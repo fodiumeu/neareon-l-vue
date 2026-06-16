@@ -2,10 +2,10 @@
 import { Link, usePage } from '@inertiajs/vue3';
 import { computed } from 'vue';
 import Heading from '@/components/Heading.vue';
-import { getSettingsNavItems } from '@/config/navigation/settings-navigation';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { useCurrentUrl } from '@/composables/useCurrentUrl';
+import { getSettingsNavItems } from '@/config/navigation/settings-navigation';
 import { toUrl } from '@/lib/utils';
 
 const { isCurrentOrParentUrl } = useCurrentUrl();

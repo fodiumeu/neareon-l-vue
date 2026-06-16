@@ -73,7 +73,9 @@ defineOptions({
                                 >
                                     {{ user.name }}
                                 </Link>
-                                <p class="truncate text-sm text-muted-foreground">
+                                <p
+                                    class="truncate text-sm text-muted-foreground"
+                                >
                                     {{ user.email }}
                                 </p>
                             </div>

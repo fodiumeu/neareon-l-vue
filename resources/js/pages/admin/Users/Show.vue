@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { Form, Head, usePage } from '@inertiajs/vue3';
+import InputError from '@/components/InputError.vue';
 import PageHeader from '@/components/PageHeader.vue';
 import PageSection from '@/components/PageSection.vue';
 import { Badge } from '@/components/ui/badge';
@@ -11,7 +12,6 @@ import {
     CardHeader,
     CardTitle,
 } from '@/components/ui/card';
-import InputError from '@/components/InputError.vue';
 import { Label } from '@/components/ui/label';
 import type { UserRole } from '@/types';
 
@@ -85,7 +85,9 @@ defineOptions({
                 </CardHeader>
                 <CardContent class="space-y-3">
                     <div class="rounded-lg border border-border px-4 py-3">
-                        <p class="text-xs font-medium tracking-wide text-muted-foreground uppercase">
+                        <p
+                            class="text-xs font-medium tracking-wide text-muted-foreground uppercase"
+                        >
                             Name
                         </p>
                         <p class="mt-1 text-sm font-medium">
@@ -94,7 +96,9 @@ defineOptions({
                     </div>
 
                     <div class="rounded-lg border border-border px-4 py-3">
-                        <p class="text-xs font-medium tracking-wide text-muted-foreground uppercase">
+                        <p
+                            class="text-xs font-medium tracking-wide text-muted-foreground uppercase"
+                        >
                             Email
                         </p>
                         <p class="mt-1 text-sm text-muted-foreground">
@@ -103,7 +107,9 @@ defineOptions({
                     </div>
 
                     <div class="rounded-lg border border-border px-4 py-3">
-                        <p class="text-xs font-medium tracking-wide text-muted-foreground uppercase">
+                        <p
+                            class="text-xs font-medium tracking-wide text-muted-foreground uppercase"
+                        >
                             Role
                         </p>
                         <Badge variant="secondary" class="mt-2 capitalize">
@@ -112,7 +118,9 @@ defineOptions({
                     </div>
 
                     <div class="rounded-lg border border-border px-4 py-3">
-                        <p class="text-xs font-medium tracking-wide text-muted-foreground uppercase">
+                        <p
+                            class="text-xs font-medium tracking-wide text-muted-foreground uppercase"
+                        >
                             Email verified at
                         </p>
                         <p class="mt-1 text-sm text-muted-foreground">
@@ -121,7 +129,9 @@ defineOptions({
                     </div>
 
                     <div class="rounded-lg border border-border px-4 py-3">
-                        <p class="text-xs font-medium tracking-wide text-muted-foreground uppercase">
+                        <p
+                            class="text-xs font-medium tracking-wide text-muted-foreground uppercase"
+                        >
                             Created at
                         </p>
                         <p class="mt-1 text-sm text-muted-foreground">
@@ -130,7 +140,9 @@ defineOptions({
                     </div>
 
                     <div class="rounded-lg border border-border px-4 py-3">
-                        <p class="text-xs font-medium tracking-wide text-muted-foreground uppercase">
+                        <p
+                            class="text-xs font-medium tracking-wide text-muted-foreground uppercase"
+                        >
                             Updated at
                         </p>
                         <p class="mt-1 text-sm text-muted-foreground">

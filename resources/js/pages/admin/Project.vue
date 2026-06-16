@@ -68,7 +68,9 @@ defineOptions({
                 </CardHeader>
                 <CardContent class="space-y-3">
                     <div class="rounded-lg border border-border px-4 py-3">
-                        <p class="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                        <p
+                            class="text-xs font-medium tracking-wide text-muted-foreground uppercase"
+                        >
                             App name
                         </p>
                         <p class="mt-1 text-sm font-medium">
@@ -77,7 +79,9 @@ defineOptions({
                     </div>
 
                     <div class="rounded-lg border border-border px-4 py-3">
-                        <p class="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                        <p
+                            class="text-xs font-medium tracking-wide text-muted-foreground uppercase"
+                        >
                             Logo label
                         </p>
                         <p class="mt-1 text-sm font-medium">
@@ -86,7 +90,9 @@ defineOptions({
                     </div>
 
                     <div class="rounded-lg border border-border px-4 py-3">
-                        <p class="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                        <p
+                            class="text-xs font-medium tracking-wide text-muted-foreground uppercase"
+                        >
                             Admin label
                         </p>
                         <p class="mt-1 text-sm font-medium">
@@ -95,7 +101,9 @@ defineOptions({
                     </div>
 
                     <div class="rounded-lg border border-border px-4 py-3">
-                        <p class="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                        <p
+                            class="text-xs font-medium tracking-wide text-muted-foreground uppercase"
+                        >
                             Tagline
                         </p>
                         <p class="mt-1 text-sm text-muted-foreground">
@@ -104,7 +112,9 @@ defineOptions({
                     </div>
 
                     <div class="rounded-lg border border-border px-4 py-3">
-                        <p class="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                        <p
+                            class="text-xs font-medium tracking-wide text-muted-foreground uppercase"
+                        >
                             Dashboard title
                         </p>
                         <p class="mt-1 text-sm font-medium">
@@ -113,7 +123,9 @@ defineOptions({
                     </div>
 
                     <div class="rounded-lg border border-border px-4 py-3">
-                        <p class="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                        <p
+                            class="text-xs font-medium tracking-wide text-muted-foreground uppercase"
+                        >
                             Dashboard description
                         </p>
                         <p class="mt-1 text-sm text-muted-foreground">
@@ -122,16 +134,24 @@ defineOptions({
                     </div>
 
                     <div class="rounded-lg border border-border px-4 py-3">
-                        <p class="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                        <p
+                            class="text-xs font-medium tracking-wide text-muted-foreground uppercase"
+                        >
                             Show admin area
                         </p>
                         <Badge variant="secondary" class="mt-2 capitalize">
-                            {{ props.overview.showAdminArea ? 'enabled' : 'disabled' }}
+                            {{
+                                props.overview.showAdminArea
+                                    ? 'enabled'
+                                    : 'disabled'
+                            }}
                         </Badge>
                     </div>
 
                     <div class="rounded-lg border border-border px-4 py-3">
-                        <p class="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                        <p
+                            class="text-xs font-medium tracking-wide text-muted-foreground uppercase"
+                        >
                             Show appearance settings
                         </p>
                         <Badge variant="secondary" class="mt-2 capitalize">

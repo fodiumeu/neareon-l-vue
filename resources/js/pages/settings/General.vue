@@ -49,7 +49,9 @@ defineOptions({
 
         <div class="space-y-3">
             <div class="rounded-lg border border-border px-4 py-3">
-                <p class="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                <p
+                    class="text-xs font-medium tracking-wide text-muted-foreground uppercase"
+                >
                     App name
                 </p>
                 <p class="mt-1 text-sm font-medium">
@@ -58,7 +60,9 @@ defineOptions({
             </div>
 
             <div class="rounded-lg border border-border px-4 py-3">
-                <p class="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                <p
+                    class="text-xs font-medium tracking-wide text-muted-foreground uppercase"
+                >
                     Email address
                 </p>
                 <p class="mt-1 text-sm font-medium">
@@ -77,7 +81,9 @@ defineOptions({
             </div>
 
             <div class="rounded-lg border border-border px-4 py-3">
-                <p class="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                <p
+                    class="text-xs font-medium tracking-wide text-muted-foreground uppercase"
+                >
                     Role
                 </p>
                 <p class="mt-1 text-sm font-medium capitalize">
@@ -96,7 +102,9 @@ defineOptions({
             </div>
 
             <div class="rounded-lg border border-border px-4 py-3">
-                <p class="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                <p
+                    class="text-xs font-medium tracking-wide text-muted-foreground uppercase"
+                >
                     Tagline
                 </p>
                 <p class="mt-1 text-sm text-muted-foreground">
@@ -105,7 +113,9 @@ defineOptions({
             </div>
 
             <div class="rounded-lg border border-border px-4 py-3">
-                <p class="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                <p
+                    class="text-xs font-medium tracking-wide text-muted-foreground uppercase"
+                >
                     Dashboard title
                 </p>
                 <p class="mt-1 text-sm font-medium">

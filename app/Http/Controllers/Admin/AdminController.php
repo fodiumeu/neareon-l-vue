@@ -79,10 +79,10 @@ class AdminController extends Controller
     public function system(): Response
     {
         $defaults = [
-            'app_name' => 'Webapp Starter Kit',
-            'tagline' => 'Reusable Laravel, Vue and Inertia foundation',
-            'welcome_title' => 'Webapp Starter Kit',
-            'dashboard_title' => 'Dashboard',
+            'app_name' => 'NEAREON',
+            'tagline' => 'Regionale Social Web-App',
+            'welcome_title' => 'NEAREON',
+            'dashboard_title' => 'NEAREON Laravel Basis - Phase 0',
             'admin_label' => 'Admin',
         ];
 

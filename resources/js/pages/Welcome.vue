@@ -79,13 +79,15 @@ const page = usePage<{
                 </nav>
             </header>
 
-            <section class="grid gap-8 lg:grid-cols-[minmax(0,2fr)_minmax(18rem,1fr)]">
+            <section
+                class="grid gap-8 lg:grid-cols-[minmax(0,2fr)_minmax(18rem,1fr)]"
+            >
                 <div class="space-y-6">
                     <div class="space-y-3">
                         <p
-                            class="inline-flex items-center rounded-full border border-border px-3 py-1 text-xs font-medium uppercase tracking-[0.2em] text-muted-foreground"
+                            class="inline-flex items-center rounded-full border border-border px-3 py-1 text-xs font-medium tracking-[0.2em] text-muted-foreground uppercase"
                         >
-                            Starter Kit
+                            Laravel Phase 0
                         </p>
                         <div class="space-y-4">
                             <h1
@@ -102,25 +104,31 @@ const page = usePage<{
                     </div>
 
                     <div class="grid gap-4 sm:grid-cols-3">
-                        <div class="rounded-xl border border-border bg-card p-5">
-                            <h2 class="text-sm font-medium">Navigation</h2>
+                        <div
+                            class="rounded-xl border border-border bg-card p-5"
+                        >
+                            <h2 class="text-sm font-medium">Region</h2>
                             <p class="mt-2 text-sm text-muted-foreground">
-                                Central app and settings navigation with room
-                                for role-aware expansion.
+                                NEAREON wird als regionale Community-App
+                                vorbereitet.
                             </p>
                         </div>
-                        <div class="rounded-xl border border-border bg-card p-5">
-                            <h2 class="text-sm font-medium">Branding</h2>
+                        <div
+                            class="rounded-xl border border-border bg-card p-5"
+                        >
+                            <h2 class="text-sm font-medium">Basis</h2>
                             <p class="mt-2 text-sm text-muted-foreground">
-                                Shared app metadata keeps naming and visual
-                                basics easy to adjust.
+                                Diese Laravel-Version bildet das spaetere
+                                Produktivsystem.
                             </p>
                         </div>
-                        <div class="rounded-xl border border-border bg-card p-5">
-                            <h2 class="text-sm font-medium">Admin Basis</h2>
+                        <div
+                            class="rounded-xl border border-border bg-card p-5"
+                        >
+                            <h2 class="text-sm font-medium">Referenz</h2>
                             <p class="mt-2 text-sm text-muted-foreground">
-                                A small protected admin area is ready for
-                                further expansion.
+                                Der Base44-MVP bleibt fachliche Demo- und
+                                Testreferenz.
                             </p>
                         </div>
                     </div>
@@ -130,10 +138,10 @@ const page = usePage<{
                     class="flex flex-col justify-between rounded-2xl border border-border bg-card p-6"
                 >
                     <div class="space-y-3">
-                        <h2 class="text-lg font-semibold">Get started</h2>
+                        <h2 class="text-lg font-semibold">NEAREON Teststand</h2>
                         <p class="text-sm leading-6 text-muted-foreground">
-                            Use this project as a clean base for future web
-                            applications and extend it step by step.
+                            Dieser Aufbau bereitet die Laravel-Basis vor, bevor
+                            erste NEAREON-Fachmodule entstehen.
                         </p>
                     </div>
 

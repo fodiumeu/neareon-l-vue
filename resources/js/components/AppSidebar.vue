@@ -6,10 +6,6 @@ import NavFooter from '@/components/NavFooter.vue';
 import NavMain from '@/components/NavMain.vue';
 import NavUser from '@/components/NavUser.vue';
 import {
-    footerNavItems,
-    getMainNavItems,
-} from '@/config/navigation/app-navigation';
-import {
     Sidebar,
     SidebarContent,
     SidebarFooter,
@@ -18,6 +14,10 @@ import {
     SidebarMenuButton,
     SidebarMenuItem,
 } from '@/components/ui/sidebar';
+import {
+    footerNavItems,
+    getMainNavItems,
+} from '@/config/navigation/app-navigation';
 import { dashboard } from '@/routes';
 import type { NavItem, User } from '@/types';
 
@@ -51,7 +51,9 @@ const visibleMainNavItems = computed(() =>
         }),
     ),
 );
-const visibleFooterNavItems = computed(() => filterItemsByUserAccess(footerNavItems));
+const visibleFooterNavItems = computed(() =>
+    filterItemsByUserAccess(footerNavItems),
+);
 </script>
 
 <template>

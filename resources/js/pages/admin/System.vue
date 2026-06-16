@@ -38,7 +38,8 @@ const page = usePage<{
     };
 }>();
 
-const isDefaultField = (field: string) => props.system.default_fields.includes(field);
+const isDefaultField = (field: string) =>
+    props.system.default_fields.includes(field);
 
 defineOptions({
     layout: {
@@ -77,7 +78,9 @@ defineOptions({
                     <CardContent class="space-y-3">
                         <div class="rounded-lg border border-border px-4 py-3">
                             <div class="flex items-start justify-between gap-3">
-                                <p class="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                                <p
+                                    class="text-xs font-medium tracking-wide text-muted-foreground uppercase"
+                                >
                                     App name
                                 </p>
                                 <Badge
@@ -94,7 +97,9 @@ defineOptions({
                         </div>
 
                         <div class="rounded-lg border border-border px-4 py-3">
-                            <p class="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                            <p
+                                class="text-xs font-medium tracking-wide text-muted-foreground uppercase"
+                            >
                                 Logo label
                             </p>
                             <p class="mt-1 text-sm font-medium">
@@ -114,7 +119,9 @@ defineOptions({
                     <CardContent class="space-y-3">
                         <div class="rounded-lg border border-border px-4 py-3">
                             <div class="flex items-start justify-between gap-3">
-                                <p class="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                                <p
+                                    class="text-xs font-medium tracking-wide text-muted-foreground uppercase"
+                                >
                                     Admin label
                                 </p>
                                 <Badge
@@ -132,7 +139,9 @@ defineOptions({
 
                         <div class="rounded-lg border border-border px-4 py-3">
                             <div class="flex items-start justify-between gap-3">
-                                <p class="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                                <p
+                                    class="text-xs font-medium tracking-wide text-muted-foreground uppercase"
+                                >
                                     Tagline
                                 </p>
                                 <Badge
@@ -150,7 +159,9 @@ defineOptions({
 
                         <div class="rounded-lg border border-border px-4 py-3">
                             <div class="flex items-start justify-between gap-3">
-                                <p class="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                                <p
+                                    class="text-xs font-medium tracking-wide text-muted-foreground uppercase"
+                                >
                                     Welcome title
                                 </p>
                                 <Badge
@@ -168,7 +179,9 @@ defineOptions({
 
                         <div class="rounded-lg border border-border px-4 py-3">
                             <div class="flex items-start justify-between gap-3">
-                                <p class="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                                <p
+                                    class="text-xs font-medium tracking-wide text-muted-foreground uppercase"
+                                >
                                     Dashboard title
                                 </p>
                                 <Badge
@@ -185,7 +198,9 @@ defineOptions({
                         </div>
 
                         <div class="rounded-lg border border-border px-4 py-3">
-                            <p class="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                            <p
+                                class="text-xs font-medium tracking-wide text-muted-foreground uppercase"
+                            >
                                 Show admin area
                             </p>
                             <Badge variant="secondary" class="mt-2 capitalize">
@@ -198,7 +213,9 @@ defineOptions({
                         </div>
 
                         <div class="rounded-lg border border-border px-4 py-3">
-                            <p class="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                            <p
+                                class="text-xs font-medium tracking-wide text-muted-foreground uppercase"
+                            >
                                 Show appearance settings
                             </p>
                             <Badge variant="secondary" class="mt-2 capitalize">
@@ -221,7 +238,9 @@ defineOptions({
                     </CardHeader>
                     <CardContent class="space-y-3">
                         <div class="rounded-lg border border-border px-4 py-3">
-                            <p class="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                            <p
+                                class="text-xs font-medium tracking-wide text-muted-foreground uppercase"
+                            >
                                 Environment
                             </p>
                             <p class="mt-1 text-sm font-medium">
@@ -230,7 +249,9 @@ defineOptions({
                         </div>
 
                         <div class="rounded-lg border border-border px-4 py-3">
-                            <p class="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                            <p
+                                class="text-xs font-medium tracking-wide text-muted-foreground uppercase"
+                            >
                                 Laravel version
                             </p>
                             <p class="mt-1 text-sm font-medium">
@@ -239,7 +260,9 @@ defineOptions({
                         </div>
 
                         <div class="rounded-lg border border-border px-4 py-3">
-                            <p class="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                            <p
+                                class="text-xs font-medium tracking-wide text-muted-foreground uppercase"
+                            >
                                 PHP version
                             </p>
                             <p class="mt-1 text-sm font-medium">

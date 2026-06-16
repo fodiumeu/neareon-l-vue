@@ -16,12 +16,8 @@ withDefaults(
 <template>
     <header
         class="flex shrink-0 items-center gap-2 border-b border-sidebar-border/70 px-6 transition-[width,height] ease-linear md:px-4"
-        style="
-            height: var(--app-shell-header-height);
-        "
-        :class="
-            'group-has-data-[collapsible=icon]/sidebar-wrapper:[height:var(--app-shell-header-height-collapsed)]'
-        "
+        style="height: var(--app-shell-header-height)"
+        :class="'group-has-data-[collapsible=icon]/sidebar-wrapper:[height:var(--app-shell-header-height-collapsed)]'"
     >
         <div class="flex items-center gap-2">
             <SidebarTrigger class="-ml-1" />

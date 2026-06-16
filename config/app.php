@@ -13,26 +13,26 @@ return [
     |
     */
 
-    'name' => env('APP_NAME', 'Webapp Starter Kit'),
+    'name' => env('APP_NAME', 'NEAREON'),
 
     'branding' => [
-        'logo' => env('APP_LOGO', 'Starter Kit'),
+        'logo' => env('APP_LOGO', 'NEAREON'),
     ],
 
     'project' => [
         'show_admin_area' => env('APP_SHOW_ADMIN_AREA', true),
         'admin_label' => env('APP_ADMIN_LABEL', 'Admin'),
         'show_appearance_settings' => env('APP_SHOW_APPEARANCE_SETTINGS', true),
-        'tagline' => env('APP_TAGLINE', 'Reusable Laravel, Vue and Inertia foundation'),
-        'welcome_title' => env('APP_WELCOME_TITLE', 'Webapp Starter Kit'),
+        'tagline' => env('APP_TAGLINE', 'Regionale Social Web-App'),
+        'welcome_title' => env('APP_WELCOME_TITLE', 'NEAREON'),
         'welcome_description' => env(
             'APP_WELCOME_DESCRIPTION',
-            'A neutral foundation for building web applications with Laravel, Vue and Inertia.',
+            'NEAREON verbindet Menschen, Gruppen und Events in deiner Region.',
         ),
-        'dashboard_title' => env('APP_DASHBOARD_TITLE', 'Dashboard'),
+        'dashboard_title' => env('APP_DASHBOARD_TITLE', 'NEAREON Laravel Basis - Phase 0'),
         'dashboard_description' => env(
             'APP_DASHBOARD_DESCRIPTION',
-            'A simple workspace starting point for signed-in users',
+            'Willkommen im NEAREON Laravel-Teststand.',
         ),
     ],
 

@@ -36,9 +36,9 @@ class HandleInertiaRequests extends Middleware
     public function share(Request $request): array
     {
         $starterDefaults = [
-            'app.name' => 'Webapp Starter Kit',
-            'app.project.tagline' => 'Reusable Laravel, Vue and Inertia foundation',
-            'app.project.dashboard_title' => 'Dashboard',
+            'app.name' => 'NEAREON',
+            'app.project.tagline' => 'Regionale Social Web-App',
+            'app.project.dashboard_title' => 'NEAREON Laravel Basis - Phase 0',
             'app.project.admin_label' => 'Admin',
         ];
 

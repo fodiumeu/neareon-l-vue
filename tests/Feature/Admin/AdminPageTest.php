@@ -277,8 +277,8 @@ test('admin can open the system status page and receive key system values', func
 
 test('system status marks known starter defaults and excludes customized values', function () {
     config([
-        'app.name' => 'Webapp Starter Kit',
-        'app.project.tagline' => 'Reusable Laravel, Vue and Inertia foundation',
+        'app.name' => 'NEAREON',
+        'app.project.tagline' => 'Regionale Social Web-App',
         'app.project.admin_label' => 'Admin',
     ]);
 
