@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Admin\AdminController;
+use App\Http\Controllers\DiscoverController;
 use App\Http\Controllers\FollowController;
 use App\Http\Controllers\OnboardingController;
 use App\Http\Controllers\ProfileController;
@@ -16,6 +17,7 @@ Route::inertia('/', 'Welcome', [
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('onboarding', [OnboardingController::class, 'create'])->name('onboarding.create');
     Route::post('onboarding', [OnboardingController::class, 'store'])->name('onboarding.store');
+    Route::get('discover', [DiscoverController::class, 'index'])->name('discover');
     Route::get('profile/edit', [ProfileController::class, 'edit'])->name('neareon-profile.edit');
     Route::patch('profile', [ProfileController::class, 'update'])->name('neareon-profile.update');
     Route::get('u/{username}', [ProfileController::class, 'show'])->name('public-profile.show');
