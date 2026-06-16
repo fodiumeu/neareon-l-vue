@@ -8,6 +8,8 @@ use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
@@ -67,5 +69,57 @@ class User extends Authenticatable
     public function profile(): HasOne
     {
         return $this->hasOne(Profile::class);
+    }
+
+    /**
+     * Get the follow relationships started by the user.
+     */
+    public function followingRelationships(): HasMany
+    {
+        return $this->hasMany(Follow::class, 'follower_id');
+    }
+
+    /**
+     * Get the follow relationships targeting the user.
+     */
+    public function followerRelationships(): HasMany
+    {
+        return $this->hasMany(Follow::class, 'followed_id');
+    }
+
+    /**
+     * Get the users this user follows.
+     */
+    public function following(): BelongsToMany
+    {
+        return $this->belongsToMany(User::class, 'follows', 'follower_id', 'followed_id')
+            ->withTimestamps();
+    }
+
+    /**
+     * Get the users following this user.
+     */
+    public function followers(): BelongsToMany
+    {
+        return $this->belongsToMany(User::class, 'follows', 'followed_id', 'follower_id')
+            ->withTimestamps();
+    }
+
+    /**
+     * Determine whether this user follows the given user.
+     */
+    public function isFollowing(User $user): bool
+    {
+        return $this->followingRelationships()
+            ->where('followed_id', $user->id)
+            ->exists();
+    }
+
+    /**
+     * Determine whether this user has a mutual follow with the given user.
+     */
+    public function isMutualWith(User $user): bool
+    {
+        return $this->isFollowing($user) && $user->isFollowing($this);
     }
 }

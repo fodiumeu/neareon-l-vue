@@ -1,12 +1,17 @@
 <script setup lang="ts">
-import { Head } from '@inertiajs/vue3';
+import { Form, Head } from '@inertiajs/vue3';
 import PageHeader from '@/components/PageHeader.vue';
 import PageSection from '@/components/PageSection.vue';
+import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+import { Spinner } from '@/components/ui/spinner';
 
 type PublicProfile = {
     username: string;
     isOwnProfile: boolean;
+    is_following: boolean;
+    is_followed_by: boolean;
+    is_mutual: boolean;
     display_name?: string;
     bio?: string | null;
     region?: string | null;
@@ -38,6 +43,36 @@ defineOptions({
             :title="profile.display_name ?? `@${profile.username}`"
             :description="`@${profile.username}`"
         />
+
+        <PageSection v-if="!props.profile.isOwnProfile">
+            <Form
+                v-if="props.profile.is_following"
+                :action="`/u/${props.profile.username}/follow`"
+                method="delete"
+                v-slot="{ processing }"
+            >
+                <Button
+                    type="submit"
+                    variant="secondary"
+                    :disabled="processing"
+                >
+                    <Spinner v-if="processing" />
+                    Entfolgen
+                </Button>
+            </Form>
+
+            <Form
+                v-else
+                :action="`/u/${props.profile.username}/follow`"
+                method="post"
+                v-slot="{ processing }"
+            >
+                <Button type="submit" :disabled="processing">
+                    <Spinner v-if="processing" />
+                    Folgen
+                </Button>
+            </Form>
+        </PageSection>
 
         <PageSection padded>
             <Card>

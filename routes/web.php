@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Admin\AdminController;
+use App\Http\Controllers\FollowController;
 use App\Http\Controllers\OnboardingController;
 use App\Http\Controllers\ProfileController;
 use Illuminate\Http\Request;
@@ -18,6 +19,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('profile/edit', [ProfileController::class, 'edit'])->name('neareon-profile.edit');
     Route::patch('profile', [ProfileController::class, 'update'])->name('neareon-profile.update');
     Route::get('u/{username}', [ProfileController::class, 'show'])->name('public-profile.show');
+    Route::post('u/{username}/follow', [FollowController::class, 'store'])->name('public-profile.follow');
+    Route::delete('u/{username}/follow', [FollowController::class, 'destroy'])->name('public-profile.unfollow');
     Route::get('dashboard', function (Request $request) {
         if (! $request->user()->profile()->exists()) {
             return to_route('onboarding.create');
