@@ -1,7 +1,10 @@
 <?php
 
 use App\Http\Controllers\Admin\AdminController;
+use App\Http\Controllers\OnboardingController;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
+use Inertia\Inertia;
 use Laravel\Fortify\Features;
 
 Route::inertia('/', 'Welcome', [
@@ -9,7 +12,15 @@ Route::inertia('/', 'Welcome', [
 ])->name('home');
 
 Route::middleware(['auth', 'verified'])->group(function () {
-    Route::inertia('dashboard', 'Dashboard')->name('dashboard');
+    Route::get('onboarding', [OnboardingController::class, 'create'])->name('onboarding.create');
+    Route::post('onboarding', [OnboardingController::class, 'store'])->name('onboarding.store');
+    Route::get('dashboard', function (Request $request) {
+        if (! $request->user()->profile()->exists()) {
+            return to_route('onboarding.create');
+        }
+
+        return Inertia::render('Dashboard');
+    })->name('dashboard');
     Route::get('admin', [AdminController::class, 'index'])
         ->middleware('role:admin')
         ->name('admin');

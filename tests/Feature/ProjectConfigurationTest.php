@@ -1,5 +1,6 @@
 <?php
 
+use App\Models\Profile;
 use App\Models\User;
 use Inertia\Testing\AssertableInertia as Assert;
 
@@ -40,6 +41,7 @@ test('dashboard page receives the shared admin visibility flag', function () {
     ]);
 
     $user = User::factory()->create();
+    Profile::factory()->for($user)->create();
 
     $this->actingAs($user)
         ->get(route('dashboard'))
@@ -58,6 +60,7 @@ test('settings pages receive the shared appearance visibility flag', function ()
     ]);
 
     $user = User::factory()->create();
+    Profile::factory()->for($user)->create();
 
     $this->actingAs($user)
         ->get(route('profile.edit'))
@@ -69,6 +72,7 @@ test('settings pages receive the shared appearance visibility flag', function ()
 
 test('flash messages are shared with inertia when present in the session', function () {
     $user = User::factory()->create();
+    Profile::factory()->for($user)->create();
 
     $this->actingAs($user)
         ->withSession([

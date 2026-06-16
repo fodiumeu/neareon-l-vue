@@ -1,5 +1,6 @@
 <?php
 
+use App\Models\Profile;
 use App\Models\User;
 use Inertia\Testing\AssertableInertia as Assert;
 
@@ -10,6 +11,8 @@ test('guests are redirected to the login page', function () {
 
 test('authenticated users can visit the dashboard', function () {
     $user = User::factory()->create();
+    Profile::factory()->for($user)->create();
+
     $this->actingAs($user);
 
     $response = $this->get(route('dashboard'));
@@ -23,6 +26,7 @@ test('dashboard receives the configured dashboard copy', function () {
     ]);
 
     $user = User::factory()->create();
+    Profile::factory()->for($user)->create();
 
     $this->actingAs($user)
         ->get(route('dashboard'))
@@ -38,6 +42,7 @@ test('dashboard receives the configured dashboard copy', function () {
 
 test('dashboard shows the first-use hint when starter defaults are active', function () {
     $admin = User::factory()->admin()->create();
+    Profile::factory()->for($admin)->create();
 
     $this->actingAs($admin)
         ->get(route('dashboard'))
@@ -58,6 +63,7 @@ test('dashboard does not flag starter defaults when central values are customize
     ]);
 
     $admin = User::factory()->admin()->create();
+    Profile::factory()->for($admin)->create();
 
     $this->actingAs($admin)
         ->get(route('dashboard'))
@@ -70,6 +76,7 @@ test('dashboard does not flag starter defaults when central values are customize
 
 test('members do not receive the admin system link in the dashboard first-use hint', function () {
     $member = User::factory()->create();
+    Profile::factory()->for($member)->create();
 
     $this->actingAs($member)
         ->get(route('dashboard'))

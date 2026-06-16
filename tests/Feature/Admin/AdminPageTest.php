@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Admin\AdminController;
+use App\Models\Profile;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Request;
@@ -89,6 +90,7 @@ test('admins can still access the admin area when the project hides the admin na
     ]);
 
     $admin = User::factory()->admin()->create();
+    Profile::factory()->for($admin)->create();
 
     $this->actingAs($admin)
         ->get('/admin')
@@ -109,6 +111,7 @@ test('members never receive admin navigation access and remain blocked from the 
     ]);
 
     $member = User::factory()->create();
+    Profile::factory()->for($member)->create();
 
     $this->actingAs($member)
         ->get(route('dashboard'))

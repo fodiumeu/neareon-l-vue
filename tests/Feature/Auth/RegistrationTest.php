@@ -1,5 +1,6 @@
 <?php
 
+use App\Models\Profile;
 use App\Models\User;
 use Inertia\Testing\AssertableInertia as Assert;
 use Laravel\Fortify\Features;
@@ -74,6 +75,7 @@ test('birthdate and age gate timestamp are not shared with inertia auth props', 
         'birthdate' => now()->subYears(20)->toDateString(),
         'age_gate_passed_at' => now(),
     ]);
+    Profile::factory()->for($user)->create();
 
     $this->actingAs($user)
         ->get(route('dashboard'))
