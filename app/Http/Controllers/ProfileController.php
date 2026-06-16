@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Enums\ProfileVisibility;
 use App\Http\Requests\UpdateProfileRequest;
+use App\Models\Profile;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -58,5 +59,77 @@ class ProfileController extends Controller
 
         return to_route('neareon-profile.edit')
             ->with('success', 'Profil wurde gespeichert.');
+    }
+
+    /**
+     * Show a public profile with server-side privacy filtering.
+     */
+    public function show(Request $request, string $username): Response|RedirectResponse
+    {
+        $viewerProfile = $request->user()->profile;
+
+        if ($viewerProfile === null) {
+            return to_route('onboarding.create');
+        }
+
+        $profile = Profile::query()
+            ->where('username', $username)
+            ->firstOrFail();
+
+        return Inertia::render('Profile/Show', [
+            'profile' => $this->visibleProfileData($profile, $viewerProfile),
+        ]);
+    }
+
+    /**
+     * Build public profile props without leaking hidden fields.
+     *
+     * @return array<string, mixed>
+     */
+    private function visibleProfileData(Profile $profile, Profile $viewerProfile): array
+    {
+        $isOwnProfile = $profile->is($viewerProfile);
+
+        $data = [
+            'username' => $profile->username,
+            'isOwnProfile' => $isOwnProfile,
+        ];
+
+        if ($this->canView($profile->profile_visibility, $isOwnProfile)) {
+            $data['display_name'] = $profile->display_name;
+            $data['bio'] = $profile->bio;
+        }
+
+        if ($this->canView($profile->region_visibility, $isOwnProfile)) {
+            $data['region'] = $profile->region;
+        }
+
+        if ($this->canView($profile->languages_visibility, $isOwnProfile)) {
+            $data['languages'] = $profile->languages;
+        }
+
+        if ($this->canView($profile->interests_visibility, $isOwnProfile)) {
+            $data['interests'] = $profile->interests;
+        }
+
+        return $data;
+    }
+
+    private function canView(ProfileVisibility $visibility, bool $isOwnProfile): bool
+    {
+        if ($isOwnProfile) {
+            return true;
+        }
+
+        return match ($visibility) {
+            ProfileVisibility::Public => true,
+            ProfileVisibility::Mutuals => $this->hasMutualFollow(),
+            ProfileVisibility::Private => false,
+        };
+    }
+
+    private function hasMutualFollow(): bool
+    {
+        return false;
     }
 }

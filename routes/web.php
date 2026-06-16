@@ -17,6 +17,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('onboarding', [OnboardingController::class, 'store'])->name('onboarding.store');
     Route::get('profile/edit', [ProfileController::class, 'edit'])->name('neareon-profile.edit');
     Route::patch('profile', [ProfileController::class, 'update'])->name('neareon-profile.update');
+    Route::get('u/{username}', [ProfileController::class, 'show'])->name('public-profile.show');
     Route::get('dashboard', function (Request $request) {
         if (! $request->user()->profile()->exists()) {
             return to_route('onboarding.create');
