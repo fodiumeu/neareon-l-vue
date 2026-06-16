@@ -11,21 +11,21 @@ export const getSettingsNavItems = ({
     showAppearanceSettings,
 }: ProjectSettingsNavigationOptions): NavItem[] => [
     {
-        title: 'General',
+        title: 'Allgemein',
         href: '/settings/general',
     },
     {
-        title: 'Profile',
+        title: 'Profil',
         href: editProfile(),
     },
     {
-        title: 'Security',
+        title: 'Sicherheit',
         href: editSecurity(),
     },
     ...(showAppearanceSettings
         ? [
               {
-                  title: 'Appearance',
+                  title: 'Darstellung',
                   href: editAppearance(),
               } satisfies NavItem,
           ]

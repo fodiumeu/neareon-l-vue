@@ -9,7 +9,7 @@ defineOptions({
     layout: {
         breadcrumbs: [
             {
-                title: 'Appearance settings',
+                title: 'Darstellung',
                 href: edit(),
             },
         ],
@@ -18,15 +18,15 @@ defineOptions({
 </script>
 
 <template>
-    <Head title="Appearance settings" />
+    <Head title="Darstellung" />
 
-    <h1 class="sr-only">Appearance settings</h1>
+    <h1 class="sr-only">Darstellung</h1>
 
     <PageSection>
         <Heading
             variant="small"
-            title="Appearance settings"
-            description="Update your account's appearance settings"
+            title="Darstellung"
+            description="Passe die Darstellung deines Accounts an"
         />
         <AppearanceTabs />
     </PageSection>

@@ -22,7 +22,7 @@ defineOptions({
     layout: {
         breadcrumbs: [
             {
-                title: 'Dashboard',
+                title: 'Home',
                 href: dashboard(),
             },
         ],
@@ -42,23 +42,24 @@ defineOptions({
         <PageSection v-if="page.props.project.hasStarterDefaults" padded>
             <Card>
                 <CardContent class="space-y-3">
-                    <h2 class="text-base font-medium">NEAREON basis active</h2>
+                    <h2 class="text-base font-medium">NEAREON-Basis aktiv</h2>
                     <p
                         class="max-w-3xl text-sm leading-6 text-muted-foreground"
                     >
-                        This project now uses the first NEAREON setup values.
-                        Keep the next steps small before building features.
+                        Dieses Projekt nutzt jetzt die ersten
+                        NEAREON-Setupwerte. Die naechsten Schritte bleiben
+                        klein, bevor Fachfeatures gebaut werden.
                     </p>
                     <p
                         v-if="page.props.auth.user?.role === 'admin'"
                         class="text-sm text-muted-foreground"
                     >
-                        Review the current project values in
+                        Pruefe die aktuellen Projektwerte im
                         <Link
                             href="/admin/system"
                             class="text-foreground underline decoration-neutral-300 underline-offset-4 transition-colors duration-300 ease-out hover:decoration-current dark:decoration-neutral-500"
                         >
-                            System status
+                            Systemstatus
                         </Link>
                         .
                     </p>
@@ -69,13 +70,13 @@ defineOptions({
         <PageSection padded>
             <Card>
                 <CardContent class="space-y-3">
-                    <h2 class="text-base font-medium">Phase 0 overview</h2>
+                    <h2 class="text-base font-medium">Phase-0-Ueberblick</h2>
                     <p
                         class="max-w-3xl text-sm leading-6 text-muted-foreground"
                     >
-                        This dashboard is intentionally minimal. It marks the
-                        NEAREON Laravel setup without pretending that profile,
-                        discover or follow features already exist.
+                        Dieses Dashboard ist bewusst minimal. Es markiert den
+                        NEAREON-Laravel-Aufbau, ohne Profil-, Discover- oder
+                        Follow-Funktionen vorzutaeuschen.
                     </p>
                 </CardContent>
             </Card>
@@ -85,28 +86,29 @@ defineOptions({
             <div class="grid gap-4 md:grid-cols-3">
                 <Card>
                     <CardContent class="space-y-2">
-                        <h2 class="text-sm font-medium">Project identity</h2>
+                        <h2 class="text-sm font-medium">Projektidentitaet</h2>
                         <p class="text-sm leading-6 text-muted-foreground">
-                            App metadata and basic page copy now point to
-                            NEAREON.
+                            App-Metadaten und grundlegende Seitentexte zeigen
+                            jetzt auf NEAREON.
                         </p>
                     </CardContent>
                 </Card>
                 <Card>
                     <CardContent class="space-y-2">
-                        <h2 class="text-sm font-medium">Laravel target</h2>
+                        <h2 class="text-sm font-medium">Laravel-Zielsystem</h2>
                         <p class="text-sm leading-6 text-muted-foreground">
-                            This repository remains the future productive
-                            Laravel system.
+                            Dieses Repository bleibt das spaetere produktive
+                            Laravel-System.
                         </p>
                     </CardContent>
                 </Card>
                 <Card>
                     <CardContent class="space-y-2">
-                        <h2 class="text-sm font-medium">MVP reference</h2>
+                        <h2 class="text-sm font-medium">MVP-Referenz</h2>
                         <p class="text-sm leading-6 text-muted-foreground">
-                            Base44 remains the current demo and test reference
-                            while Laravel is prepared step by step.
+                            Base44 bleibt die aktuelle Demo- und Testreferenz,
+                            waehrend Laravel Schritt fuer Schritt vorbereitet
+                            wird.
                         </p>
                     </CardContent>
                 </Card>
@@ -116,12 +118,14 @@ defineOptions({
         <PageSection padded>
             <Card>
                 <CardContent class="space-y-3">
-                    <h2 class="text-base font-medium">Next setup step</h2>
+                    <h2 class="text-base font-medium">
+                        Naechster Setup-Schritt
+                    </h2>
                     <p
                         class="max-w-3xl text-sm leading-6 text-muted-foreground"
                     >
-                        Continue with language and locale preparation before
-                        starting the first NEAREON feature slice.
+                        Fahre mit Sprache und Locale fort, bevor der erste
+                        NEAREON-Feature-Slice startet.
                     </p>
                 </CardContent>
             </Card>

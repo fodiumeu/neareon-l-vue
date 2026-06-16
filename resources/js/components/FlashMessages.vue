@@ -18,7 +18,7 @@ const page = usePage<{
     >
         <Alert v-if="page.props.flash.success">
             <CheckCircle2 />
-            <AlertTitle>Success</AlertTitle>
+            <AlertTitle>Erfolg</AlertTitle>
             <AlertDescription>
                 <p>{{ page.props.flash.success }}</p>
             </AlertDescription>
@@ -26,7 +26,7 @@ const page = usePage<{
 
         <Alert v-if="page.props.flash.error" variant="destructive">
             <CircleAlert />
-            <AlertTitle>Error</AlertTitle>
+            <AlertTitle>Fehler</AlertTitle>
             <AlertDescription>
                 <p>{{ page.props.flash.error }}</p>
             </AlertDescription>

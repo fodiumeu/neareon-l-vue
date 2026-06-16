@@ -27,7 +27,7 @@ defineOptions({
     layout: {
         breadcrumbs: [
             {
-                title: 'General settings',
+                title: 'Allgemeine Einstellungen',
                 href: '/settings/general',
             },
         ],
@@ -36,15 +36,15 @@ defineOptions({
 </script>
 
 <template>
-    <Head title="General settings" />
+    <Head title="Allgemeine Einstellungen" />
 
-    <h1 class="sr-only">General settings</h1>
+    <h1 class="sr-only">Allgemeine Einstellungen</h1>
 
     <PageSection>
         <Heading
             variant="small"
-            title="General settings"
-            description="A small read-only overview of core account and project context. Update actions remain in their dedicated settings areas."
+            title="Allgemeine Einstellungen"
+            description="Ein kurzer Ueberblick ueber Account- und Projektkontext. Aenderungen bleiben in den jeweiligen Einstellungsbereichen."
         />
 
         <div class="space-y-3">
@@ -52,7 +52,7 @@ defineOptions({
                 <p
                     class="text-xs font-medium tracking-wide text-muted-foreground uppercase"
                 >
-                    App name
+                    App-Name
                 </p>
                 <p class="mt-1 text-sm font-medium">
                     {{ page.props.app.name }}
@@ -63,18 +63,18 @@ defineOptions({
                 <p
                     class="text-xs font-medium tracking-wide text-muted-foreground uppercase"
                 >
-                    Email address
+                    E-Mail-Adresse
                 </p>
                 <p class="mt-1 text-sm font-medium">
                     {{ page.props.auth.user.email }}
                 </p>
                 <p class="mt-2 text-sm text-muted-foreground">
-                    Update your email in
+                    Aendere deine E-Mail-Adresse in den
                     <Link
                         :href="editProfile()"
                         class="text-foreground underline decoration-neutral-300 underline-offset-4 transition-colors duration-300 ease-out hover:decoration-current dark:decoration-neutral-500"
                     >
-                        Profile settings
+                        Profileinstellungen
                     </Link>
                     .
                 </p>
@@ -84,18 +84,18 @@ defineOptions({
                 <p
                     class="text-xs font-medium tracking-wide text-muted-foreground uppercase"
                 >
-                    Role
+                    Rolle
                 </p>
                 <p class="mt-1 text-sm font-medium capitalize">
                     {{ page.props.auth.user.role }}
                 </p>
                 <p class="mt-2 text-sm text-muted-foreground">
-                    Password and sign-in security can be managed in
+                    Passwort und Anmeldesicherheit verwaltest du in den
                     <Link
                         :href="editSecurity()"
                         class="text-foreground underline decoration-neutral-300 underline-offset-4 transition-colors duration-300 ease-out hover:decoration-current dark:decoration-neutral-500"
                     >
-                        Security settings
+                        Sicherheitseinstellungen
                     </Link>
                     .
                 </p>
@@ -116,7 +116,7 @@ defineOptions({
                 <p
                     class="text-xs font-medium tracking-wide text-muted-foreground uppercase"
                 >
-                    Dashboard title
+                    Dashboard-Titel
                 </p>
                 <p class="mt-1 text-sm font-medium">
                     {{ page.props.project.dashboardTitle }}

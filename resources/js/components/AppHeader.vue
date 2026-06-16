@@ -55,7 +55,7 @@ const activeItemStyles =
 
 const mainNavItems: NavItem[] = [
     {
-        title: 'Dashboard',
+        title: 'Home',
         href: dashboard(),
         icon: LayoutGrid,
     },
@@ -68,7 +68,7 @@ const rightNavItems: NavItem[] = [
         icon: Folder,
     },
     {
-        title: 'Documentation',
+        title: 'Dokumentation',
         href: 'https://laravel.com/docs/starter-kits#vue',
         icon: BookOpen,
     },
@@ -79,7 +79,7 @@ const rightNavItems: NavItem[] = [
     <div>
         <div class="border-b border-sidebar-border/80">
             <div class="mx-auto flex h-16 items-center px-4 md:max-w-7xl">
-                <!-- Mobile Menu -->
+                <!-- Mobile navigation -->
                 <div class="lg:hidden">
                     <Sheet>
                         <SheetTrigger :as-child="true">
@@ -93,7 +93,7 @@ const rightNavItems: NavItem[] = [
                         </SheetTrigger>
                         <SheetContent side="left" class="w-[300px] p-6">
                             <SheetTitle class="sr-only"
-                                >Navigation menu</SheetTitle
+                                >Navigationsmenue</SheetTitle
                             >
                             <SheetHeader class="flex justify-start text-left">
                                 <AppLogoIcon
@@ -150,7 +150,7 @@ const rightNavItems: NavItem[] = [
                     <AppLogo />
                 </Link>
 
-                <!-- Desktop Menu -->
+                <!-- Desktop navigation -->
                 <div class="hidden h-full lg:flex lg:flex-1">
                     <NavigationMenu class="ml-10 flex h-full items-stretch">
                         <NavigationMenuList

@@ -28,7 +28,7 @@ const page = usePage<{
 </script>
 
 <template>
-    <Head title="Welcome" />
+    <Head title="Willkommen" />
 
     <div class="flex min-h-screen bg-background text-foreground">
         <main
@@ -59,21 +59,21 @@ const page = usePage<{
                         :href="dashboard()"
                         class="inline-flex items-center rounded-md border border-border px-4 py-2 text-sm font-medium transition-colors hover:bg-accent"
                     >
-                        Dashboard
+                        Home
                     </Link>
                     <template v-else>
                         <Link
                             :href="login()"
                             class="inline-flex items-center rounded-md border border-transparent px-4 py-2 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
                         >
-                            Log in
+                            Anmelden
                         </Link>
                         <Link
                             v-if="canRegister"
                             :href="register()"
                             class="inline-flex items-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
                         >
-                            Register
+                            Registrieren
                         </Link>
                     </template>
                 </nav>
@@ -151,21 +151,21 @@ const page = usePage<{
                             :href="dashboard()"
                             class="inline-flex w-full items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
                         >
-                            Open dashboard
+                            Home oeffnen
                         </Link>
                         <template v-else>
                             <Link
                                 :href="login()"
                                 class="inline-flex w-full items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
                             >
-                                Log in
+                                Anmelden
                             </Link>
                             <Link
                                 v-if="canRegister"
                                 :href="register()"
                                 class="inline-flex w-full items-center justify-center rounded-md border border-border px-4 py-2 text-sm font-medium transition-colors hover:bg-accent"
                             >
-                                Create account
+                                Account erstellen
                             </Link>
                         </template>
                     </div>

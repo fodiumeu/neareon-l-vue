@@ -12,7 +12,7 @@ export const getMainNavItems = ({
     showAdminArea,
 }: ProjectNavigationOptions): NavItem[] => [
     {
-        title: 'Dashboard',
+        title: 'Home',
         href: dashboard(),
         icon: LayoutGrid,
     },

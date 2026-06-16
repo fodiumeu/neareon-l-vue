@@ -42,11 +42,12 @@ onMounted(async () => {
     <Card class="w-full">
         <CardHeader>
             <CardTitle class="flex gap-3">
-                <LockKeyhole class="size-4" />2FA recovery codes
+                <LockKeyhole class="size-4" />2FA-Wiederherstellungscodes
             </CardTitle>
             <CardDescription>
-                Recovery codes let you regain access if you lose your 2FA
-                device. Store them in a secure password manager.
+                Wiederherstellungscodes helfen dir, wieder Zugriff zu erhalten,
+                falls du dein 2FA-Geraet verlierst. Bewahre sie in einem
+                sicheren Passwortmanager auf.
             </CardDescription>
         </CardHeader>
         <CardContent>
@@ -58,8 +59,8 @@ onMounted(async () => {
                         :is="isRecoveryCodesVisible ? EyeOff : Eye"
                         class="size-4"
                     />
-                    {{ isRecoveryCodesVisible ? 'Hide' : 'View' }} recovery
-                    codes
+                    {{ isRecoveryCodesVisible ? 'Ausblenden' : 'Anzeigen' }}
+                    der Wiederherstellungscodes
                 </Button>
 
                 <Form
@@ -75,7 +76,7 @@ onMounted(async () => {
                         type="submit"
                         :disabled="processing"
                     >
-                        <RefreshCw /> Regenerate codes
+                        <RefreshCw /> Codes neu erzeugen
                     </Button>
                 </Form>
             </div>
@@ -111,10 +112,11 @@ onMounted(async () => {
                         </div>
                     </div>
                     <p class="text-xs text-muted-foreground select-none">
-                        Each recovery code can be used once to access your
-                        account and will be removed after use. If you need more,
-                        click
-                        <span class="font-bold">Regenerate codes</span> above.
+                        Jeder Wiederherstellungscode kann einmalig fuer den
+                        Zugriff auf deinen Account verwendet werden und wird
+                        danach entfernt. Wenn du neue Codes brauchst, klicke
+                        oben auf
+                        <span class="font-bold">Codes neu erzeugen</span>.
                     </p>
                 </div>
             </div>
