@@ -58,11 +58,27 @@ defineOptions({
             </div>
 
             <div class="grid gap-2">
+                <Label for="birthdate">Geburtsdatum</Label>
+                <Input
+                    id="birthdate"
+                    type="date"
+                    required
+                    :tabindex="3"
+                    autocomplete="bday"
+                    name="birthdate"
+                />
+                <p class="text-sm text-muted-foreground">
+                    NEAREON kann aktuell erst ab 14 Jahren genutzt werden.
+                </p>
+                <InputError :message="errors.birthdate" />
+            </div>
+
+            <div class="grid gap-2">
                 <Label for="password">Passwort</Label>
                 <PasswordInput
                     id="password"
                     required
-                    :tabindex="3"
+                    :tabindex="4"
                     autocomplete="new-password"
                     name="password"
                     placeholder="Passwort"
@@ -75,7 +91,7 @@ defineOptions({
                 <PasswordInput
                     id="password_confirmation"
                     required
-                    :tabindex="4"
+                    :tabindex="5"
                     autocomplete="new-password"
                     name="password_confirmation"
                     placeholder="Passwort bestaetigen"
@@ -86,7 +102,7 @@ defineOptions({
             <Button
                 type="submit"
                 class="mt-2 w-full"
-                tabindex="5"
+                tabindex="6"
                 :disabled="processing"
                 data-test="register-user-button"
             >
@@ -100,7 +116,7 @@ defineOptions({
             <TextLink
                 :href="login()"
                 class="underline underline-offset-4"
-                :tabindex="6"
+                :tabindex="7"
                 >Anmelden</TextLink
             >
         </div>

@@ -12,8 +12,8 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Fortify\TwoFactorAuthenticatable;
 
-#[Fillable(['name', 'email', 'role', 'password'])]
-#[Hidden(['password', 'two_factor_secret', 'two_factor_recovery_codes', 'remember_token'])]
+#[Fillable(['name', 'email', 'role', 'birthdate', 'age_gate_passed_at', 'password'])]
+#[Hidden(['age_gate_passed_at', 'birthdate', 'password', 'two_factor_secret', 'two_factor_recovery_codes', 'remember_token'])]
 class User extends Authenticatable
 {
     /** @use HasFactory<UserFactory> */
@@ -27,6 +27,8 @@ class User extends Authenticatable
     protected function casts(): array
     {
         return [
+            'age_gate_passed_at' => 'datetime',
+            'birthdate' => 'date',
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
             'role' => UserRole::class,
