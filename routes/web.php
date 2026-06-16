@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Admin\AdminController;
 use App\Http\Controllers\OnboardingController;
+use App\Http\Controllers\ProfileController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -14,6 +15,8 @@ Route::inertia('/', 'Welcome', [
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('onboarding', [OnboardingController::class, 'create'])->name('onboarding.create');
     Route::post('onboarding', [OnboardingController::class, 'store'])->name('onboarding.store');
+    Route::get('profile/edit', [ProfileController::class, 'edit'])->name('neareon-profile.edit');
+    Route::patch('profile', [ProfileController::class, 'update'])->name('neareon-profile.update');
     Route::get('dashboard', function (Request $request) {
         if (! $request->user()->profile()->exists()) {
             return to_route('onboarding.create');

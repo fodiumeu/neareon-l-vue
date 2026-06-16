@@ -46,6 +46,16 @@ const user = computed(() => page.props.auth.user);
             description="Aktualisiere deinen Namen und deine E-Mail-Adresse"
         />
 
+        <p class="mb-6 text-sm text-muted-foreground">
+            Dein Community-Profil bearbeitest du separat:
+            <Link
+                href="/profile/edit"
+                class="text-foreground underline decoration-neutral-300 underline-offset-4 transition-colors duration-300 ease-out hover:decoration-current dark:decoration-neutral-500"
+            >
+                NEAREON-Profil bearbeiten
+            </Link>
+        </p>
+
         <Form
             v-bind="ProfileController.update.form()"
             class="space-y-6"
