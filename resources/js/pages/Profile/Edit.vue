@@ -139,7 +139,7 @@ defineOptions({
                                 <select
                                     id="profile_visibility"
                                     name="profile_visibility"
-                                    :default-value="profile.profile_visibility"
+                                    :value="profile.profile_visibility"
                                     class="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-base shadow-xs ring-offset-background transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50 md:text-sm"
                                 >
                                     <option
@@ -162,9 +162,7 @@ defineOptions({
                                 <select
                                     id="interests_visibility"
                                     name="interests_visibility"
-                                    :default-value="
-                                        profile.interests_visibility
-                                    "
+                                    :value="profile.interests_visibility"
                                     class="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-base shadow-xs ring-offset-background transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50 md:text-sm"
                                 >
                                     <option
@@ -187,9 +185,7 @@ defineOptions({
                                 <select
                                     id="languages_visibility"
                                     name="languages_visibility"
-                                    :default-value="
-                                        profile.languages_visibility
-                                    "
+                                    :value="profile.languages_visibility"
                                     class="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-base shadow-xs ring-offset-background transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50 md:text-sm"
                                 >
                                     <option
@@ -212,7 +208,7 @@ defineOptions({
                                 <select
                                     id="region_visibility"
                                     name="region_visibility"
-                                    :default-value="profile.region_visibility"
+                                    :value="profile.region_visibility"
                                     class="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-base shadow-xs ring-offset-background transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50 md:text-sm"
                                 >
                                     <option
@@ -235,9 +231,7 @@ defineOptions({
                                 <select
                                     id="social_counts_visibility"
                                     name="social_counts_visibility"
-                                    :default-value="
-                                        profile.social_counts_visibility
-                                    "
+                                    :value="profile.social_counts_visibility"
                                     class="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-base shadow-xs ring-offset-background transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50 md:text-sm"
                                 >
                                     <option

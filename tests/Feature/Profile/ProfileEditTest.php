@@ -40,6 +40,11 @@ test('users with a profile can open profile editing', function () {
         'display_name' => 'Existing Member',
         'languages' => ['Deutsch', 'Englisch'],
         'interests' => ['Musik', 'Events'],
+        'profile_visibility' => ProfileVisibility::Mutuals,
+        'interests_visibility' => ProfileVisibility::Private,
+        'languages_visibility' => ProfileVisibility::Public,
+        'region_visibility' => ProfileVisibility::Private,
+        'social_counts_visibility' => ProfileVisibility::Mutuals,
     ]);
 
     $this->actingAs($user)
@@ -49,7 +54,12 @@ test('users with a profile can open profile editing', function () {
             ->component('Profile/Edit')
             ->where('profile.display_name', 'Existing Member')
             ->where('profile.languages', 'Deutsch, Englisch')
-            ->where('profile.interests', 'Musik, Events'),
+            ->where('profile.interests', 'Musik, Events')
+            ->where('profile.profile_visibility', 'mutuals')
+            ->where('profile.interests_visibility', 'private')
+            ->where('profile.languages_visibility', 'public')
+            ->where('profile.region_visibility', 'private')
+            ->where('profile.social_counts_visibility', 'mutuals'),
         );
 });
 
@@ -127,6 +137,33 @@ test('users can update visibility fields', function () {
         ->and($profile->languages_visibility)->toBe(ProfileVisibility::Private)
         ->and($profile->region_visibility)->toBe(ProfileVisibility::Public)
         ->and($profile->social_counts_visibility)->toBe(ProfileVisibility::Mutuals);
+});
+
+test('saved visibility fields are returned after updating and reloading profile editing', function () {
+    $user = User::factory()->create();
+    Profile::factory()->for($user)->create();
+
+    $this->actingAs($user)
+        ->patch(route('neareon-profile.update'), validProfileUpdatePayload([
+            'profile_visibility' => ProfileVisibility::Mutuals->value,
+            'interests_visibility' => ProfileVisibility::Private->value,
+            'languages_visibility' => ProfileVisibility::Mutuals->value,
+            'region_visibility' => ProfileVisibility::Private->value,
+            'social_counts_visibility' => ProfileVisibility::Public->value,
+        ]))
+        ->assertRedirect(route('neareon-profile.edit'));
+
+    $this->actingAs($user)
+        ->get(route('neareon-profile.edit'))
+        ->assertOk()
+        ->assertInertia(fn (Assert $page) => $page
+            ->component('Profile/Edit')
+            ->where('profile.profile_visibility', 'mutuals')
+            ->where('profile.interests_visibility', 'private')
+            ->where('profile.languages_visibility', 'mutuals')
+            ->where('profile.region_visibility', 'private')
+            ->where('profile.social_counts_visibility', 'public'),
+        );
 });
 
 test('invalid visibility values are rejected', function () {
