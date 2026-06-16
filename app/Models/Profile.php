@@ -1,0 +1,56 @@
+<?php
+
+namespace App\Models;
+
+use App\Enums\ProfileVisibility;
+use Database\Factories\ProfileFactory;
+use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+
+#[Fillable([
+    'user_id',
+    'username',
+    'display_name',
+    'bio',
+    'region',
+    'languages',
+    'interests',
+    'profile_visibility',
+    'interests_visibility',
+    'languages_visibility',
+    'region_visibility',
+    'social_counts_visibility',
+])]
+class Profile extends Model
+{
+    /** @use HasFactory<ProfileFactory> */
+    use HasFactory;
+
+    /**
+     * Get the attributes that should be cast.
+     *
+     * @return array<string, string>
+     */
+    protected function casts(): array
+    {
+        return [
+            'interests' => 'array',
+            'interests_visibility' => ProfileVisibility::class,
+            'languages' => 'array',
+            'languages_visibility' => ProfileVisibility::class,
+            'profile_visibility' => ProfileVisibility::class,
+            'region_visibility' => ProfileVisibility::class,
+            'social_counts_visibility' => ProfileVisibility::class,
+        ];
+    }
+
+    /**
+     * Get the user that owns the profile.
+     */
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(User::class);
+    }
+}
