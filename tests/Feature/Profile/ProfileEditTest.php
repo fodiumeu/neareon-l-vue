@@ -38,6 +38,7 @@ test('users with a profile can open profile editing', function () {
     $user = User::factory()->create();
     Profile::factory()->for($user)->create([
         'display_name' => 'Existing Member',
+        'bio' => 'Existing Bio',
         'languages' => ['Deutsch', 'Englisch'],
         'interests' => ['Musik', 'Events'],
         'profile_visibility' => ProfileVisibility::Mutuals,
@@ -53,6 +54,7 @@ test('users with a profile can open profile editing', function () {
         ->assertInertia(fn (Assert $page) => $page
             ->component('Profile/Edit')
             ->where('profile.display_name', 'Existing Member')
+            ->where('profile.bio', 'Existing Bio')
             ->where('profile.languages', 'Deutsch, Englisch')
             ->where('profile.interests', 'Musik, Events')
             ->where('profile.profile_visibility', 'mutuals')
@@ -102,6 +104,78 @@ test('users can update display name bio and region', function () {
     expect($profile->display_name)->toBe('Neuer Anzeigename')
         ->and($profile->bio)->toBe('Neue Kurzinfo.')
         ->and($profile->region)->toBe('Koeln');
+});
+
+test('saved bio is returned when reopening profile editing', function () {
+    $user = User::factory()->create();
+    Profile::factory()->for($user)->create([
+        'bio' => 'Gespeicherte Bio.',
+    ]);
+
+    $this->actingAs($user)
+        ->get(route('neareon-profile.edit'))
+        ->assertOk()
+        ->assertInertia(fn (Assert $page) => $page
+            ->component('Profile/Edit')
+            ->where('profile.bio', 'Gespeicherte Bio.'),
+        );
+});
+
+test('changing visibility keeps an existing bio when bio is submitted unchanged', function () {
+    $user = User::factory()->create();
+    $profile = Profile::factory()->for($user)->create([
+        'bio' => 'Bleibende Bio.',
+    ]);
+
+    $this->actingAs($user)
+        ->patch(route('neareon-profile.update'), validProfileUpdatePayload([
+            'display_name' => $profile->display_name,
+            'bio' => 'Bleibende Bio.',
+            'region' => $profile->region,
+            'languages' => implode(', ', $profile->languages ?? []),
+            'interests' => implode(', ', $profile->interests ?? []),
+            'region_visibility' => ProfileVisibility::Private->value,
+        ]))
+        ->assertRedirect(route('neareon-profile.edit'));
+
+    expect($profile->refresh()->bio)->toBe('Bleibende Bio.')
+        ->and($profile->region_visibility)->toBe(ProfileVisibility::Private);
+});
+
+test('missing bio input does not clear an existing bio', function () {
+    $user = User::factory()->create();
+    $profile = Profile::factory()->for($user)->create([
+        'bio' => 'Nicht versehentlich löschen.',
+    ]);
+    $payload = validProfileUpdatePayload([
+        'display_name' => $profile->display_name,
+        'region' => $profile->region,
+        'languages' => implode(', ', $profile->languages ?? []),
+        'interests' => implode(', ', $profile->interests ?? []),
+        'region_visibility' => ProfileVisibility::Private->value,
+    ]);
+    unset($payload['bio']);
+
+    $this->actingAs($user)
+        ->patch(route('neareon-profile.update'), $payload)
+        ->assertRedirect(route('neareon-profile.edit'));
+
+    expect($profile->refresh()->bio)->toBe('Nicht versehentlich löschen.');
+});
+
+test('users can intentionally clear their bio', function () {
+    $user = User::factory()->create();
+    $profile = Profile::factory()->for($user)->create([
+        'bio' => 'Diese Bio wird geleert.',
+    ]);
+
+    $this->actingAs($user)
+        ->patch(route('neareon-profile.update'), validProfileUpdatePayload([
+            'bio' => '',
+        ]))
+        ->assertRedirect(route('neareon-profile.edit'));
+
+    expect($profile->refresh()->bio)->toBeNull();
 });
 
 test('users can update languages and interests', function () {

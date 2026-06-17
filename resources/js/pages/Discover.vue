@@ -119,12 +119,16 @@ defineOptions({
                             </div>
                         </div>
 
-                        <p
-                            v-if="profile.bio"
-                            class="text-sm leading-6 text-muted-foreground"
-                        >
-                            {{ profile.bio }}
-                        </p>
+                        <div v-if="profile.bio" class="space-y-2">
+                            <p
+                                class="text-xs font-medium text-muted-foreground"
+                            >
+                                Bio
+                            </p>
+                            <p class="text-sm leading-6 text-muted-foreground">
+                                {{ profile.bio }}
+                            </p>
+                        </div>
                         <p
                             v-else
                             class="text-sm leading-6 text-muted-foreground"

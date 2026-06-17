@@ -21,13 +21,18 @@ class UpdateProfileRequest extends FormRequest
      */
     protected function prepareForValidation(): void
     {
-        $this->merge([
+        $profileData = [
             'display_name' => $this->normalizeNullableString($this->input('display_name')),
-            'bio' => $this->normalizeNullableString($this->input('bio')),
             'region' => $this->normalizeNullableString($this->input('region')),
             'languages' => $this->normalizeList($this->input('languages')),
             'interests' => $this->normalizeList($this->input('interests')),
-        ]);
+        ];
+
+        if ($this->has('bio')) {
+            $profileData['bio'] = $this->normalizeNullableString($this->input('bio'));
+        }
+
+        $this->merge($profileData);
     }
 
     /**
@@ -75,7 +80,7 @@ class UpdateProfileRequest extends FormRequest
         return [
             'display_name.required' => 'Bitte gib einen Anzeigenamen ein.',
             'display_name.max' => 'Der Anzeigename darf maximal 80 Zeichen lang sein.',
-            'bio.max' => 'Die Kurzinfo darf maximal 280 Zeichen lang sein.',
+            'bio.max' => 'Die Bio darf maximal 280 Zeichen lang sein.',
             'region.max' => 'Die Region darf maximal 120 Zeichen lang sein.',
             'languages.max' => 'Bitte gib maximal 20 Sprachen an.',
             'languages.*.max' => 'Ein Spracheintrag darf maximal 40 Zeichen lang sein.',

@@ -84,12 +84,14 @@ defineOptions({
         <PageSection padded>
             <Card>
                 <CardContent class="space-y-4">
-                    <p
-                        v-if="props.profile.bio"
-                        class="max-w-3xl text-sm leading-6 text-muted-foreground"
-                    >
-                        {{ props.profile.bio }}
-                    </p>
+                    <div v-if="props.profile.bio" class="space-y-2">
+                        <h2 class="text-sm font-medium">Bio</h2>
+                        <p
+                            class="max-w-3xl text-sm leading-6 text-muted-foreground"
+                        >
+                            {{ props.profile.bio }}
+                        </p>
+                    </div>
                     <p v-else class="text-sm text-muted-foreground">
                         Für dieses Profil sind aktuell keine weiteren Angaben
                         sichtbar.
