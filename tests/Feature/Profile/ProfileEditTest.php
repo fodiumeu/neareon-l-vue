@@ -63,6 +63,28 @@ test('users with a profile can open profile editing', function () {
         );
 });
 
+test('profile editing exposes followers only for field visibility options', function () {
+    $user = User::factory()->create();
+    Profile::factory()->for($user)->create();
+
+    $this->actingAs($user)
+        ->get(route('neareon-profile.edit'))
+        ->assertOk()
+        ->assertInertia(fn (Assert $page) => $page
+            ->where('profileVisibilityOptions', [
+                ['value' => 'public', 'label' => 'Alle'],
+                ['value' => 'mutuals', 'label' => 'Gegenseitige Kontakte'],
+                ['value' => 'private', 'label' => 'Nur ich'],
+            ])
+            ->where('fieldVisibilityOptions', [
+                ['value' => 'public', 'label' => 'Alle'],
+                ['value' => 'followers', 'label' => 'Follower'],
+                ['value' => 'mutuals', 'label' => 'Gegenseitige Kontakte'],
+                ['value' => 'private', 'label' => 'Nur ich'],
+            ]),
+        );
+});
+
 test('users can update display name bio and region', function () {
     $user = User::factory()->create();
     $profile = Profile::factory()->for($user)->create();
@@ -137,6 +159,45 @@ test('users can update visibility fields', function () {
         ->and($profile->languages_visibility)->toBe(ProfileVisibility::Private)
         ->and($profile->region_visibility)->toBe(ProfileVisibility::Public)
         ->and($profile->social_counts_visibility)->toBe(ProfileVisibility::Mutuals);
+});
+
+test('followers visibility is valid for profile field visibility settings', function () {
+    $user = User::factory()->create();
+    $profile = Profile::factory()->for($user)->create();
+
+    $this->actingAs($user)
+        ->patch(route('neareon-profile.update'), validProfileUpdatePayload([
+            'interests_visibility' => ProfileVisibility::Followers->value,
+            'languages_visibility' => ProfileVisibility::Followers->value,
+            'region_visibility' => ProfileVisibility::Followers->value,
+            'social_counts_visibility' => ProfileVisibility::Followers->value,
+        ]))
+        ->assertRedirect(route('neareon-profile.edit'));
+
+    $profile->refresh();
+
+    expect($profile->profile_visibility)->toBe(ProfileVisibility::Public)
+        ->and($profile->interests_visibility)->toBe(ProfileVisibility::Followers)
+        ->and($profile->languages_visibility)->toBe(ProfileVisibility::Followers)
+        ->and($profile->region_visibility)->toBe(ProfileVisibility::Followers)
+        ->and($profile->social_counts_visibility)->toBe(ProfileVisibility::Followers);
+});
+
+test('followers visibility is rejected for whole profile visibility', function () {
+    $user = User::factory()->create();
+    $profile = Profile::factory()->for($user)->create([
+        'profile_visibility' => ProfileVisibility::Public,
+    ]);
+
+    $this->actingAs($user)
+        ->from(route('neareon-profile.edit'))
+        ->patch(route('neareon-profile.update'), validProfileUpdatePayload([
+            'profile_visibility' => ProfileVisibility::Followers->value,
+        ]))
+        ->assertRedirect(route('neareon-profile.edit'))
+        ->assertSessionHasErrors('profile_visibility');
+
+    expect($profile->refresh()->profile_visibility)->toBe(ProfileVisibility::Public);
 });
 
 test('saved visibility fields are returned after updating and reloading profile editing', function () {

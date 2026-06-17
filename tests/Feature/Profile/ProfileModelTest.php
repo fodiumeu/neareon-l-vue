@@ -98,5 +98,10 @@ test('profile factory creates a valid profile', function () {
     expect($profile)->toBeInstanceOf(Profile::class)
         ->and($profile->user)->toBeInstanceOf(User::class)
         ->and($profile->username)->not->toBeEmpty()
-        ->and($profile->display_name)->not->toBeEmpty();
+        ->and($profile->display_name)->not->toBeEmpty()
+        ->and($profile->profile_visibility)->toBe(ProfileVisibility::Public)
+        ->and($profile->interests_visibility)->toBe(ProfileVisibility::Public)
+        ->and($profile->languages_visibility)->toBe(ProfileVisibility::Public)
+        ->and($profile->region_visibility)->toBe(ProfileVisibility::Public)
+        ->and($profile->social_counts_visibility)->toBe(ProfileVisibility::Public);
 });

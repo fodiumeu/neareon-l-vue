@@ -29,7 +29,8 @@ type VisibilityOption = {
 
 defineProps<{
     profile: ProfileForm;
-    visibilityOptions: VisibilityOption[];
+    fieldVisibilityOptions: VisibilityOption[];
+    profileVisibilityOptions: VisibilityOption[];
 }>();
 
 defineOptions({
@@ -143,7 +144,7 @@ defineOptions({
                                     class="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-base shadow-xs ring-offset-background transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50 md:text-sm"
                                 >
                                     <option
-                                        v-for="option in visibilityOptions"
+                                        v-for="option in profileVisibilityOptions"
                                         :key="option.value"
                                         :value="option.value"
                                     >
@@ -166,7 +167,7 @@ defineOptions({
                                     class="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-base shadow-xs ring-offset-background transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50 md:text-sm"
                                 >
                                     <option
-                                        v-for="option in visibilityOptions"
+                                        v-for="option in fieldVisibilityOptions"
                                         :key="option.value"
                                         :value="option.value"
                                     >
@@ -189,7 +190,7 @@ defineOptions({
                                     class="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-base shadow-xs ring-offset-background transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50 md:text-sm"
                                 >
                                     <option
-                                        v-for="option in visibilityOptions"
+                                        v-for="option in fieldVisibilityOptions"
                                         :key="option.value"
                                         :value="option.value"
                                     >
@@ -212,7 +213,7 @@ defineOptions({
                                     class="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-base shadow-xs ring-offset-background transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50 md:text-sm"
                                 >
                                     <option
-                                        v-for="option in visibilityOptions"
+                                        v-for="option in fieldVisibilityOptions"
                                         :key="option.value"
                                         :value="option.value"
                                     >
@@ -235,7 +236,7 @@ defineOptions({
                                     class="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-base shadow-xs ring-offset-background transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50 md:text-sm"
                                 >
                                     <option
-                                        v-for="option in visibilityOptions"
+                                        v-for="option in fieldVisibilityOptions"
                                         :key="option.value"
                                         :value="option.value"
                                     >

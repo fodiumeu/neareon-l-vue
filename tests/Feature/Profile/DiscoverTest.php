@@ -171,6 +171,74 @@ test('discover does not deliver private profile fields', function () {
         );
 });
 
+test('discover does not deliver followers fields before follow exists', function () {
+    $viewer = User::factory()->create();
+    Profile::factory()->for($viewer)->create();
+
+    Profile::factory()->create([
+        'username' => 'followers_hidden_discover',
+        'display_name' => 'Followers Hidden Discover',
+        'bio' => 'Basis sichtbar.',
+        'region' => 'Bremen',
+        'languages' => ['Deutsch'],
+        'interests' => ['Community'],
+        'profile_visibility' => ProfileVisibility::Public,
+        'region_visibility' => ProfileVisibility::Followers,
+        'languages_visibility' => ProfileVisibility::Followers,
+        'interests_visibility' => ProfileVisibility::Followers,
+    ]);
+
+    $this->actingAs($viewer)
+        ->get(route('discover'))
+        ->assertOk()
+        ->assertInertia(fn (Assert $page) => $page
+            ->has('profiles', 1)
+            ->where('profiles.0.username', 'followers_hidden_discover')
+            ->where('profiles.0.display_name', 'Followers Hidden Discover')
+            ->where('profiles.0.bio', 'Basis sichtbar.')
+            ->missing('profiles.0.region')
+            ->missing('profiles.0.languages')
+            ->missing('profiles.0.interests'),
+        );
+});
+
+test('discover delivers followers fields after follow exists', function () {
+    $viewer = User::factory()->create();
+    Profile::factory()->for($viewer)->create();
+
+    $target = User::factory()->create();
+    Profile::factory()->for($target)->create([
+        'username' => 'followers_visible_discover',
+        'display_name' => 'Followers Visible Discover',
+        'bio' => 'Basis sichtbar.',
+        'region' => 'Bremen',
+        'languages' => ['Deutsch'],
+        'interests' => ['Community'],
+        'profile_visibility' => ProfileVisibility::Public,
+        'region_visibility' => ProfileVisibility::Followers,
+        'languages_visibility' => ProfileVisibility::Followers,
+        'interests_visibility' => ProfileVisibility::Followers,
+    ]);
+
+    Follow::query()->create([
+        'follower_id' => $viewer->id,
+        'followed_id' => $target->id,
+    ]);
+
+    $this->actingAs($viewer)
+        ->get(route('discover'))
+        ->assertOk()
+        ->assertInertia(fn (Assert $page) => $page
+            ->has('profiles', 1)
+            ->where('profiles.0.username', 'followers_visible_discover')
+            ->where('profiles.0.display_name', 'Followers Visible Discover')
+            ->where('profiles.0.bio', 'Basis sichtbar.')
+            ->where('profiles.0.region', 'Bremen')
+            ->where('profiles.0.languages', ['Deutsch'])
+            ->where('profiles.0.interests', ['Community']),
+        );
+});
+
 test('discover delivers visible profile fields', function () {
     $viewer = User::factory()->create();
     Profile::factory()->for($viewer)->create();

@@ -32,7 +32,7 @@ class ProfileFactory extends Factory
             'profile_visibility' => ProfileVisibility::Public,
             'interests_visibility' => ProfileVisibility::Public,
             'languages_visibility' => ProfileVisibility::Public,
-            'region_visibility' => ProfileVisibility::Mutuals,
+            'region_visibility' => ProfileVisibility::Public,
             'social_counts_visibility' => ProfileVisibility::Public,
         ];
     }

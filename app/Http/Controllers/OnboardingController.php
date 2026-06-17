@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\ProfileVisibility;
 use App\Http\Requests\StoreOnboardingDetailsRequest;
 use App\Http\Requests\StoreOnboardingInterestsRequest;
 use App\Http\Requests\StoreOnboardingLanguagesRequest;
@@ -47,7 +48,14 @@ class OnboardingController extends Controller
             return NextUserRoute::redirect($user);
         }
 
-        $user->profile()->create($request->validated());
+        $user->profile()->create([
+            ...$request->validated(),
+            'profile_visibility' => ProfileVisibility::Public,
+            'interests_visibility' => ProfileVisibility::Public,
+            'languages_visibility' => ProfileVisibility::Public,
+            'region_visibility' => ProfileVisibility::Public,
+            'social_counts_visibility' => ProfileVisibility::Public,
+        ]);
 
         return to_route('onboarding.interests');
     }

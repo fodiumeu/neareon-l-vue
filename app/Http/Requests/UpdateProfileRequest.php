@@ -37,6 +37,18 @@ class UpdateProfileRequest extends FormRequest
      */
     public function rules(): array
     {
+        $profileVisibility = [
+            ProfileVisibility::Public->value,
+            ProfileVisibility::Mutuals->value,
+            ProfileVisibility::Private->value,
+        ];
+        $fieldVisibility = [
+            ProfileVisibility::Public->value,
+            ProfileVisibility::Followers->value,
+            ProfileVisibility::Mutuals->value,
+            ProfileVisibility::Private->value,
+        ];
+
         return [
             'display_name' => ['required', 'string', 'max:80'],
             'bio' => ['nullable', 'string', 'max:280'],
@@ -45,11 +57,11 @@ class UpdateProfileRequest extends FormRequest
             'languages.*' => ['string', 'max:40'],
             'interests' => ['nullable', 'array', 'max:20'],
             'interests.*' => ['string', 'max:40'],
-            'profile_visibility' => ['required', Rule::enum(ProfileVisibility::class)],
-            'interests_visibility' => ['required', Rule::enum(ProfileVisibility::class)],
-            'languages_visibility' => ['required', Rule::enum(ProfileVisibility::class)],
-            'region_visibility' => ['required', Rule::enum(ProfileVisibility::class)],
-            'social_counts_visibility' => ['required', Rule::enum(ProfileVisibility::class)],
+            'profile_visibility' => ['required', Rule::in($profileVisibility)],
+            'interests_visibility' => ['required', Rule::in($fieldVisibility)],
+            'languages_visibility' => ['required', Rule::in($fieldVisibility)],
+            'region_visibility' => ['required', Rule::in($fieldVisibility)],
+            'social_counts_visibility' => ['required', Rule::in($fieldVisibility)],
         ];
     }
 
@@ -70,7 +82,7 @@ class UpdateProfileRequest extends FormRequest
             'interests.max' => 'Bitte gib maximal 20 Interessen an.',
             'interests.*.max' => 'Ein Interesse darf maximal 40 Zeichen lang sein.',
             '*.required' => 'Bitte waehle eine Sichtbarkeit aus.',
-            '*.Illuminate\Validation\Rules\Enum' => 'Bitte waehle eine gueltige Sichtbarkeit aus.',
+            '*.in' => 'Bitte waehle eine gueltige Sichtbarkeit aus.',
         ];
     }
 

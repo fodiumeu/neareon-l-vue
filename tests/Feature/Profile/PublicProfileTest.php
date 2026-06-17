@@ -1,6 +1,7 @@
 <?php
 
 use App\Enums\ProfileVisibility;
+use App\Models\Follow;
 use App\Models\Profile;
 use App\Models\User;
 use Inertia\Testing\AssertableInertia as Assert;
@@ -171,6 +172,72 @@ test('other users cannot receive mutual fields before follow exists', function (
             ->missing('profile.region')
             ->missing('profile.languages')
             ->missing('profile.interests'),
+        );
+});
+
+test('other users cannot receive followers fields before follow exists', function () {
+    $viewer = User::factory()->create();
+    Profile::factory()->for($viewer)->create();
+
+    $profile = Profile::factory()->create([
+        'username' => 'followers_hidden_fields',
+        'display_name' => 'Followers Hidden Fields',
+        'bio' => 'Basis sichtbar.',
+        'region' => 'Dortmund',
+        'languages' => ['Deutsch'],
+        'interests' => ['Community'],
+        'profile_visibility' => ProfileVisibility::Public,
+        'region_visibility' => ProfileVisibility::Followers,
+        'languages_visibility' => ProfileVisibility::Followers,
+        'interests_visibility' => ProfileVisibility::Followers,
+    ]);
+
+    $this->actingAs($viewer)
+        ->get(route('public-profile.show', $profile->username))
+        ->assertOk()
+        ->assertInertia(fn (Assert $page) => $page
+            ->where('profile.username', 'followers_hidden_fields')
+            ->where('profile.display_name', 'Followers Hidden Fields')
+            ->where('profile.bio', 'Basis sichtbar.')
+            ->missing('profile.region')
+            ->missing('profile.languages')
+            ->missing('profile.interests'),
+        );
+});
+
+test('other users can receive followers fields after following', function () {
+    $viewer = User::factory()->create();
+    Profile::factory()->for($viewer)->create();
+
+    $owner = User::factory()->create();
+    $profile = Profile::factory()->for($owner)->create([
+        'username' => 'followers_visible_fields',
+        'display_name' => 'Followers Visible Fields',
+        'bio' => 'Basis sichtbar.',
+        'region' => 'Dortmund',
+        'languages' => ['Deutsch'],
+        'interests' => ['Community'],
+        'profile_visibility' => ProfileVisibility::Public,
+        'region_visibility' => ProfileVisibility::Followers,
+        'languages_visibility' => ProfileVisibility::Followers,
+        'interests_visibility' => ProfileVisibility::Followers,
+    ]);
+
+    Follow::query()->create([
+        'follower_id' => $viewer->id,
+        'followed_id' => $owner->id,
+    ]);
+
+    $this->actingAs($viewer)
+        ->get(route('public-profile.show', $profile->username))
+        ->assertOk()
+        ->assertInertia(fn (Assert $page) => $page
+            ->where('profile.username', 'followers_visible_fields')
+            ->where('profile.display_name', 'Followers Visible Fields')
+            ->where('profile.bio', 'Basis sichtbar.')
+            ->where('profile.region', 'Dortmund')
+            ->where('profile.languages', ['Deutsch'])
+            ->where('profile.interests', ['Community']),
         );
 });
 

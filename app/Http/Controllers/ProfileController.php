@@ -29,6 +29,18 @@ class ProfileController extends Controller
             return NextUserRoute::redirect($request->user());
         }
 
+        $profileVisibilityOptions = [
+            ['value' => ProfileVisibility::Public->value, 'label' => 'Alle'],
+            ['value' => ProfileVisibility::Mutuals->value, 'label' => 'Gegenseitige Kontakte'],
+            ['value' => ProfileVisibility::Private->value, 'label' => 'Nur ich'],
+        ];
+        $fieldVisibilityOptions = [
+            ['value' => ProfileVisibility::Public->value, 'label' => 'Alle'],
+            ['value' => ProfileVisibility::Followers->value, 'label' => 'Follower'],
+            ['value' => ProfileVisibility::Mutuals->value, 'label' => 'Gegenseitige Kontakte'],
+            ['value' => ProfileVisibility::Private->value, 'label' => 'Nur ich'],
+        ];
+
         return Inertia::render('Profile/Edit', [
             'profile' => [
                 'display_name' => $profile->display_name,
@@ -42,11 +54,8 @@ class ProfileController extends Controller
                 'region_visibility' => $profile->region_visibility->value,
                 'social_counts_visibility' => $profile->social_counts_visibility->value,
             ],
-            'visibilityOptions' => [
-                ['value' => ProfileVisibility::Public->value, 'label' => 'Alle'],
-                ['value' => ProfileVisibility::Mutuals->value, 'label' => 'Gegenseitige Kontakte'],
-                ['value' => ProfileVisibility::Private->value, 'label' => 'Nur ich'],
-            ],
+            'fieldVisibilityOptions' => $fieldVisibilityOptions,
+            'profileVisibilityOptions' => $profileVisibilityOptions,
         ]);
     }
 

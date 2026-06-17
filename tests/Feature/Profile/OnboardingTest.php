@@ -1,5 +1,6 @@
 <?php
 
+use App\Enums\ProfileVisibility;
 use App\Models\Profile;
 use App\Models\User;
 use App\Support\OnboardingOptions;
@@ -120,6 +121,25 @@ test('details step creates a profile', function () {
         ->not->toBeNull()
         ->username->toBe('new_member')
         ->display_name->toBe('New Member');
+});
+
+test('details step creates profile with public visibility defaults', function () {
+    $user = User::factory()->create();
+
+    $this->actingAs($user)
+        ->post(route('onboarding.details.store'), [
+            'username' => 'public_defaults',
+            'display_name' => 'Public Defaults',
+        ])
+        ->assertRedirect(route('onboarding.interests'));
+
+    $profile = $user->fresh()->profile;
+
+    expect($profile->profile_visibility)->toBe(ProfileVisibility::Public)
+        ->and($profile->interests_visibility)->toBe(ProfileVisibility::Public)
+        ->and($profile->languages_visibility)->toBe(ProfileVisibility::Public)
+        ->and($profile->region_visibility)->toBe(ProfileVisibility::Public)
+        ->and($profile->social_counts_visibility)->toBe(ProfileVisibility::Public);
 });
 
 test('duplicate usernames are blocked in details step', function () {

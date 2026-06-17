@@ -28,20 +28,20 @@ class ProfileVisibilityService
             'is_mutual' => $isMutual,
         ];
 
-        if ($this->canView($profile->profile_visibility, $isOwnProfile, $isMutual)) {
+        if ($this->canView($profile->profile_visibility, $isOwnProfile, $isFollowing, $isMutual)) {
             $data['display_name'] = $profile->display_name;
             $data['bio'] = $profile->bio;
         }
 
-        if ($this->canView($profile->region_visibility, $isOwnProfile, $isMutual)) {
+        if ($this->canView($profile->region_visibility, $isOwnProfile, $isFollowing, $isMutual)) {
             $data['region'] = $profile->region;
         }
 
-        if ($this->canView($profile->languages_visibility, $isOwnProfile, $isMutual)) {
+        if ($this->canView($profile->languages_visibility, $isOwnProfile, $isFollowing, $isMutual)) {
             $data['languages'] = $profile->languages;
         }
 
-        if ($this->canView($profile->interests_visibility, $isOwnProfile, $isMutual)) {
+        if ($this->canView($profile->interests_visibility, $isOwnProfile, $isFollowing, $isMutual)) {
             $data['interests'] = $profile->interests;
         }
 
@@ -60,18 +60,24 @@ class ProfileVisibilityService
         return $this->canView(
             $profile->profile_visibility,
             isOwnProfile: false,
+            isFollowing: $viewer->isFollowing($profile->user),
             isMutual: $viewer->isMutualWith($profile->user),
         );
     }
 
-    private function canView(ProfileVisibility $visibility, bool $isOwnProfile, bool $isMutual): bool
-    {
+    private function canView(
+        ProfileVisibility $visibility,
+        bool $isOwnProfile,
+        bool $isFollowing,
+        bool $isMutual,
+    ): bool {
         if ($isOwnProfile) {
             return true;
         }
 
         return match ($visibility) {
             ProfileVisibility::Public => true,
+            ProfileVisibility::Followers => $isFollowing,
             ProfileVisibility::Mutuals => $isMutual,
             ProfileVisibility::Private => false,
         };
