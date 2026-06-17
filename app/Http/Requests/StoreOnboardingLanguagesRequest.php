@@ -49,11 +49,11 @@ class StoreOnboardingLanguagesRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'languages.required' => 'Bitte waehle deine Hauptsprache aus.',
-            'languages.min' => 'Bitte waehle deine Hauptsprache aus.',
-            'languages.max' => 'Bitte waehle maximal 5 Sprachen aus.',
-            'languages.*.distinct' => 'Bitte waehle jede Sprache nur einmal aus.',
-            'languages.*.in' => 'Bitte waehle nur vorgeschlagene Sprachen aus.',
+            'languages.required' => 'Bitte wähle deine Hauptsprache aus.',
+            'languages.min' => 'Bitte wähle deine Hauptsprache aus.',
+            'languages.max' => 'Bitte wähle maximal 5 Sprachen aus.',
+            'languages.*.distinct' => 'Bitte wähle jede Sprache nur einmal aus.',
+            'languages.*.in' => 'Bitte wähle nur vorgeschlagene Sprachen aus.',
         ];
     }
 

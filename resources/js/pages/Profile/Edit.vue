@@ -111,7 +111,7 @@ defineOptions({
                                 placeholder="Deutsch, Englisch"
                             />
                             <p class="text-sm text-muted-foreground">
-                                Kommagetrennt, maximal 20 Eintraege.
+                                Kommagetrennt, maximal 20 Einträge.
                             </p>
                             <InputError :message="errors.languages" />
                         </div>
@@ -126,7 +126,7 @@ defineOptions({
                                 placeholder="Musik, Events, Technik"
                             />
                             <p class="text-sm text-muted-foreground">
-                                Kommagetrennt, maximal 20 Eintraege.
+                                Kommagetrennt, maximal 20 Einträge.
                             </p>
                             <InputError :message="errors.interests" />
                         </div>
@@ -255,7 +255,7 @@ defineOptions({
                                 data-test="update-neareon-profile-button"
                             >
                                 <Spinner v-if="processing" />
-                                Aenderungen speichern
+                                Änderungen speichern
                             </Button>
                         </div>
                     </Form>

@@ -44,7 +44,7 @@ defineOptions({
     <div class="flex h-full flex-1 flex-col gap-6 overflow-x-auto p-4">
         <PageHeader
             title="Deine Sprachen"
-            description="Waehle deine Hauptsprache und optional weitere Sprachen aus."
+            description="Wähle deine Hauptsprache und optional weitere Sprachen aus."
         />
 
         <PageSection padded>
@@ -75,7 +75,7 @@ defineOptions({
                                     :required="index === 0"
                                     class="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-base shadow-xs ring-offset-background transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50 md:text-sm"
                                 >
-                                    <option value="">Sprache auswaehlen</option>
+                                    <option value="">Sprache auswählen</option>
                                     <option
                                         v-for="language in languages"
                                         :key="language"
@@ -96,12 +96,12 @@ defineOptions({
                                 :disabled="languageFields.length >= 5"
                                 @click="addLanguage"
                             >
-                                Weitere Sprache hinzufuegen
+                                Weitere Sprache hinzufügen
                             </Button>
 
                             <Button type="submit" :disabled="processing">
                                 <Spinner v-if="processing" />
-                                Onboarding abschliessen
+                                Onboarding abschließen
                             </Button>
                         </div>
                     </Form>

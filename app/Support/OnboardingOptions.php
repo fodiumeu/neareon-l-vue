@@ -25,6 +25,7 @@ class OnboardingOptions
             'Kultur',
             'Sprachen',
             'Familie',
+            'Gesundheit',
             'Business / Networking',
             'Lernen',
             'Essen & Ausgehen',
@@ -33,7 +34,7 @@ class OnboardingOptions
             'Community',
             'Herkunft / Heritage',
             'Ehrenamt',
-            'Kreativitaet',
+            'Kreativität',
         ];
     }
 
@@ -45,16 +46,16 @@ class OnboardingOptions
         return [
             'Deutsch',
             'Englisch',
-            'Tuerkisch',
+            'Türkisch',
             'Arabisch',
-            'Franzoesisch',
+            'Französisch',
             'Spanisch',
             'Italienisch',
             'Portugiesisch',
             'Polnisch',
             'Russisch',
             'Ukrainisch',
-            'Niederlaendisch',
+            'Niederländisch',
             'Kroatisch',
             'Serbisch',
             'Bosnisch',
@@ -62,7 +63,7 @@ class OnboardingOptions
             'Kurdisch',
             'Persisch/Farsi',
             'Griechisch',
-            'Rumaenisch',
+            'Rumänisch',
             'Bulgarisch',
         ];
     }

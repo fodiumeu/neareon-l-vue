@@ -84,7 +84,7 @@ defineOptions({
                         {{ props.profile.bio }}
                     </p>
                     <p v-else class="text-sm text-muted-foreground">
-                        Fuer dieses Profil sind aktuell keine weiteren Angaben
+                        Für dieses Profil sind aktuell keine weiteren Angaben
                         sichtbar.
                     </p>
                 </CardContent>

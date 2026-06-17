@@ -295,7 +295,7 @@ test('languages step rejects more than five languages', function () {
     $this->actingAs($user)
         ->from(route('onboarding.languages'))
         ->post(route('onboarding.languages.store'), [
-            'languages' => ['Deutsch', 'Englisch', 'Tuerkisch', 'Arabisch', 'Spanisch', 'Italienisch'],
+            'languages' => ['Deutsch', 'Englisch', 'Türkisch', 'Arabisch', 'Spanisch', 'Italienisch'],
         ])
         ->assertRedirect(route('onboarding.languages'))
         ->assertSessionHasErrors('languages');

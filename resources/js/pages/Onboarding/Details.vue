@@ -27,7 +27,7 @@ defineOptions({
     <div class="flex h-full flex-1 flex-col gap-6 overflow-x-auto p-4">
         <PageHeader
             title="Profil einrichten"
-            description="Lege dein NEAREON-Profil an, damit du spaeter gefunden werden und die Community-Funktionen nutzen kannst."
+            description="Lege dein NEAREON-Profil an, damit du später gefunden werden und die Community-Funktionen nutzen kannst."
         />
 
         <PageSection padded>
@@ -93,7 +93,7 @@ defineOptions({
                                 maxlength="280"
                                 rows="4"
                                 class="flex min-h-24 w-full rounded-md border border-input bg-transparent px-3 py-2 text-base shadow-xs transition-[color,box-shadow] outline-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm"
-                                placeholder="Ein kurzer Satz ueber dich"
+                                placeholder="Ein kurzer Satz über dich"
                             />
                             <InputError :message="errors.bio" />
                         </div>

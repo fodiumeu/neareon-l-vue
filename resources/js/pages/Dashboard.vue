@@ -47,14 +47,14 @@ defineOptions({
                         class="max-w-3xl text-sm leading-6 text-muted-foreground"
                     >
                         Dieses Projekt nutzt jetzt die ersten
-                        NEAREON-Setupwerte. Die naechsten Schritte bleiben
-                        klein, bevor Fachfeatures gebaut werden.
+                        NEAREON-Setupwerte. Die nächsten Schritte bleiben klein,
+                        bevor Fachfeatures gebaut werden.
                     </p>
                     <p
                         v-if="page.props.auth.user?.role === 'admin'"
                         class="text-sm text-muted-foreground"
                     >
-                        Pruefe die aktuellen Projektwerte im
+                        Prüfe die aktuellen Projektwerte im
                         <Link
                             href="/admin/system"
                             class="text-foreground underline decoration-neutral-300 underline-offset-4 transition-colors duration-300 ease-out hover:decoration-current dark:decoration-neutral-500"
@@ -70,13 +70,13 @@ defineOptions({
         <PageSection padded>
             <Card>
                 <CardContent class="space-y-3">
-                    <h2 class="text-base font-medium">Phase-0-Ueberblick</h2>
+                    <h2 class="text-base font-medium">Phase-0-Überblick</h2>
                     <p
                         class="max-w-3xl text-sm leading-6 text-muted-foreground"
                     >
                         Dieses Dashboard ist bewusst minimal. Es markiert den
                         NEAREON-Laravel-Aufbau, ohne Profil-, Discover- oder
-                        Follow-Funktionen vorzutaeuschen.
+                        Follow-Funktionen vorzutäuschen.
                     </p>
                 </CardContent>
             </Card>
@@ -86,7 +86,7 @@ defineOptions({
             <div class="grid gap-4 md:grid-cols-3">
                 <Card>
                     <CardContent class="space-y-2">
-                        <h2 class="text-sm font-medium">Projektidentitaet</h2>
+                        <h2 class="text-sm font-medium">Projektidentität</h2>
                         <p class="text-sm leading-6 text-muted-foreground">
                             App-Metadaten und grundlegende Seitentexte zeigen
                             jetzt auf NEAREON.
@@ -97,7 +97,7 @@ defineOptions({
                     <CardContent class="space-y-2">
                         <h2 class="text-sm font-medium">Laravel-Zielsystem</h2>
                         <p class="text-sm leading-6 text-muted-foreground">
-                            Dieses Repository bleibt das spaetere produktive
+                            Dieses Repository bleibt das spätere produktive
                             Laravel-System.
                         </p>
                     </CardContent>
@@ -107,7 +107,7 @@ defineOptions({
                         <h2 class="text-sm font-medium">MVP-Referenz</h2>
                         <p class="text-sm leading-6 text-muted-foreground">
                             Base44 bleibt die aktuelle Demo- und Testreferenz,
-                            waehrend Laravel Schritt fuer Schritt vorbereitet
+                            während Laravel Schritt für Schritt vorbereitet
                             wird.
                         </p>
                     </CardContent>
@@ -119,7 +119,7 @@ defineOptions({
             <Card>
                 <CardContent class="space-y-3">
                     <h2 class="text-base font-medium">
-                        Naechster Setup-Schritt
+                        Nächster Setup-Schritt
                     </h2>
                     <p
                         class="max-w-3xl text-sm leading-6 text-muted-foreground"

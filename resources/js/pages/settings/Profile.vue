@@ -70,7 +70,7 @@ const user = computed(() => page.props.auth.user);
                     :default-value="user.name"
                     required
                     autocomplete="name"
-                    placeholder="Vollstaendiger Name"
+                    placeholder="Vollständiger Name"
                 />
                 <InputError class="mt-2" :message="errors.name" />
             </div>
@@ -92,13 +92,13 @@ const user = computed(() => page.props.auth.user);
 
             <div v-if="mustVerifyEmail && !user.email_verified_at">
                 <p class="-mt-4 text-sm text-muted-foreground">
-                    Deine E-Mail-Adresse ist noch nicht bestaetigt.
+                    Deine E-Mail-Adresse ist noch nicht bestätigt.
                     <Link
                         :href="send()"
                         as="button"
                         class="text-foreground underline decoration-neutral-300 underline-offset-4 transition-colors duration-300 ease-out hover:decoration-current! dark:decoration-neutral-500"
                     >
-                        Klicke hier, um die Bestaetigungs-E-Mail erneut zu
+                        Klicke hier, um die Bestätigungs-E-Mail erneut zu
                         senden.
                     </Link>
                 </p>
@@ -107,7 +107,7 @@ const user = computed(() => page.props.auth.user);
                     v-if="status === 'verification-link-sent'"
                     class="mt-2 text-sm font-medium text-green-600"
                 >
-                    Ein neuer Bestaetigungslink wurde an deine E-Mail-Adresse
+                    Ein neuer Bestätigungslink wurde an deine E-Mail-Adresse
                     gesendet.
                 </div>
             </div>

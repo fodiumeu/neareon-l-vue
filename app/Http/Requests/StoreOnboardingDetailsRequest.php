@@ -50,7 +50,7 @@ class StoreOnboardingDetailsRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'username.required' => 'Bitte waehle einen Benutzernamen.',
+            'username.required' => 'Bitte wähle einen Benutzernamen.',
             'username.min' => 'Der Benutzername muss mindestens 3 Zeichen lang sein.',
             'username.max' => 'Der Benutzername darf maximal 30 Zeichen lang sein.',
             'username.regex' => 'Der Benutzername darf nur Kleinbuchstaben, Zahlen, Bindestriche und Unterstriche enthalten.',

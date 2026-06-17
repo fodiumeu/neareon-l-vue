@@ -47,10 +47,10 @@ class StoreOnboardingInterestsRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'interests.required' => 'Bitte waehle mindestens ein Interesse aus.',
-            'interests.min' => 'Bitte waehle mindestens ein Interesse aus.',
-            'interests.max' => 'Bitte waehle maximal 20 Interessen aus.',
-            'interests.*.in' => 'Bitte waehle nur vorgeschlagene Interessen aus.',
+            'interests.required' => 'Bitte wähle mindestens ein Interesse aus.',
+            'interests.min' => 'Bitte wähle mindestens ein Interesse aus.',
+            'interests.max' => 'Bitte wähle maximal 20 Interessen aus.',
+            'interests.*.in' => 'Bitte wähle nur vorgeschlagene Interessen aus.',
         ];
     }
 

@@ -30,7 +30,7 @@ defineOptions({
     <div class="flex h-full flex-1 flex-col gap-6 overflow-x-auto p-4">
         <PageHeader
             title="Deine Interessen"
-            description="Waehle Themen aus, die zu dir passen."
+            description="Wähle Themen aus, die zu dir passen."
         />
 
         <PageSection padded>
