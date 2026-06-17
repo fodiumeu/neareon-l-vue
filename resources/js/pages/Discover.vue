@@ -22,6 +22,20 @@ defineProps<{
     profiles: DiscoverProfile[];
 }>();
 
+const profileLabel = (profile: DiscoverProfile) =>
+    profile.display_name ?? `@${profile.username}`;
+
+const avatarInitial = (profile: DiscoverProfile) =>
+    profileLabel(profile).charAt(0).toUpperCase();
+
+const visibleDetailCount = (profile: DiscoverProfile) =>
+    Number(Boolean(profile.region)) +
+    Number(Boolean(profile.languages?.length)) +
+    Number(Boolean(profile.interests?.length));
+
+const hasAnySocialStatus = (profile: DiscoverProfile) =>
+    profile.is_mutual || profile.is_following || profile.is_followed_by;
+
 defineOptions({
     layout: {
         breadcrumbs: [
@@ -57,12 +71,12 @@ defineOptions({
                     </p>
                     <div class="max-w-3xl space-y-3">
                         <h2 class="text-2xl font-semibold tracking-tight">
-                            Menschen finden, Profile öffnen, Verbindungen
-                            erkennen.
+                            Sichtbare Profile aus der Community
                         </h2>
                         <p class="text-sm leading-6 text-muted-foreground">
-                            Discover zeigt nur Profile und Angaben, die vom
-                            Server für diese Ansicht ausgeliefert werden.
+                            Discover zeigt nur Profile und Angaben, die nach
+                            Sichtbarkeit freigegeben und vom Server für diese
+                            Ansicht ausgeliefert werden.
                         </p>
                     </div>
                 </CardContent>
@@ -88,28 +102,21 @@ defineOptions({
                 <Card
                     v-for="profile in profiles"
                     :key="profile.username"
-                    class="bg-card/95"
+                    class="bg-card/95 shadow-md shadow-black/5 dark:shadow-black/25"
                 >
                     <CardContent class="flex h-full flex-col gap-5">
                         <div class="flex items-start gap-3">
                             <div
-                                class="flex size-12 shrink-0 items-center justify-center rounded-full border border-border bg-accent text-base font-semibold text-accent-foreground"
+                                class="flex size-12 shrink-0 items-center justify-center rounded-full border border-primary/25 bg-primary/15 text-base font-semibold text-primary"
                             >
-                                {{
-                                    (
-                                        profile.display_name ?? profile.username
-                                    ).charAt(0)
-                                }}
+                                {{ avatarInitial(profile) }}
                             </div>
 
                             <div class="min-w-0 flex-1 space-y-1">
                                 <h2
                                     class="truncate text-base font-semibold tracking-tight"
                                 >
-                                    {{
-                                        profile.display_name ??
-                                        `@${profile.username}`
-                                    }}
+                                    {{ profileLabel(profile) }}
                                 </h2>
                                 <p
                                     class="truncate text-sm text-muted-foreground"
@@ -117,6 +124,35 @@ defineOptions({
                                     @{{ profile.username }}
                                 </p>
                             </div>
+                        </div>
+
+                        <div class="flex flex-wrap gap-2">
+                            <span
+                                v-if="profile.region"
+                                class="rounded-full border border-border bg-background/70 px-3 py-1 text-xs font-medium text-foreground dark:bg-input/30"
+                            >
+                                {{ profile.region }}
+                            </span>
+                            <span
+                                v-if="profile.is_mutual"
+                                class="rounded-full border border-primary/30 bg-primary/10 px-3 py-1 text-xs font-medium text-primary"
+                            >
+                                Gegenseitiges Folgen
+                            </span>
+                            <span
+                                v-else-if="profile.is_following"
+                                class="rounded-full border border-border bg-background/70 px-3 py-1 text-xs font-medium text-muted-foreground dark:bg-input/30"
+                            >
+                                Du folgst
+                            </span>
+                            <span
+                                v-if="
+                                    profile.is_followed_by && !profile.is_mutual
+                                "
+                                class="rounded-full border border-border bg-background/70 px-3 py-1 text-xs font-medium text-muted-foreground dark:bg-input/30"
+                            >
+                                Folgt dir
+                            </span>
                         </div>
 
                         <div v-if="profile.bio" class="space-y-2">
@@ -137,14 +173,6 @@ defineOptions({
                         </p>
 
                         <div class="space-y-3">
-                            <div v-if="profile.region" class="flex flex-wrap">
-                                <span
-                                    class="rounded-full border border-border bg-background/70 px-3 py-1 text-xs font-medium text-foreground dark:bg-input/30"
-                                >
-                                    {{ profile.region }}
-                                </span>
-                            </div>
-
                             <div
                                 v-if="profile.languages?.length"
                                 class="space-y-2"
@@ -184,26 +212,22 @@ defineOptions({
                                     </span>
                                 </div>
                             </div>
+
+                            <p
+                                v-if="visibleDetailCount(profile) === 0"
+                                class="rounded-md border border-border bg-background/60 px-3 py-2 text-sm leading-6 text-muted-foreground dark:bg-input/20"
+                            >
+                                Weitere Angaben sind für Discover aktuell nicht
+                                sichtbar.
+                            </p>
                         </div>
 
                         <div class="mt-auto space-y-3">
                             <p
-                                v-if="profile.is_mutual"
-                                class="rounded-md border border-primary/30 bg-primary/10 px-3 py-2 text-sm text-foreground"
+                                v-if="!hasAnySocialStatus(profile)"
+                                class="rounded-md border border-border bg-background/60 px-3 py-2 text-sm text-muted-foreground dark:bg-input/20"
                             >
-                                Gegenseitiges Folgen
-                            </p>
-                            <p
-                                v-else-if="profile.is_following"
-                                class="rounded-md border border-border bg-background/70 px-3 py-2 text-sm text-muted-foreground dark:bg-input/30"
-                            >
-                                Du folgst diesem Profil
-                            </p>
-                            <p
-                                v-else-if="profile.is_followed_by"
-                                class="rounded-md border border-border bg-background/70 px-3 py-2 text-sm text-muted-foreground dark:bg-input/30"
-                            >
-                                Dieses Profil folgt dir
+                                Noch keine Follow-Verbindung sichtbar.
                             </p>
 
                             <Button as-child variant="secondary" class="w-full">
