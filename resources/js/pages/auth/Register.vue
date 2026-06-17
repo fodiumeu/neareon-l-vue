@@ -29,27 +29,13 @@ defineOptions({
     >
         <div class="grid gap-6">
             <div class="grid gap-2">
-                <Label for="name">Name</Label>
-                <Input
-                    id="name"
-                    type="text"
-                    required
-                    autofocus
-                    :tabindex="1"
-                    autocomplete="name"
-                    name="name"
-                    placeholder="Vollstaendiger Name"
-                />
-                <InputError :message="errors.name" />
-            </div>
-
-            <div class="grid gap-2">
                 <Label for="email">E-Mail-Adresse</Label>
                 <Input
                     id="email"
                     type="email"
                     required
-                    :tabindex="2"
+                    autofocus
+                    :tabindex="1"
                     autocomplete="email"
                     name="email"
                     placeholder="email@example.com"
@@ -58,27 +44,11 @@ defineOptions({
             </div>
 
             <div class="grid gap-2">
-                <Label for="birthdate">Geburtsdatum</Label>
-                <Input
-                    id="birthdate"
-                    type="date"
-                    required
-                    :tabindex="3"
-                    autocomplete="bday"
-                    name="birthdate"
-                />
-                <p class="text-sm text-muted-foreground">
-                    NEAREON kann aktuell erst ab 14 Jahren genutzt werden.
-                </p>
-                <InputError :message="errors.birthdate" />
-            </div>
-
-            <div class="grid gap-2">
                 <Label for="password">Passwort</Label>
                 <PasswordInput
                     id="password"
                     required
-                    :tabindex="4"
+                    :tabindex="2"
                     autocomplete="new-password"
                     name="password"
                     placeholder="Passwort"
@@ -91,7 +61,7 @@ defineOptions({
                 <PasswordInput
                     id="password_confirmation"
                     required
-                    :tabindex="5"
+                    :tabindex="3"
                     autocomplete="new-password"
                     name="password_confirmation"
                     placeholder="Passwort bestaetigen"
@@ -102,7 +72,7 @@ defineOptions({
             <Button
                 type="submit"
                 class="mt-2 w-full"
-                tabindex="6"
+                tabindex="4"
                 :disabled="processing"
                 data-test="register-user-button"
             >
@@ -116,7 +86,7 @@ defineOptions({
             <TextLink
                 :href="login()"
                 class="underline underline-offset-4"
-                :tabindex="7"
+                :tabindex="5"
                 >Anmelden</TextLink
             >
         </div>

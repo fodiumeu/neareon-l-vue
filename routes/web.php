@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Admin\AdminController;
+use App\Http\Controllers\AgeGateController;
 use App\Http\Controllers\DiscoverController;
 use App\Http\Controllers\FollowController;
 use App\Http\Controllers\OnboardingController;
@@ -14,7 +15,12 @@ Route::inertia('/', 'Welcome', [
     'canRegister' => Features::enabled(Features::registration()),
 ])->name('home');
 
-Route::middleware(['auth', 'verified'])->group(function () {
+Route::middleware(['auth'])->group(function () {
+    Route::get('age-gate', [AgeGateController::class, 'show'])->name('age-gate.show');
+    Route::post('age-gate', [AgeGateController::class, 'store'])->name('age-gate.store');
+});
+
+Route::middleware(['auth', 'age.gate', 'verified'])->group(function () {
     Route::get('onboarding', [OnboardingController::class, 'create'])->name('onboarding.create');
     Route::post('onboarding', [OnboardingController::class, 'store'])->name('onboarding.store');
     Route::get('discover', [DiscoverController::class, 'index'])->name('discover');

@@ -5,8 +5,8 @@ namespace App\Actions\Fortify;
 use App\Concerns\PasswordValidationRules;
 use App\Concerns\ProfileValidationRules;
 use App\Models\User;
-use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Str;
 use Laravel\Fortify\Contracts\CreatesNewUsers;
 
 class CreateNewUser implements CreatesNewUsers
@@ -20,36 +20,22 @@ class CreateNewUser implements CreatesNewUsers
      */
     public function create(array $input): User
     {
-        $validator = Validator::make($input, [
-            ...$this->profileRules(),
-            'birthdate' => ['required', 'date'],
+        Validator::make($input, [
+            'email' => $this->emailRules(),
             'password' => $this->passwordRules(),
-        ]);
-
-        $validator->after(function ($validator) use ($input): void {
-            if ($validator->errors()->has('birthdate')) {
-                return;
-            }
-
-            $birthdate = Carbon::parse($input['birthdate'])->startOfDay();
-            $minimumBirthdate = now()->subYears(14)->startOfDay();
-
-            if ($birthdate->greaterThan($minimumBirthdate)) {
-                $validator->errors()->add(
-                    'birthdate',
-                    __('NEAREON kann aktuell erst ab 14 Jahren genutzt werden.'),
-                );
-            }
-        });
-
-        $validator->validate();
+        ])->validate();
 
         return User::create([
-            'name' => $input['name'],
+            'name' => $this->fallbackName($input['email']),
             'email' => $input['email'],
-            'birthdate' => $input['birthdate'],
-            'age_gate_passed_at' => now(),
             'password' => $input['password'],
         ]);
+    }
+
+    private function fallbackName(string $email): string
+    {
+        $name = trim(Str::before($email, '@'));
+
+        return $name === '' ? 'NEAREON Nutzer' : $name;
     }
 }

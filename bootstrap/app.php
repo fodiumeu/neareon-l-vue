@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Middleware\EnsureAgeGateIsPassed;
 use App\Http\Middleware\EnsureUserHasRole;
 use App\Http\Middleware\HandleAppearance;
 use App\Http\Middleware\HandleInertiaRequests;
@@ -17,6 +18,7 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->encryptCookies(except: ['appearance', 'sidebar_state']);
         $middleware->alias([
+            'age.gate' => EnsureAgeGateIsPassed::class,
             'role' => EnsureUserHasRole::class,
         ]);
 
