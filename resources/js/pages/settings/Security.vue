@@ -53,7 +53,7 @@ onUnmounted(() => clearTwoFactorAuthData());
         <Heading
             variant="small"
             title="Passwort aktualisieren"
-            description="Nutze ein langes, zufaelliges Passwort, um deinen Account zu schuetzen"
+            description="Nutze ein langes, zufälliges Passwort, um deinen Account zu schützen"
         />
 
         <Form
@@ -95,13 +95,13 @@ onUnmounted(() => clearTwoFactorAuthData());
             </div>
 
             <div class="grid gap-2">
-                <Label for="password_confirmation">Passwort bestaetigen</Label>
+                <Label for="password_confirmation">Passwort bestätigen</Label>
                 <PasswordInput
                     id="password_confirmation"
                     name="password_confirmation"
                     class="mt-1 block w-full"
                     autocomplete="new-password"
-                    placeholder="Passwort bestaetigen"
+                    placeholder="Passwort bestätigen"
                 />
                 <InputError :message="errors.password_confirmation" />
             </div>
@@ -131,7 +131,7 @@ onUnmounted(() => clearTwoFactorAuthData());
             <p class="text-sm text-muted-foreground">
                 Wenn du die Zwei-Faktor-Authentifizierung aktivierst, wirst du
                 bei der Anmeldung nach einem sicheren Code gefragt. Diesen Code
-                erhaeltst du aus einer TOTP-App auf deinem Smartphone.
+                erhältst du aus einer TOTP-App auf deinem Smartphone.
             </p>
 
             <div>

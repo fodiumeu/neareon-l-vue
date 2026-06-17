@@ -57,14 +57,14 @@ defineOptions({
             </div>
 
             <div class="grid gap-2">
-                <Label for="password_confirmation">Passwort bestaetigen</Label>
+                <Label for="password_confirmation">Passwort bestätigen</Label>
                 <PasswordInput
                     id="password_confirmation"
                     required
                     :tabindex="3"
                     autocomplete="new-password"
                     name="password_confirmation"
-                    placeholder="Passwort bestaetigen"
+                    placeholder="Passwort bestätigen"
                 />
                 <InputError :message="errors.password_confirmation" />
             </div>

@@ -44,7 +44,7 @@ defineOptions({
         <Heading
             variant="small"
             title="Allgemeine Einstellungen"
-            description="Ein kurzer Ueberblick ueber Account- und Projektkontext. Aenderungen bleiben in den jeweiligen Einstellungsbereichen."
+            description="Ein kurzer Überblick über Account- und Projektkontext. Änderungen bleiben in den jeweiligen Einstellungsbereichen."
         />
 
         <div class="space-y-3">
@@ -69,7 +69,7 @@ defineOptions({
                     {{ page.props.auth.user.email }}
                 </p>
                 <p class="mt-2 text-sm text-muted-foreground">
-                    Aendere deine E-Mail-Adresse in den
+                    Ändere deine E-Mail-Adresse in den
                     <Link
                         :href="editProfile()"
                         class="text-foreground underline decoration-neutral-300 underline-offset-4 transition-colors duration-300 ease-out hover:decoration-current dark:decoration-neutral-500"

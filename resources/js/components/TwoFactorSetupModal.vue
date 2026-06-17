@@ -48,14 +48,14 @@ const modalConfig = computed<TwoFactorConfigContent>(() => {
         return {
             title: 'Zwei-Faktor-Authentifizierung aktiviert',
             description:
-                'Die Zwei-Faktor-Authentifizierung ist jetzt aktiviert. Scanne den QR-Code oder gib den Einrichtungsschluessel in deiner Authenticator-App ein.',
-            buttonText: 'Schliessen',
+                'Die Zwei-Faktor-Authentifizierung ist jetzt aktiviert. Scanne den QR-Code oder gib den Einrichtungsschlüssel in deiner Authenticator-App ein.',
+            buttonText: 'Schließen',
         };
     }
 
     if (showVerificationStep.value) {
         return {
-            title: 'Authentifizierungscode bestaetigen',
+            title: 'Authentifizierungscode bestätigen',
             description:
                 'Gib den 6-stelligen Code aus deiner Authenticator-App ein',
             buttonText: 'Weiter',
@@ -65,7 +65,7 @@ const modalConfig = computed<TwoFactorConfigContent>(() => {
     return {
         title: 'Zwei-Faktor-Authentifizierung aktivieren',
         description:
-            'Scanne den QR-Code oder gib den Einrichtungsschluessel in deiner Authenticator-App ein, um die Zwei-Faktor-Authentifizierung abzuschliessen',
+            'Scanne den QR-Code oder gib den Einrichtungsschlüssel in deiner Authenticator-App ein, um die Zwei-Faktor-Authentifizierung abzuschließen',
         buttonText: 'Weiter',
     };
 });
@@ -279,14 +279,14 @@ watch(
                                     @click="showVerificationStep = false"
                                     :disabled="processing"
                                 >
-                                    Zurueck
+                                    Zurück
                                 </Button>
                                 <Button
                                     type="submit"
                                     class="w-auto flex-1"
                                     :disabled="processing || code.length < 6"
                                 >
-                                    Bestaetigen
+                                    Bestätigen
                                 </Button>
                             </div>
                         </div>

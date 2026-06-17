@@ -81,8 +81,8 @@ class UpdateProfileRequest extends FormRequest
             'languages.*.max' => 'Ein Spracheintrag darf maximal 40 Zeichen lang sein.',
             'interests.max' => 'Bitte gib maximal 20 Interessen an.',
             'interests.*.max' => 'Ein Interesse darf maximal 40 Zeichen lang sein.',
-            '*.required' => 'Bitte waehle eine Sichtbarkeit aus.',
-            '*.in' => 'Bitte waehle eine gueltige Sichtbarkeit aus.',
+            '*.required' => 'Bitte wähle eine Sichtbarkeit aus.',
+            '*.in' => 'Bitte wähle eine gültige Sichtbarkeit aus.',
         ];
     }
 

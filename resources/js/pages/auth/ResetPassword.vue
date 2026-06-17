@@ -11,7 +11,7 @@ import { update } from '@/routes/password';
 
 defineOptions({
     layout: {
-        title: 'Passwort zuruecksetzen',
+        title: 'Passwort zurücksetzen',
         description: 'Gib unten dein neues Passwort ein',
     },
 });
@@ -25,7 +25,7 @@ const inputEmail = ref(props.email);
 </script>
 
 <template>
-    <Head title="Passwort zuruecksetzen" />
+    <Head title="Passwort zurücksetzen" />
 
     <Form
         v-bind="update.form()"
@@ -62,15 +62,13 @@ const inputEmail = ref(props.email);
             </div>
 
             <div class="grid gap-2">
-                <Label for="password_confirmation">
-                    Passwort bestaetigen
-                </Label>
+                <Label for="password_confirmation"> Passwort bestätigen </Label>
                 <PasswordInput
                     id="password_confirmation"
                     name="password_confirmation"
                     autocomplete="new-password"
                     class="mt-1 block w-full"
-                    placeholder="Passwort bestaetigen"
+                    placeholder="Passwort bestätigen"
                 />
                 <InputError :message="errors.password_confirmation" />
             </div>
@@ -82,7 +80,7 @@ const inputEmail = ref(props.email);
                 data-test="reset-password-button"
             >
                 <Spinner v-if="processing" />
-                Passwort zuruecksetzen
+                Passwort zurücksetzen
             </Button>
         </div>
     </Form>

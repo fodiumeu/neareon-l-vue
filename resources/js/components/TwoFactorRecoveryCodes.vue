@@ -46,8 +46,8 @@ onMounted(async () => {
             </CardTitle>
             <CardDescription>
                 Wiederherstellungscodes helfen dir, wieder Zugriff zu erhalten,
-                falls du dein 2FA-Geraet verlierst. Bewahre sie in einem
-                sicheren Passwortmanager auf.
+                falls du dein 2FA-Gerät verlierst. Bewahre sie in einem sicheren
+                Passwortmanager auf.
             </CardDescription>
         </CardHeader>
         <CardContent>
@@ -112,7 +112,7 @@ onMounted(async () => {
                         </div>
                     </div>
                     <p class="text-xs text-muted-foreground select-none">
-                        Jeder Wiederherstellungscode kann einmalig fuer den
+                        Jeder Wiederherstellungscode kann einmalig für den
                         Zugriff auf deinen Account verwendet werden und wird
                         danach entfernt. Wenn du neue Codes brauchst, klicke
                         oben auf

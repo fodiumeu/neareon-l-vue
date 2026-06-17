@@ -9,15 +9,15 @@ import { store } from '@/routes/password/confirm';
 
 defineOptions({
     layout: {
-        title: 'Passwort bestaetigen',
+        title: 'Passwort bestätigen',
         description:
-            'Dies ist ein geschuetzter Bereich. Bitte bestaetige dein Passwort, bevor du fortfaehrst.',
+            'Dies ist ein geschützter Bereich. Bitte bestätige dein Passwort, bevor du fortfährst.',
     },
 });
 </script>
 
 <template>
-    <Head title="Passwort bestaetigen" />
+    <Head title="Passwort bestätigen" />
 
     <Form
         v-bind="store.form()"
@@ -46,7 +46,7 @@ defineOptions({
                     data-test="confirm-password-button"
                 >
                     <Spinner v-if="processing" />
-                    Passwort bestaetigen
+                    Passwort bestätigen
                 </Button>
             </div>
         </div>

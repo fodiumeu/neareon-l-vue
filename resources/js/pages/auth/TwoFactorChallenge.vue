@@ -17,7 +17,7 @@ const authConfigContent = computed<TwoFactorConfigContent>(() => {
         return {
             title: 'Wiederherstellungscode',
             description:
-                'Bestaetige den Zugriff auf deinen Account mit einem deiner Wiederherstellungscodes.',
+                'Bestätige den Zugriff auf deinen Account mit einem deiner Wiederherstellungscodes.',
             buttonText: 'mit Authentifizierungscode anmelden',
         };
     }

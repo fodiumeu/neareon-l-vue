@@ -25,8 +25,8 @@ const passwordInput = useTemplateRef('passwordInput');
     <div class="space-y-6">
         <Heading
             variant="small"
-            title="Account loeschen"
-            description="Loesche deinen Account und alle zugehoerigen Ressourcen"
+            title="Account löschen"
+            description="Lösche deinen Account und alle zugehörigen Ressourcen"
         />
         <div
             class="space-y-4 rounded-lg border border-red-100 bg-red-50 p-4 dark:border-red-200/10 dark:bg-red-700/10"
@@ -35,13 +35,13 @@ const passwordInput = useTemplateRef('passwordInput');
                 <p class="font-medium">Warnung</p>
                 <p class="text-sm">
                     Bitte gehe vorsichtig vor. Diese Aktion kann nicht
-                    rueckgaengig gemacht werden.
+                    rückgängig gemacht werden.
                 </p>
             </div>
             <Dialog>
                 <DialogTrigger as-child>
                     <Button variant="destructive" data-test="delete-user-button"
-                        >Account loeschen</Button
+                        >Account löschen</Button
                     >
                 </DialogTrigger>
                 <DialogContent>
@@ -57,15 +57,15 @@ const passwordInput = useTemplateRef('passwordInput');
                     >
                         <DialogHeader class="space-y-3">
                             <DialogTitle
-                                >Moechtest du deinen Account wirklich
-                                loeschen?</DialogTitle
+                                >Möchtest du deinen Account wirklich
+                                löschen?</DialogTitle
                             >
                             <DialogDescription>
-                                Sobald dein Account geloescht ist, werden auch
-                                alle zugehoerigen Ressourcen und Daten dauerhaft
-                                geloescht. Bitte gib dein Passwort ein, um das
-                                dauerhafte Loeschen deines Accounts zu
-                                bestaetigen.
+                                Sobald dein Account gelöscht ist, werden auch
+                                alle zugehörigen Ressourcen und Daten dauerhaft
+                                gelöscht. Bitte gib dein Passwort ein, um das
+                                dauerhafte Löschen deines Accounts zu
+                                bestätigen.
                             </DialogDescription>
                         </DialogHeader>
 
@@ -103,7 +103,7 @@ const passwordInput = useTemplateRef('passwordInput');
                                 :disabled="processing"
                                 data-test="confirm-delete-user-button"
                             >
-                                Account loeschen
+                                Account löschen
                             </Button>
                         </DialogFooter>
                     </Form>

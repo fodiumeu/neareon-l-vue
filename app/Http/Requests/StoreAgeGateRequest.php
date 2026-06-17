@@ -58,8 +58,8 @@ class StoreAgeGateRequest extends FormRequest
     {
         return [
             'birthdate.required' => 'Bitte gib dein Geburtsdatum ein.',
-            'birthdate.date' => 'Bitte gib ein gueltiges Geburtsdatum ein.',
-            'birthdate.before_or_equal' => 'Bitte gib ein gueltiges Geburtsdatum ein.',
+            'birthdate.date' => 'Bitte gib ein gültiges Geburtsdatum ein.',
+            'birthdate.before_or_equal' => 'Bitte gib ein gültiges Geburtsdatum ein.',
         ];
     }
 }

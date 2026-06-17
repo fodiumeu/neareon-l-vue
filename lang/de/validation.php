@@ -2,9 +2,9 @@
 
 return [
     'accepted' => ':attribute muss akzeptiert werden.',
-    'confirmed' => ':attribute stimmt nicht mit der Bestaetigung ueberein.',
+    'confirmed' => ':attribute stimmt nicht mit der Bestätigung überein.',
     'current_password' => 'Das Passwort ist falsch.',
-    'email' => ':attribute muss eine gueltige E-Mail-Adresse sein.',
+    'email' => ':attribute muss eine gültige E-Mail-Adresse sein.',
     'max' => [
         'string' => ':attribute darf maximal :max Zeichen lang sein.',
     ],
@@ -20,7 +20,7 @@ return [
         'email' => 'E-Mail-Adresse',
         'name' => 'Name',
         'password' => 'Passwort',
-        'password_confirmation' => 'Passwortbestaetigung',
+        'password_confirmation' => 'Passwortbestätigung',
         'recovery_code' => 'Wiederherstellungscode',
         'role' => 'Rolle',
     ],

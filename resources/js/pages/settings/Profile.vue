@@ -43,11 +43,12 @@ const user = computed(() => page.props.auth.user);
         <Heading
             variant="small"
             title="Profilinformationen"
-            description="Aktualisiere deinen Namen und deine E-Mail-Adresse"
+            description="Aktualisiere deinen Account-Namen und deine E-Mail-Adresse"
         />
 
         <p class="mb-6 text-sm text-muted-foreground">
-            Dein Community-Profil bearbeitest du separat:
+            Deinen NEAREON-Anzeigenamen bearbeitest du separat im
+            Community-Profil:
             <Link
                 href="/profile/edit"
                 class="text-foreground underline decoration-neutral-300 underline-offset-4 transition-colors duration-300 ease-out hover:decoration-current dark:decoration-neutral-500"
@@ -62,7 +63,7 @@ const user = computed(() => page.props.auth.user);
             v-slot="{ errors, processing }"
         >
             <div class="grid gap-2">
-                <Label for="name">Name</Label>
+                <Label for="name">Account-Name</Label>
                 <Input
                     id="name"
                     class="mt-1 block w-full"
@@ -70,7 +71,7 @@ const user = computed(() => page.props.auth.user);
                     :default-value="user.name"
                     required
                     autocomplete="name"
-                    placeholder="Vollständiger Name"
+                    placeholder="Account-Name"
                 />
                 <InputError class="mt-2" :message="errors.name" />
             </div>

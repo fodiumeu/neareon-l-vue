@@ -13,7 +13,7 @@ defineOptions({
     layout: {
         title: 'Passwort vergessen',
         description:
-            'Gib deine E-Mail-Adresse ein, um einen Link zum Zuruecksetzen zu erhalten',
+            'Gib deine E-Mail-Adresse ein, um einen Link zum Zurücksetzen zu erhalten',
     },
 });
 
@@ -54,13 +54,13 @@ defineProps<{
                     data-test="email-password-reset-link-button"
                 >
                     <Spinner v-if="processing" />
-                    Link zum Zuruecksetzen senden
+                    Link zum Zurücksetzen senden
                 </Button>
             </div>
         </Form>
 
         <div class="space-x-1 text-center text-sm text-muted-foreground">
-            <span>Oder zurueck zur</span>
+            <span>Oder zurück zur</span>
             <TextLink :href="login()">Anmeldung</TextLink>
         </div>
     </div>

@@ -118,7 +118,7 @@ const page = usePage<{
                         >
                             <h2 class="text-sm font-medium">Basis</h2>
                             <p class="mt-2 text-sm text-muted-foreground">
-                                Diese Laravel-Version bildet das spaetere
+                                Diese Laravel-Version bildet das spätere
                                 Produktivsystem.
                             </p>
                         </div>
@@ -151,7 +151,7 @@ const page = usePage<{
                             :href="dashboard()"
                             class="inline-flex w-full items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
                         >
-                            Home oeffnen
+                            Home öffnen
                         </Link>
                         <template v-else>
                             <Link
