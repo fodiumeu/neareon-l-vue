@@ -24,21 +24,25 @@ defineOptions({
         class="flex flex-col gap-6"
     >
         <div class="grid gap-6">
-            <div class="grid gap-2">
-                <Label for="birthdate">Geburtsdatum</Label>
-                <Input
-                    id="birthdate"
-                    type="date"
-                    required
-                    autofocus
-                    :tabindex="1"
-                    autocomplete="bday"
-                    name="birthdate"
-                />
-                <p class="text-sm text-muted-foreground">
-                    NEAREON kann aktuell erst ab 14 Jahren genutzt werden.
-                </p>
-                <InputError :message="errors.birthdate" />
+            <div
+                class="rounded-lg border border-border/70 bg-background/60 p-4 dark:bg-input/20"
+            >
+                <div class="grid gap-2">
+                    <Label for="birthdate">Geburtsdatum</Label>
+                    <Input
+                        id="birthdate"
+                        type="date"
+                        required
+                        autofocus
+                        :tabindex="1"
+                        autocomplete="bday"
+                        name="birthdate"
+                    />
+                    <p class="text-sm leading-6 text-muted-foreground">
+                        NEAREON kann aktuell erst ab 14 Jahren genutzt werden.
+                    </p>
+                    <InputError :message="errors.birthdate" />
+                </div>
             </div>
 
             <Button

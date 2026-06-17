@@ -41,14 +41,25 @@ defineOptions({
 <template>
     <Head title="Deine Sprachen" />
 
-    <div class="flex h-full flex-1 flex-col gap-6 overflow-x-auto p-4">
-        <PageHeader
-            title="Deine Sprachen"
-            description="Wähle deine Hauptsprache und optional weitere Sprachen aus."
-        />
+    <div
+        class="mx-auto flex h-full w-full max-w-3xl flex-1 flex-col gap-6 overflow-x-auto p-4 sm:p-6"
+    >
+        <div class="space-y-2">
+            <p
+                class="text-xs font-semibold tracking-wide text-primary uppercase"
+            >
+                Schritt 3 von 3
+            </p>
+            <PageHeader
+                title="Deine Sprachen"
+                description="Wähle deine Hauptsprache und optional weitere Sprachen aus."
+            />
+        </div>
 
         <PageSection padded>
-            <Card>
+            <Card
+                class="bg-card/95 shadow-lg shadow-black/10 dark:shadow-black/30"
+            >
                 <CardContent>
                     <Form
                         action="/onboarding/languages"
@@ -73,7 +84,7 @@ defineOptions({
                                     :id="`language-${field}`"
                                     name="languages[]"
                                     :required="index === 0"
-                                    class="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-base shadow-xs ring-offset-background transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50 md:text-sm"
+                                    class="flex h-10 w-full rounded-md border border-input bg-background/80 px-3 py-2 text-base shadow-xs ring-offset-background transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50 md:text-sm dark:border-border/90 dark:bg-input/60"
                                 >
                                     <option value="">Sprache auswählen</option>
                                     <option
@@ -93,13 +104,18 @@ defineOptions({
                             <Button
                                 type="button"
                                 variant="secondary"
+                                class="w-full sm:w-auto"
                                 :disabled="languageFields.length >= 5"
                                 @click="addLanguage"
                             >
                                 Weitere Sprache hinzufügen
                             </Button>
 
-                            <Button type="submit" :disabled="processing">
+                            <Button
+                                type="submit"
+                                class="w-full sm:w-auto"
+                                :disabled="processing"
+                            >
                                 <Spinner v-if="processing" />
                                 Onboarding abschließen
                             </Button>

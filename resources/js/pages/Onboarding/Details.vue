@@ -24,14 +24,25 @@ defineOptions({
 <template>
     <Head title="Profil einrichten" />
 
-    <div class="flex h-full flex-1 flex-col gap-6 overflow-x-auto p-4">
-        <PageHeader
-            title="Profil einrichten"
-            description="Lege dein NEAREON-Profil an, damit du später gefunden werden und die Community-Funktionen nutzen kannst."
-        />
+    <div
+        class="mx-auto flex h-full w-full max-w-3xl flex-1 flex-col gap-6 overflow-x-auto p-4 sm:p-6"
+    >
+        <div class="space-y-2">
+            <p
+                class="text-xs font-semibold tracking-wide text-primary uppercase"
+            >
+                Schritt 1 von 3
+            </p>
+            <PageHeader
+                title="Profil einrichten"
+                description="Lege dein NEAREON-Profil an, damit du später gefunden werden und die Community-Funktionen nutzen kannst."
+            />
+        </div>
 
         <PageSection padded>
-            <Card>
+            <Card
+                class="bg-card/95 shadow-lg shadow-black/10 dark:shadow-black/30"
+            >
                 <CardContent>
                     <Form
                         action="/onboarding/details"
@@ -92,7 +103,7 @@ defineOptions({
                                 name="bio"
                                 maxlength="280"
                                 rows="4"
-                                class="flex min-h-24 w-full rounded-md border border-input bg-transparent px-3 py-2 text-base shadow-xs transition-[color,box-shadow] outline-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm"
+                                class="flex min-h-24 w-full rounded-md border border-input bg-background/80 px-3 py-2 text-base shadow-xs transition-[color,box-shadow] outline-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/45 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm dark:border-border/90 dark:bg-input/60"
                                 placeholder="Ein kurzer Satz über dich"
                             />
                             <InputError :message="errors.bio" />
@@ -101,6 +112,7 @@ defineOptions({
                         <div class="flex items-center">
                             <Button
                                 type="submit"
+                                class="w-full sm:w-auto"
                                 :disabled="processing"
                                 data-test="create-profile-button"
                             >
