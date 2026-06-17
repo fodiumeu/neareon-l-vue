@@ -32,6 +32,7 @@ Route::middleware(['auth', 'age.gate', 'verified'])->group(function () {
 
 Route::middleware(['auth', 'age.gate', 'verified', 'onboarding.complete'])->group(function () {
     Route::get('discover', [DiscoverController::class, 'index'])->name('discover');
+    Route::get('profile', [ProfileController::class, 'me'])->name('neareon-profile.show');
     Route::get('profile/edit', [ProfileController::class, 'edit'])->name('neareon-profile.edit');
     Route::patch('profile', [ProfileController::class, 'update'])->name('neareon-profile.update');
     Route::get('u/{username}', [ProfileController::class, 'show'])->name('public-profile.show');

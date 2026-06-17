@@ -1,4 +1,4 @@
-import { LayoutGrid, Search, Shield } from 'lucide-vue-next';
+import { LayoutGrid, Search, Shield, UserCircle } from 'lucide-vue-next';
 import { dashboard } from '@/routes';
 import type { NavItem } from '@/types';
 
@@ -20,6 +20,11 @@ export const getMainNavItems = ({
         title: 'Entdecken',
         href: '/discover',
         icon: Search,
+    },
+    {
+        title: 'Profil',
+        href: '/profile',
+        icon: UserCircle,
     },
     ...(showAdminArea
         ? [

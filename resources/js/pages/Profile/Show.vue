@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Form, Head } from '@inertiajs/vue3';
+import { Form, Head, Link } from '@inertiajs/vue3';
 import PageHeader from '@/components/PageHeader.vue';
 import PageSection from '@/components/PageSection.vue';
 import { Button } from '@/components/ui/button';
@@ -21,6 +21,7 @@ type PublicProfile = {
 
 const props = defineProps<{
     profile: PublicProfile;
+    editProfileHref?: string | null;
 }>();
 
 defineOptions({
@@ -43,6 +44,12 @@ defineOptions({
             :title="profile.display_name ?? `@${profile.username}`"
             :description="`@${profile.username}`"
         />
+
+        <PageSection v-if="props.editProfileHref">
+            <Button as-child>
+                <Link :href="props.editProfileHref">Profil bearbeiten</Link>
+            </Button>
+        </PageSection>
 
         <PageSection v-if="!props.profile.isOwnProfile">
             <Form

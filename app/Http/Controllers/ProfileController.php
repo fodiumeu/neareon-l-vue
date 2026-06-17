@@ -19,6 +19,24 @@ class ProfileController extends Controller
     ) {}
 
     /**
+     * Show the authenticated user's own NEAREON profile.
+     */
+    public function me(Request $request): Response|RedirectResponse
+    {
+        $user = $request->user();
+        $profile = $user->profile;
+
+        if ($profile === null) {
+            return NextUserRoute::redirect($user);
+        }
+
+        return Inertia::render('Profile/Show', [
+            'profile' => $this->profileVisibility->visibleProfileData($profile, $user),
+            'editProfileHref' => '/profile/edit',
+        ]);
+    }
+
+    /**
      * Show the edit form for the authenticated user's NEAREON profile.
      */
     public function edit(Request $request): Response|RedirectResponse
