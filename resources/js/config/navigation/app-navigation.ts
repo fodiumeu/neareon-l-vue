@@ -1,5 +1,12 @@
-import { LayoutGrid, Search, Shield, UserCircle } from 'lucide-vue-next';
+import {
+    LayoutGrid,
+    Search,
+    Settings,
+    Shield,
+    UserCircle,
+} from 'lucide-vue-next';
 import { dashboard } from '@/routes';
+import { edit as editSettingsProfile } from '@/routes/profile';
 import type { NavItem } from '@/types';
 
 type ProjectNavigationOptions = {
@@ -39,3 +46,26 @@ export const getMainNavItems = ({
 ];
 
 export const footerNavItems: NavItem[] = [];
+
+export const mobileBottomNavItems: NavItem[] = [
+    {
+        title: 'Home',
+        href: dashboard(),
+        icon: LayoutGrid,
+    },
+    {
+        title: 'Entdecken',
+        href: '/discover',
+        icon: Search,
+    },
+    {
+        title: 'Profil',
+        href: '/profile',
+        icon: UserCircle,
+    },
+    {
+        title: 'Einstellungen',
+        href: editSettingsProfile(),
+        icon: Settings,
+    },
+];

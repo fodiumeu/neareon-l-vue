@@ -4,6 +4,7 @@ import AppShell from '@/components/AppShell.vue';
 import AppSidebar from '@/components/AppSidebar.vue';
 import AppSidebarHeader from '@/components/AppSidebarHeader.vue';
 import FlashMessages from '@/components/FlashMessages.vue';
+import MobileBottomNavigation from '@/components/MobileBottomNavigation.vue';
 import { Toaster } from '@/components/ui/sonner';
 import type { BreadcrumbItem } from '@/types';
 
@@ -19,11 +20,12 @@ withDefaults(defineProps<Props>(), {
 <template>
     <AppShell variant="sidebar">
         <AppSidebar />
-        <AppContent variant="sidebar" class="overflow-x-hidden">
+        <AppContent variant="sidebar" class="overflow-x-hidden pb-24 md:pb-0">
             <AppSidebarHeader :breadcrumbs="breadcrumbs" />
             <FlashMessages />
             <slot />
         </AppContent>
+        <MobileBottomNavigation />
         <Toaster />
     </AppShell>
 </template>
