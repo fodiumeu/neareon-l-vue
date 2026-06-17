@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { Form, Head } from '@inertiajs/vue3';
+import Heading from '@/components/Heading.vue';
 import InputError from '@/components/InputError.vue';
+import PageSection from '@/components/PageSection.vue';
 import PasswordInput from '@/components/PasswordInput.vue';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
@@ -11,7 +13,7 @@ defineOptions({
     layout: {
         title: 'Passwort bestätigen',
         description:
-            'Dies ist ein geschützter Bereich. Bitte bestätige dein Passwort, bevor du fortfährst.',
+            'Bestätige dein Passwort, um die Sicherheitseinstellungen zu öffnen.',
     },
 });
 </script>
@@ -19,36 +21,44 @@ defineOptions({
 <template>
     <Head title="Passwort bestätigen" />
 
-    <Form
-        v-bind="store.form()"
-        reset-on-success
-        v-slot="{ errors, processing }"
-    >
-        <div class="space-y-6">
-            <div class="grid gap-2">
-                <Label htmlFor="password">Passwort</Label>
-                <PasswordInput
-                    id="password"
-                    name="password"
-                    class="mt-1 block w-full"
-                    required
-                    autocomplete="current-password"
-                    autofocus
-                />
+    <PageSection>
+        <Heading
+            variant="small"
+            title="Passwort bestätigen"
+            description="Bestätige dein Passwort, um die Sicherheitseinstellungen zu öffnen."
+        />
 
-                <InputError :message="errors.password" />
-            </div>
+        <Form
+            v-bind="store.form()"
+            reset-on-success
+            v-slot="{ errors, processing }"
+        >
+            <div class="space-y-6">
+                <div class="grid gap-2">
+                    <Label htmlFor="password">Passwort</Label>
+                    <PasswordInput
+                        id="password"
+                        name="password"
+                        class="mt-1 block w-full"
+                        required
+                        autocomplete="current-password"
+                        autofocus
+                    />
 
-            <div class="flex items-center">
-                <Button
-                    class="w-full"
-                    :disabled="processing"
-                    data-test="confirm-password-button"
-                >
-                    <Spinner v-if="processing" />
-                    Passwort bestätigen
-                </Button>
+                    <InputError :message="errors.password" />
+                </div>
+
+                <div class="flex items-center">
+                    <Button
+                        class="w-full"
+                        :disabled="processing"
+                        data-test="confirm-password-button"
+                    >
+                        <Spinner v-if="processing" />
+                        Passwort bestätigen
+                    </Button>
+                </div>
             </div>
-        </div>
-    </Form>
+        </Form>
+    </PageSection>
 </template>

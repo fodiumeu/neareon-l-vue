@@ -22,7 +22,7 @@ return [
     'project' => [
         'show_admin_area' => env('APP_SHOW_ADMIN_AREA', true),
         'admin_label' => env('APP_ADMIN_LABEL', 'Admin'),
-        'show_appearance_settings' => env('APP_SHOW_APPEARANCE_SETTINGS', true),
+        'show_appearance_settings' => false,
         'tagline' => env('APP_TAGLINE', 'Regionale Social Web-App'),
         'welcome_title' => env('APP_WELCOME_TITLE', 'NEAREON'),
         'welcome_description' => env(

@@ -41,6 +41,33 @@ test('security page requires password confirmation when enabled', function () {
     $response->assertRedirect(route('password.confirm'));
 });
 
+test('password confirmation keeps app context before security settings', function () {
+    $this->skipUnlessFortifyHas(Features::twoFactorAuthentication());
+
+    $user = User::factory()->create();
+
+    Features::twoFactorAuthentication([
+        'confirm' => true,
+        'confirmPassword' => true,
+    ]);
+
+    $this->actingAs($user)
+        ->from(route('security.edit'))
+        ->get(route('password.confirm'))
+        ->assertOk()
+        ->assertInertia(fn (Assert $page) => $page
+            ->component('auth/ConfirmPassword'),
+        );
+});
+
+test('confirm password page uses the app and settings layouts in the frontend resolver', function () {
+    $app = file_get_contents(resource_path('js/app.ts'));
+
+    expect($app)
+        ->toContain("case name === 'auth/ConfirmPassword':")
+        ->toContain('return [AppLayout, SettingsLayout];');
+});
+
 test('security page does not require password confirmation when disabled', function () {
     $this->skipUnlessFortifyHas(Features::twoFactorAuthentication());
 
