@@ -12,7 +12,7 @@ withDefaults(defineProps<Props>(), {
     <section
         class="space-y-6"
         :class="{
-            'rounded-xl border border-sidebar-border/70 p-4 dark:border-sidebar-border':
+            'rounded-xl border border-border/70 p-4 dark:border-border/80':
                 padded,
         }"
     >
