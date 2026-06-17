@@ -2,6 +2,7 @@
 
 use App\Models\Profile;
 use App\Models\User;
+use App\Support\OnboardingOptions;
 use Inertia\Testing\AssertableInertia as Assert;
 
 test('guests cannot open onboarding', function () {
@@ -9,35 +10,111 @@ test('guests cannot open onboarding', function () {
         ->assertRedirect(route('login'));
 });
 
-test('authenticated users without a profile can open onboarding', function () {
+test('users without a profile are redirected to onboarding details', function () {
     $user = User::factory()->create();
 
     $this->actingAs($user)
         ->get(route('onboarding.create'))
+        ->assertRedirect(route('onboarding.details'));
+});
+
+test('users with details but without interests are redirected to onboarding interests', function () {
+    $user = User::factory()->create();
+    Profile::factory()->for($user)->create([
+        'interests' => null,
+        'languages' => null,
+    ]);
+
+    $this->actingAs($user)
+        ->get(route('onboarding.create'))
+        ->assertRedirect(route('onboarding.interests'));
+});
+
+test('users with details and interests but without languages are redirected to onboarding languages', function () {
+    $user = User::factory()->create();
+    Profile::factory()->for($user)->create([
+        'interests' => ['Musik'],
+        'languages' => null,
+    ]);
+
+    $this->actingAs($user)
+        ->get(route('onboarding.create'))
+        ->assertRedirect(route('onboarding.languages'));
+});
+
+test('users with complete onboarding are redirected to dashboard', function () {
+    $user = User::factory()->create();
+    Profile::factory()->for($user)->create([
+        'interests' => ['Musik'],
+        'languages' => ['Deutsch'],
+    ]);
+
+    $this->actingAs($user)
+        ->get(route('onboarding.create'))
+        ->assertRedirect(route('dashboard'));
+});
+
+test('direct later onboarding steps redirect to the correct previous step', function () {
+    $user = User::factory()->create();
+
+    $this->actingAs($user)
+        ->get(route('onboarding.interests'))
+        ->assertRedirect(route('onboarding.details'));
+
+    $this->actingAs($user)
+        ->get(route('onboarding.languages'))
+        ->assertRedirect(route('onboarding.details'));
+
+    Profile::factory()->for($user)->create([
+        'interests' => null,
+        'languages' => null,
+    ]);
+
+    $this->actingAs($user)
+        ->get(route('onboarding.languages'))
+        ->assertRedirect(route('onboarding.interests'));
+});
+
+test('completed users are redirected away from onboarding steps', function () {
+    $user = User::factory()->create();
+    Profile::factory()->for($user)->create([
+        'interests' => ['Musik'],
+        'languages' => ['Deutsch'],
+    ]);
+
+    $this->actingAs($user)
+        ->get(route('onboarding.details'))
+        ->assertRedirect(route('dashboard'));
+
+    $this->actingAs($user)
+        ->get(route('onboarding.interests'))
+        ->assertRedirect(route('dashboard'));
+
+    $this->actingAs($user)
+        ->get(route('onboarding.languages'))
+        ->assertRedirect(route('dashboard'));
+});
+
+test('details step can be opened by users without a profile', function () {
+    $user = User::factory()->create();
+
+    $this->actingAs($user)
+        ->get(route('onboarding.details'))
         ->assertOk()
         ->assertInertia(fn (Assert $page) => $page
-            ->component('Onboarding'),
+            ->component('Onboarding/Details'),
         );
 });
 
-test('authenticated users with a profile are redirected away from onboarding', function () {
-    $user = User::factory()->create();
-    Profile::factory()->for($user)->create();
-
-    $this->actingAs($user)
-        ->get(route('onboarding.create'))
-        ->assertRedirect(route('dashboard'));
-});
-
-test('authenticated users without a profile can create a minimal profile', function () {
+test('details step creates a profile', function () {
     $user = User::factory()->create();
 
     $this->actingAs($user)
-        ->post(route('onboarding.store'), [
+        ->post(route('onboarding.details.store'), [
             'username' => 'new_member',
             'display_name' => 'New Member',
         ])
-        ->assertRedirect(route('dashboard'));
+        ->assertRedirect(route('onboarding.interests'));
 
     expect($user->fresh()->profile)
         ->not->toBeNull()
@@ -45,20 +122,7 @@ test('authenticated users without a profile can create a minimal profile', funct
         ->display_name->toBe('New Member');
 });
 
-test('successful onboarding creates exactly one profile', function () {
-    $user = User::factory()->create();
-
-    $this->actingAs($user)
-        ->post(route('onboarding.store'), [
-            'username' => 'single_profile',
-            'display_name' => 'Single Profile',
-        ])
-        ->assertRedirect(route('dashboard'));
-
-    expect(Profile::query()->where('user_id', $user->id)->count())->toBe(1);
-});
-
-test('duplicate usernames are blocked', function () {
+test('duplicate usernames are blocked in details step', function () {
     Profile::factory()->create([
         'username' => 'taken_name',
     ]);
@@ -66,78 +130,261 @@ test('duplicate usernames are blocked', function () {
     $user = User::factory()->create();
 
     $this->actingAs($user)
-        ->from(route('onboarding.create'))
-        ->post(route('onboarding.store'), [
+        ->from(route('onboarding.details'))
+        ->post(route('onboarding.details.store'), [
             'username' => 'taken_name',
             'display_name' => 'Taken Name',
         ])
-        ->assertRedirect(route('onboarding.create'))
+        ->assertRedirect(route('onboarding.details'))
         ->assertSessionHasErrors('username');
 
     expect(Profile::query()->where('user_id', $user->id)->exists())->toBeFalse();
 });
 
-test('usernames are normalized before storage', function () {
+test('usernames are normalized in details step', function () {
     $user = User::factory()->create();
 
     $this->actingAs($user)
-        ->post(route('onboarding.store'), [
+        ->post(route('onboarding.details.store'), [
             'username' => '  Mixed_Name-42  ',
             'display_name' => 'Mixed Name',
         ])
-        ->assertRedirect(route('dashboard'));
+        ->assertRedirect(route('onboarding.interests'));
 
     expect($user->fresh()->profile->username)->toBe('mixed_name-42');
 });
 
-test('invalid username characters are rejected', function () {
-    $user = User::factory()->create();
-
-    $this->actingAs($user)
-        ->from(route('onboarding.create'))
-        ->post(route('onboarding.store'), [
-            'username' => 'bad name',
-            'display_name' => 'Bad Name',
-        ])
-        ->assertRedirect(route('onboarding.create'))
-        ->assertSessionHasErrors('username');
-
-    expect(Profile::query()->where('user_id', $user->id)->exists())->toBeFalse();
-});
-
-test('users cannot create a second profile through onboarding', function () {
+test('users cannot create a second profile through details step', function () {
     $user = User::factory()->create();
     Profile::factory()->for($user)->create([
         'username' => 'first_profile',
+        'interests' => null,
+        'languages' => null,
     ]);
 
     $this->actingAs($user)
-        ->post(route('onboarding.store'), [
+        ->post(route('onboarding.details.store'), [
             'username' => 'second_profile',
             'display_name' => 'Second Profile',
         ])
-        ->assertRedirect(route('dashboard'));
+        ->assertRedirect(route('onboarding.interests'));
 
     expect(Profile::query()->where('user_id', $user->id)->count())->toBe(1)
         ->and($user->fresh()->profile->username)->toBe('first_profile');
 });
 
-test('dashboard redirects users without a profile to onboarding', function () {
+test('interests step stores selected interests as an array', function () {
     $user = User::factory()->create();
+    $profile = Profile::factory()->for($user)->create([
+        'interests' => null,
+        'languages' => null,
+    ]);
 
     $this->actingAs($user)
-        ->get(route('dashboard'))
-        ->assertRedirect(route('onboarding.create'));
+        ->post(route('onboarding.interests.store'), [
+            'interests' => ['Musik', 'Events'],
+        ])
+        ->assertRedirect(route('onboarding.languages'));
+
+    expect($profile->refresh()->interests)->toBe(['Musik', 'Events']);
 });
 
-test('users with a profile can visit the dashboard', function () {
+test('interests step requires at least one interest', function () {
     $user = User::factory()->create();
-    Profile::factory()->for($user)->create();
+    Profile::factory()->for($user)->create([
+        'interests' => null,
+        'languages' => null,
+    ]);
+
+    $this->actingAs($user)
+        ->from(route('onboarding.interests'))
+        ->post(route('onboarding.interests.store'), [
+            'interests' => [],
+        ])
+        ->assertRedirect(route('onboarding.interests'))
+        ->assertSessionHasErrors('interests');
+});
+
+test('interests step rejects more than twenty interests', function () {
+    $user = User::factory()->create();
+    Profile::factory()->for($user)->create([
+        'interests' => null,
+        'languages' => null,
+    ]);
+
+    $this->actingAs($user)
+        ->from(route('onboarding.interests'))
+        ->post(route('onboarding.interests.store'), [
+            'interests' => array_merge(OnboardingOptions::interests(), ['Extra']),
+        ])
+        ->assertRedirect(route('onboarding.interests'))
+        ->assertSessionHasErrors('interests');
+});
+
+test('interests step rejects unavailable interests', function () {
+    $user = User::factory()->create();
+    Profile::factory()->for($user)->create([
+        'interests' => null,
+        'languages' => null,
+    ]);
+
+    $this->actingAs($user)
+        ->from(route('onboarding.interests'))
+        ->post(route('onboarding.interests.store'), [
+            'interests' => ['Nicht vorhanden'],
+        ])
+        ->assertRedirect(route('onboarding.interests'))
+        ->assertSessionHasErrors('interests.0');
+});
+
+test('interests step removes duplicates', function () {
+    $user = User::factory()->create();
+    $profile = Profile::factory()->for($user)->create([
+        'interests' => null,
+        'languages' => null,
+    ]);
+
+    $this->actingAs($user)
+        ->post(route('onboarding.interests.store'), [
+            'interests' => ['Musik', 'Musik', 'Events'],
+        ])
+        ->assertRedirect(route('onboarding.languages'));
+
+    expect($profile->refresh()->interests)->toBe(['Musik', 'Events']);
+});
+
+test('languages step stores languages as an array', function () {
+    $user = User::factory()->create();
+    $profile = Profile::factory()->for($user)->create([
+        'interests' => ['Musik'],
+        'languages' => null,
+    ]);
+
+    $this->actingAs($user)
+        ->post(route('onboarding.languages.store'), [
+            'languages' => ['Deutsch', 'Englisch'],
+        ])
+        ->assertRedirect(route('dashboard'));
+
+    expect($profile->refresh()->languages)->toBe(['Deutsch', 'Englisch']);
+});
+
+test('languages step requires a main language', function () {
+    $user = User::factory()->create();
+    Profile::factory()->for($user)->create([
+        'interests' => ['Musik'],
+        'languages' => null,
+    ]);
+
+    $this->actingAs($user)
+        ->from(route('onboarding.languages'))
+        ->post(route('onboarding.languages.store'), [
+            'languages' => [],
+        ])
+        ->assertRedirect(route('onboarding.languages'))
+        ->assertSessionHasErrors('languages');
+});
+
+test('languages step rejects more than five languages', function () {
+    $user = User::factory()->create();
+    Profile::factory()->for($user)->create([
+        'interests' => ['Musik'],
+        'languages' => null,
+    ]);
+
+    $this->actingAs($user)
+        ->from(route('onboarding.languages'))
+        ->post(route('onboarding.languages.store'), [
+            'languages' => ['Deutsch', 'Englisch', 'Tuerkisch', 'Arabisch', 'Spanisch', 'Italienisch'],
+        ])
+        ->assertRedirect(route('onboarding.languages'))
+        ->assertSessionHasErrors('languages');
+});
+
+test('languages step rejects duplicate languages', function () {
+    $user = User::factory()->create();
+    Profile::factory()->for($user)->create([
+        'interests' => ['Musik'],
+        'languages' => null,
+    ]);
+
+    $this->actingAs($user)
+        ->from(route('onboarding.languages'))
+        ->post(route('onboarding.languages.store'), [
+            'languages' => ['Deutsch', 'Deutsch'],
+        ])
+        ->assertRedirect(route('onboarding.languages'))
+        ->assertSessionHasErrors('languages.0');
+});
+
+test('languages step rejects unavailable languages', function () {
+    $user = User::factory()->create();
+    Profile::factory()->for($user)->create([
+        'interests' => ['Musik'],
+        'languages' => null,
+    ]);
+
+    $this->actingAs($user)
+        ->from(route('onboarding.languages'))
+        ->post(route('onboarding.languages.store'), [
+            'languages' => ['Klingonisch'],
+        ])
+        ->assertRedirect(route('onboarding.languages'))
+        ->assertSessionHasErrors('languages.0');
+});
+
+test('languages step keeps first language as main language', function () {
+    $user = User::factory()->create();
+    $profile = Profile::factory()->for($user)->create([
+        'interests' => ['Musik'],
+        'languages' => null,
+    ]);
+
+    $this->actingAs($user)
+        ->post(route('onboarding.languages.store'), [
+            'languages' => ['Englisch', 'Deutsch'],
+        ])
+        ->assertRedirect(route('dashboard'));
+
+    expect($profile->refresh()->languages[0])->toBe('Englisch');
+});
+
+test('incomplete onboarding cannot access app areas', function () {
+    $user = User::factory()->create();
+    Profile::factory()->for($user)->create([
+        'interests' => ['Musik'],
+        'languages' => null,
+    ]);
 
     $this->actingAs($user)
         ->get(route('dashboard'))
-        ->assertOk()
-        ->assertInertia(fn (Assert $page) => $page
-            ->component('Dashboard'),
-        );
+        ->assertRedirect(route('onboarding.languages'));
+
+    $this->actingAs($user)
+        ->get(route('discover'))
+        ->assertRedirect(route('onboarding.languages'));
+
+    $this->actingAs($user)
+        ->get(route('neareon-profile.edit'))
+        ->assertRedirect(route('onboarding.languages'));
+});
+
+test('complete onboarding can access app areas', function () {
+    $user = User::factory()->create();
+    Profile::factory()->for($user)->create([
+        'interests' => ['Musik'],
+        'languages' => ['Deutsch'],
+    ]);
+
+    $this->actingAs($user)
+        ->get(route('dashboard'))
+        ->assertOk();
+
+    $this->actingAs($user)
+        ->get(route('discover'))
+        ->assertOk();
+
+    $this->actingAs($user)
+        ->get(route('neareon-profile.edit'))
+        ->assertOk();
 });

@@ -14,7 +14,7 @@ defineOptions({
         breadcrumbs: [
             {
                 title: 'Profil einrichten',
-                href: '/onboarding',
+                href: '/onboarding/details',
             },
         ],
     },
@@ -34,7 +34,7 @@ defineOptions({
             <Card>
                 <CardContent>
                     <Form
-                        action="/onboarding"
+                        action="/onboarding/details"
                         method="post"
                         class="space-y-6"
                         v-slot="{ errors, processing }"
@@ -105,7 +105,7 @@ defineOptions({
                                 data-test="create-profile-button"
                             >
                                 <Spinner v-if="processing" />
-                                Profil erstellen
+                                Weiter
                             </Button>
                         </div>
                     </Form>

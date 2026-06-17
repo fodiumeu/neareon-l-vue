@@ -6,6 +6,7 @@ use App\Enums\ProfileVisibility;
 use App\Http\Requests\UpdateProfileRequest;
 use App\Models\Profile;
 use App\Services\ProfileVisibilityService;
+use App\Support\NextUserRoute;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -25,7 +26,7 @@ class ProfileController extends Controller
         $profile = $request->user()->profile;
 
         if ($profile === null) {
-            return to_route('onboarding.create');
+            return NextUserRoute::redirect($request->user());
         }
 
         return Inertia::render('Profile/Edit', [
@@ -57,7 +58,7 @@ class ProfileController extends Controller
         $profile = $request->user()->profile;
 
         if ($profile === null) {
-            return to_route('onboarding.create');
+            return NextUserRoute::redirect($request->user());
         }
 
         $profile->update($request->validated());
@@ -75,7 +76,7 @@ class ProfileController extends Controller
         $viewerProfile = $viewer->profile;
 
         if ($viewerProfile === null) {
-            return to_route('onboarding.create');
+            return NextUserRoute::redirect($viewer);
         }
 
         $profile = Profile::query()

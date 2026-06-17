@@ -10,6 +10,11 @@ use Inertia\Testing\AssertableInertia as Assert;
 
 uses(RefreshDatabase::class);
 
+function completeOnboardingFor(User $user): Profile
+{
+    return Profile::factory()->for($user)->create();
+}
+
 test('guests are redirected to the login page for the admin area', function () {
     $this->get('/admin')
         ->assertRedirect(route('login'));
@@ -42,6 +47,7 @@ test('guests are redirected to the login page for admin role updates', function 
 
 test('members cannot access the admin area', function () {
     $user = User::factory()->create();
+    completeOnboardingFor($user);
 
     $this->actingAs($user)
         ->get('/admin')
@@ -51,6 +57,7 @@ test('members cannot access the admin area', function () {
 test('members cannot access admin user details', function () {
     $member = User::factory()->create();
     $otherUser = User::factory()->create();
+    completeOnboardingFor($member);
 
     $this->actingAs($member)
         ->get("/admin/users/{$otherUser->id}")
@@ -59,6 +66,7 @@ test('members cannot access admin user details', function () {
 
 test('members cannot access the admin project overview', function () {
     $member = User::factory()->create();
+    completeOnboardingFor($member);
 
     $this->actingAs($member)
         ->get('/admin/project')
@@ -67,6 +75,7 @@ test('members cannot access the admin project overview', function () {
 
 test('members cannot access the admin system status page', function () {
     $member = User::factory()->create();
+    completeOnboardingFor($member);
 
     $this->actingAs($member)
         ->get('/admin/system')
@@ -76,6 +85,7 @@ test('members cannot access the admin system status page', function () {
 test('members cannot update user roles', function () {
     $member = User::factory()->create();
     $otherUser = User::factory()->create();
+    completeOnboardingFor($member);
 
     $this->actingAs($member)
         ->patch("/admin/users/{$otherUser->id}/role", [
@@ -252,6 +262,7 @@ test('admin project overview page includes the project configuration payload', f
 
 test('admin can open the system status page and receive key system values', function () {
     $admin = User::factory()->admin()->create();
+    completeOnboardingFor($admin);
 
     $this->actingAs($admin)
         ->get('/admin/system')
@@ -286,6 +297,7 @@ test('system status marks known starter defaults and excludes customized values'
     ]);
 
     $admin = User::factory()->admin()->create();
+    completeOnboardingFor($admin);
 
     $this->actingAs($admin)
         ->get('/admin/system')
@@ -314,6 +326,7 @@ test('system status marks known starter defaults and excludes customized values'
 test('admin can promote another user to admin', function () {
     $admin = User::factory()->admin()->create();
     $member = User::factory()->create();
+    completeOnboardingFor($admin);
 
     $this->actingAs($admin)
         ->from("/admin/users/{$member->id}")
@@ -329,6 +342,7 @@ test('admin can promote another user to admin', function () {
 test('admin can demote another admin when another admin remains', function () {
     $admin = User::factory()->admin()->create();
     $otherAdmin = User::factory()->admin()->create();
+    completeOnboardingFor($admin);
 
     $this->actingAs($admin)
         ->from("/admin/users/{$otherAdmin->id}")
@@ -344,6 +358,7 @@ test('admin can demote another admin when another admin remains', function () {
 test('admin cannot change their own role', function () {
     $admin = User::factory()->admin()->create();
     User::factory()->admin()->create();
+    completeOnboardingFor($admin);
 
     $this->actingAs($admin)
         ->from("/admin/users/{$admin->id}")
@@ -358,6 +373,7 @@ test('admin cannot change their own role', function () {
 
 test('last admin cannot be demoted to member', function () {
     $admin = User::factory()->admin()->create();
+    completeOnboardingFor($admin);
 
     $this->actingAs($admin)
         ->from("/admin/users/{$admin->id}")
@@ -373,6 +389,7 @@ test('last admin cannot be demoted to member', function () {
 test('invalid roles are rejected', function () {
     $admin = User::factory()->admin()->create();
     $member = User::factory()->create();
+    completeOnboardingFor($admin);
 
     $this->actingAs($admin)
         ->from("/admin/users/{$member->id}")

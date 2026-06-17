@@ -16,7 +16,7 @@ test('users without a profile are redirected to onboarding from discover', funct
 
     $this->actingAs($user)
         ->get(route('discover'))
-        ->assertRedirect(route('onboarding.create'));
+        ->assertRedirect(route('onboarding.details'));
 });
 
 test('users with a profile can open discover', function () {

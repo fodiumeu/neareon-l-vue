@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Profile;
+use App\Support\NextUserRoute;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 
@@ -16,7 +17,7 @@ class FollowController extends Controller
         $user = $request->user();
 
         if (! $user->profile()->exists()) {
-            return to_route('onboarding.create');
+            return NextUserRoute::redirect($user);
         }
 
         $profile = Profile::query()
@@ -43,7 +44,7 @@ class FollowController extends Controller
         $user = $request->user();
 
         if (! $user->profile()->exists()) {
-            return to_route('onboarding.create');
+            return NextUserRoute::redirect($user);
         }
 
         $profile = Profile::query()

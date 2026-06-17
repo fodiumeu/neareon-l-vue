@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Middleware\EnsureAgeGateIsPassed;
+use App\Http\Middleware\EnsureOnboardingIsComplete;
 use App\Http\Middleware\EnsureUserHasRole;
 use App\Http\Middleware\HandleAppearance;
 use App\Http\Middleware\HandleInertiaRequests;
@@ -19,6 +20,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->encryptCookies(except: ['appearance', 'sidebar_state']);
         $middleware->alias([
             'age.gate' => EnsureAgeGateIsPassed::class,
+            'onboarding.complete' => EnsureOnboardingIsComplete::class,
             'role' => EnsureUserHasRole::class,
         ]);
 

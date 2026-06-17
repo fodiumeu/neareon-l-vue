@@ -22,7 +22,7 @@ test('users without their own profile are redirected to onboarding from public p
 
     $this->actingAs($viewer)
         ->get(route('public-profile.show', $profile->username))
-        ->assertRedirect(route('onboarding.create'));
+        ->assertRedirect(route('onboarding.details'));
 });
 
 test('users with a profile can open another public profile', function () {

@@ -31,7 +31,7 @@ test('users without a profile are redirected to onboarding from profile editing'
 
     $this->actingAs($user)
         ->get(route('neareon-profile.edit'))
-        ->assertRedirect(route('onboarding.create'));
+        ->assertRedirect(route('onboarding.details'));
 });
 
 test('users with a profile can open profile editing', function () {

@@ -27,11 +27,29 @@ class NextUserRoute
             return 'verification.notice';
         }
 
-        if (! $user->profile()->exists()) {
-            return 'onboarding.create';
+        $profile = $user->profile()->first();
+
+        if ($profile === null) {
+            return 'onboarding.details';
+        }
+
+        if ($profile->interests === null || $profile->interests === []) {
+            return 'onboarding.interests';
+        }
+
+        if ($profile->languages === null || $profile->languages === []) {
+            return 'onboarding.languages';
         }
 
         return 'dashboard';
+    }
+
+    /**
+     * Determine whether the user has completed the required onboarding steps.
+     */
+    public static function onboardingComplete(User $user): bool
+    {
+        return self::name($user) === 'dashboard';
     }
 
     /**

@@ -21,8 +21,16 @@ Route::middleware(['auth'])->group(function () {
 });
 
 Route::middleware(['auth', 'age.gate', 'verified'])->group(function () {
-    Route::get('onboarding', [OnboardingController::class, 'create'])->name('onboarding.create');
-    Route::post('onboarding', [OnboardingController::class, 'store'])->name('onboarding.store');
+    Route::get('onboarding', [OnboardingController::class, 'index'])->name('onboarding.create');
+    Route::get('onboarding/details', [OnboardingController::class, 'details'])->name('onboarding.details');
+    Route::post('onboarding/details', [OnboardingController::class, 'storeDetails'])->name('onboarding.details.store');
+    Route::get('onboarding/interests', [OnboardingController::class, 'interests'])->name('onboarding.interests');
+    Route::post('onboarding/interests', [OnboardingController::class, 'storeInterests'])->name('onboarding.interests.store');
+    Route::get('onboarding/languages', [OnboardingController::class, 'languages'])->name('onboarding.languages');
+    Route::post('onboarding/languages', [OnboardingController::class, 'storeLanguages'])->name('onboarding.languages.store');
+});
+
+Route::middleware(['auth', 'age.gate', 'verified', 'onboarding.complete'])->group(function () {
     Route::get('discover', [DiscoverController::class, 'index'])->name('discover');
     Route::get('profile/edit', [ProfileController::class, 'edit'])->name('neareon-profile.edit');
     Route::patch('profile', [ProfileController::class, 'update'])->name('neareon-profile.update');
@@ -30,10 +38,6 @@ Route::middleware(['auth', 'age.gate', 'verified'])->group(function () {
     Route::post('u/{username}/follow', [FollowController::class, 'store'])->name('public-profile.follow');
     Route::delete('u/{username}/follow', [FollowController::class, 'destroy'])->name('public-profile.unfollow');
     Route::get('dashboard', function (Request $request) {
-        if (! $request->user()->profile()->exists()) {
-            return to_route('onboarding.create');
-        }
-
         return Inertia::render('Dashboard');
     })->name('dashboard');
     Route::get('admin', [AdminController::class, 'index'])

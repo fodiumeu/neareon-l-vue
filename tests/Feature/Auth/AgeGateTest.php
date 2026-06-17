@@ -60,7 +60,7 @@ test('users fourteen and older pass age gate', function () {
         ->post(route('age-gate.store'), [
             'birthdate' => $birthdate,
         ])
-        ->assertRedirect(route('onboarding.create'));
+        ->assertRedirect(route('onboarding.details'));
 
     $user->refresh();
 
@@ -73,7 +73,7 @@ test('users with completed age gate are redirected away from age gate', function
 
     $this->actingAs($user)
         ->get(route('age-gate.show'))
-        ->assertRedirect(route('onboarding.create'));
+        ->assertRedirect(route('onboarding.details'));
 });
 
 test('users without age gate are redirected from dashboard to age gate', function () {
@@ -131,7 +131,7 @@ test('users with age gate but without profile are redirected to onboarding', fun
 
     $this->actingAs($user)
         ->get(route('dashboard'))
-        ->assertRedirect(route('onboarding.create'));
+        ->assertRedirect(route('onboarding.details'));
 });
 
 test('users with age gate and profile can access app areas', function () {

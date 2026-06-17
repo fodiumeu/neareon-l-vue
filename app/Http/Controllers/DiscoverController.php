@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Profile;
 use App\Services\ProfileVisibilityService;
+use App\Support\NextUserRoute;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -23,7 +24,7 @@ class DiscoverController extends Controller
         $viewer = $request->user();
 
         if (! $viewer->profile()->exists()) {
-            return to_route('onboarding.create');
+            return NextUserRoute::redirect($viewer);
         }
 
         $profiles = Profile::query()

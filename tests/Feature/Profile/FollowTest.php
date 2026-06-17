@@ -23,7 +23,7 @@ test('users without a profile cannot follow and are redirected to onboarding', f
 
     $this->actingAs($viewer)
         ->post(route('public-profile.follow', $profile->username))
-        ->assertRedirect(route('onboarding.create'));
+        ->assertRedirect(route('onboarding.details'));
 
     expect(Follow::query()->exists())->toBeFalse();
 });
