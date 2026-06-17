@@ -4,7 +4,6 @@ namespace App\Http\Controllers\Admin;
 
 use App\Enums\UserRole;
 use App\Http\Controllers\Controller;
-use App\Models\InterestOption;
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -51,26 +50,6 @@ class AdminController extends Controller
     public function options(): Response
     {
         return Inertia::render('admin/Options/Index');
-    }
-
-    /**
-     * Display the interest option placeholder.
-     */
-    public function interests(): Response
-    {
-        return Inertia::render('admin/Options/Interests', [
-            'interests' => InterestOption::query()
-                ->select([
-                    'id',
-                    'slug',
-                    'label',
-                    'sort_order',
-                    'is_active',
-                ])
-                ->orderBy('sort_order')
-                ->orderBy('label')
-                ->get(),
-        ]);
     }
 
     /**
