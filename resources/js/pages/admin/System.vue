@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { Head, usePage } from '@inertiajs/vue3';
+import AdminNavigation from '@/components/AdminNavigation.vue';
 import PageHeader from '@/components/PageHeader.vue';
 import PageSection from '@/components/PageSection.vue';
 import { Badge } from '@/components/ui/badge';
@@ -58,21 +59,23 @@ defineOptions({
 </script>
 
 <template>
-    <Head title="System status" />
+    <Head title="Systemstatus" />
 
     <div class="flex h-full flex-1 flex-col gap-6 overflow-x-auto p-4">
         <PageHeader
-            title="System status"
-            :description="`Read-only system and starter-kit status inside ${page.props.project.adminLabel.toLowerCase()}.`"
+            title="Systemstatus"
+            :description="`System- und Laufzeitinformationen im Bereich ${page.props.project.adminLabel}.`"
         />
+
+        <AdminNavigation />
 
         <PageSection>
             <div class="grid gap-6 xl:grid-cols-3">
                 <Card>
                     <CardHeader>
-                        <CardTitle>Application</CardTitle>
+                        <CardTitle>Anwendung</CardTitle>
                         <CardDescription>
-                            Basic app and branding values.
+                            Grundlegende App- und Markenwerte.
                         </CardDescription>
                     </CardHeader>
                     <CardContent class="space-y-3">
@@ -81,14 +84,14 @@ defineOptions({
                                 <p
                                     class="text-xs font-medium tracking-wide text-muted-foreground uppercase"
                                 >
-                                    App name
+                                    App-Name
                                 </p>
                                 <Badge
                                     v-if="isDefaultField('app_name')"
                                     variant="secondary"
                                     class="capitalize"
                                 >
-                                    default
+                                    Standard
                                 </Badge>
                             </div>
                             <p class="mt-1 text-sm font-medium">
@@ -100,7 +103,7 @@ defineOptions({
                             <p
                                 class="text-xs font-medium tracking-wide text-muted-foreground uppercase"
                             >
-                                Logo label
+                                Logo-Bezeichnung
                             </p>
                             <p class="mt-1 text-sm font-medium">
                                 {{ props.system.app_logo }}
@@ -111,9 +114,9 @@ defineOptions({
 
                 <Card>
                     <CardHeader>
-                        <CardTitle>Project configuration</CardTitle>
+                        <CardTitle>Projektkonfiguration</CardTitle>
                         <CardDescription>
-                            Shared project values exposed to the frontend.
+                            Gemeinsame Projektwerte für das Frontend.
                         </CardDescription>
                     </CardHeader>
                     <CardContent class="space-y-3">
@@ -122,14 +125,14 @@ defineOptions({
                                 <p
                                     class="text-xs font-medium tracking-wide text-muted-foreground uppercase"
                                 >
-                                    Admin label
+                                    Admin-Bezeichnung
                                 </p>
                                 <Badge
                                     v-if="isDefaultField('admin_label')"
                                     variant="secondary"
                                     class="capitalize"
                                 >
-                                    default
+                                    Standard
                                 </Badge>
                             </div>
                             <p class="mt-1 text-sm font-medium">
@@ -142,14 +145,14 @@ defineOptions({
                                 <p
                                     class="text-xs font-medium tracking-wide text-muted-foreground uppercase"
                                 >
-                                    Tagline
+                                    Slogan
                                 </p>
                                 <Badge
                                     v-if="isDefaultField('tagline')"
                                     variant="secondary"
                                     class="capitalize"
                                 >
-                                    default
+                                    Standard
                                 </Badge>
                             </div>
                             <p class="mt-1 text-sm text-muted-foreground">
@@ -162,14 +165,14 @@ defineOptions({
                                 <p
                                     class="text-xs font-medium tracking-wide text-muted-foreground uppercase"
                                 >
-                                    Welcome title
+                                    Willkommenstitel
                                 </p>
                                 <Badge
                                     v-if="isDefaultField('welcome_title')"
                                     variant="secondary"
                                     class="capitalize"
                                 >
-                                    default
+                                    Standard
                                 </Badge>
                             </div>
                             <p class="mt-1 text-sm font-medium">
@@ -182,14 +185,14 @@ defineOptions({
                                 <p
                                     class="text-xs font-medium tracking-wide text-muted-foreground uppercase"
                                 >
-                                    Dashboard title
+                                    Dashboard-Titel
                                 </p>
                                 <Badge
                                     v-if="isDefaultField('dashboard_title')"
                                     variant="secondary"
                                     class="capitalize"
                                 >
-                                    default
+                                    Standard
                                 </Badge>
                             </div>
                             <p class="mt-1 text-sm font-medium">
@@ -201,13 +204,13 @@ defineOptions({
                             <p
                                 class="text-xs font-medium tracking-wide text-muted-foreground uppercase"
                             >
-                                Show admin area
+                                Adminbereich anzeigen
                             </p>
                             <Badge variant="secondary" class="mt-2 capitalize">
                                 {{
                                     props.system.show_admin_area
-                                        ? 'enabled'
-                                        : 'disabled'
+                                        ? 'Aktiviert'
+                                        : 'Deaktiviert'
                                 }}
                             </Badge>
                         </div>
@@ -216,13 +219,13 @@ defineOptions({
                             <p
                                 class="text-xs font-medium tracking-wide text-muted-foreground uppercase"
                             >
-                                Show appearance settings
+                                Darstellungseinstellungen anzeigen
                             </p>
                             <Badge variant="secondary" class="mt-2 capitalize">
                                 {{
                                     props.system.show_appearance_settings
-                                        ? 'enabled'
-                                        : 'disabled'
+                                        ? 'Aktiviert'
+                                        : 'Deaktiviert'
                                 }}
                             </Badge>
                         </div>
@@ -231,9 +234,9 @@ defineOptions({
 
                 <Card>
                     <CardHeader>
-                        <CardTitle>Runtime</CardTitle>
+                        <CardTitle>Laufzeit</CardTitle>
                         <CardDescription>
-                            Environment and framework runtime information.
+                            Informationen zu Umgebung und Framework.
                         </CardDescription>
                     </CardHeader>
                     <CardContent class="space-y-3">
@@ -241,7 +244,7 @@ defineOptions({
                             <p
                                 class="text-xs font-medium tracking-wide text-muted-foreground uppercase"
                             >
-                                Environment
+                                Umgebung
                             </p>
                             <p class="mt-1 text-sm font-medium">
                                 {{ props.system.environment }}
@@ -252,7 +255,7 @@ defineOptions({
                             <p
                                 class="text-xs font-medium tracking-wide text-muted-foreground uppercase"
                             >
-                                Laravel version
+                                Laravel-Version
                             </p>
                             <p class="mt-1 text-sm font-medium">
                                 {{ props.system.laravel_version }}
@@ -263,7 +266,7 @@ defineOptions({
                             <p
                                 class="text-xs font-medium tracking-wide text-muted-foreground uppercase"
                             >
-                                PHP version
+                                PHP-Version
                             </p>
                             <p class="mt-1 text-sm font-medium">
                                 {{ props.system.php_version }}

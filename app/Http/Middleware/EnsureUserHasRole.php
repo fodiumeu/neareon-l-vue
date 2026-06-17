@@ -16,7 +16,7 @@ class EnsureUserHasRole
     {
         $requiredRole = UserRole::tryFrom($role);
 
-        if (! $requiredRole || ! $request->user()?->hasRole($requiredRole)) {
+        if (! $requiredRole || ! $request->user()?->hasAtLeastRole($requiredRole)) {
             abort(Response::HTTP_FORBIDDEN);
         }
 

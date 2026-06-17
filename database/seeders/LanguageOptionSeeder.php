@@ -22,8 +22,18 @@ class LanguageOptionSeeder extends Seeder
             ['code' => 'it', 'label' => 'Italienisch', 'native_label' => 'Italiano'],
             ['code' => 'pt', 'label' => 'Portugiesisch', 'native_label' => 'Português'],
             ['code' => 'pl', 'label' => 'Polnisch', 'native_label' => 'Polski'],
+            ['code' => 'ru', 'label' => 'Russisch', 'native_label' => 'Русский'],
             ['code' => 'uk', 'label' => 'Ukrainisch', 'native_label' => 'Українська'],
             ['code' => 'nl', 'label' => 'Niederländisch', 'native_label' => 'Nederlands'],
+            ['code' => 'hr', 'label' => 'Kroatisch', 'native_label' => 'Hrvatski'],
+            ['code' => 'sr', 'label' => 'Serbisch', 'native_label' => 'Српски'],
+            ['code' => 'bs', 'label' => 'Bosnisch', 'native_label' => 'Bosanski'],
+            ['code' => 'sq', 'label' => 'Albanisch', 'native_label' => 'Shqip'],
+            ['code' => 'ku', 'label' => 'Kurdisch', 'native_label' => 'Kurdî'],
+            ['code' => 'fa', 'label' => 'Persisch/Farsi', 'native_label' => 'فارسی'],
+            ['code' => 'el', 'label' => 'Griechisch', 'native_label' => 'Ελληνικά'],
+            ['code' => 'ro', 'label' => 'Rumänisch', 'native_label' => 'Română'],
+            ['code' => 'bg', 'label' => 'Bulgarisch', 'native_label' => 'Български'],
         ];
 
         foreach ($languages as $index => $language) {

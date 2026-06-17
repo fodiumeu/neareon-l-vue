@@ -82,4 +82,24 @@ class UserFactory extends Factory
             'role' => UserRole::Admin,
         ]);
     }
+
+    /**
+     * Indicate that the user is a moderator.
+     */
+    public function moderator(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'role' => UserRole::Moderator,
+        ]);
+    }
+
+    /**
+     * Indicate that the user is an owner.
+     */
+    public function owner(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'role' => UserRole::Owner,
+        ]);
+    }
 }

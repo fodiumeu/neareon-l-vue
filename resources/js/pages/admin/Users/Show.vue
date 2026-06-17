@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { Form, Head, usePage } from '@inertiajs/vue3';
+import AdminNavigation from '@/components/AdminNavigation.vue';
 import InputError from '@/components/InputError.vue';
 import PageHeader from '@/components/PageHeader.vue';
 import PageSection from '@/components/PageSection.vue';
@@ -37,14 +38,20 @@ const page = usePage<{
     };
 }>();
 
-const availableRoles: UserRole[] = ['member', 'admin'];
+const availableRoles: UserRole[] = ['member', 'moderator', 'admin', 'owner'];
+const roleLabels: Record<UserRole, string> = {
+    member: 'Mitglied',
+    moderator: 'Moderator',
+    admin: 'Administrator',
+    owner: 'Inhaber',
+};
 
 const formatDateTime = (value: string | null) => {
     if (!value) {
-        return 'Not set';
+        return 'Nicht gesetzt';
     }
 
-    return new Intl.DateTimeFormat('en', {
+    return new Intl.DateTimeFormat('de-DE', {
         dateStyle: 'medium',
         timeStyle: 'short',
     }).format(new Date(value));
@@ -58,7 +65,7 @@ defineOptions({
                 href: '/admin',
             },
             {
-                title: 'Users',
+                title: 'Benutzer',
                 href: '/admin',
             },
         ],
@@ -72,15 +79,17 @@ defineOptions({
     <div class="flex h-full flex-1 flex-col gap-6 overflow-x-auto p-4">
         <PageHeader
             :title="props.user.name"
-            description="Read-only user details in the administration area"
+            description="Kontodetails und Rollenverwaltung im Administrationsbereich"
         />
+
+        <AdminNavigation />
 
         <PageSection>
             <Card>
                 <CardHeader>
-                    <CardTitle>User details</CardTitle>
+                    <CardTitle>Benutzerdetails</CardTitle>
                     <CardDescription>
-                        Basic account information for this user account.
+                        Grundlegende Informationen zu diesem Benutzerkonto.
                     </CardDescription>
                 </CardHeader>
                 <CardContent class="space-y-3">
@@ -99,7 +108,7 @@ defineOptions({
                         <p
                             class="text-xs font-medium tracking-wide text-muted-foreground uppercase"
                         >
-                            Email
+                            E-Mail-Adresse
                         </p>
                         <p class="mt-1 text-sm text-muted-foreground">
                             {{ props.user.email }}
@@ -110,10 +119,10 @@ defineOptions({
                         <p
                             class="text-xs font-medium tracking-wide text-muted-foreground uppercase"
                         >
-                            Role
+                            Rolle
                         </p>
-                        <Badge variant="secondary" class="mt-2 capitalize">
-                            {{ props.user.role }}
+                        <Badge variant="secondary" class="mt-2">
+                            {{ roleLabels[props.user.role] }}
                         </Badge>
                     </div>
 
@@ -121,7 +130,7 @@ defineOptions({
                         <p
                             class="text-xs font-medium tracking-wide text-muted-foreground uppercase"
                         >
-                            Email verified at
+                            E-Mail bestätigt am
                         </p>
                         <p class="mt-1 text-sm text-muted-foreground">
                             {{ formatDateTime(props.user.email_verified_at) }}
@@ -132,7 +141,7 @@ defineOptions({
                         <p
                             class="text-xs font-medium tracking-wide text-muted-foreground uppercase"
                         >
-                            Created at
+                            Erstellt am
                         </p>
                         <p class="mt-1 text-sm text-muted-foreground">
                             {{ formatDateTime(props.user.created_at) }}
@@ -143,7 +152,7 @@ defineOptions({
                         <p
                             class="text-xs font-medium tracking-wide text-muted-foreground uppercase"
                         >
-                            Updated at
+                            Aktualisiert am
                         </p>
                         <p class="mt-1 text-sm text-muted-foreground">
                             {{ formatDateTime(props.user.updated_at) }}
@@ -156,9 +165,9 @@ defineOptions({
         <PageSection v-if="page.props.auth.user?.id !== props.user.id">
             <Card>
                 <CardHeader>
-                    <CardTitle>Role management</CardTitle>
+                    <CardTitle>Rollenverwaltung</CardTitle>
                     <CardDescription>
-                        Update this user's role between member and admin.
+                        Weise diesem Benutzer eine passende Plattformrolle zu.
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -169,27 +178,28 @@ defineOptions({
                         v-slot="{ errors, processing }"
                     >
                         <div class="grid gap-2">
-                            <Label for="role">Role</Label>
+                            <Label for="role">Rolle</Label>
                             <select
                                 id="role"
                                 name="role"
-                                class="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs transition-[color,box-shadow] outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
+                                class="flex h-10 w-full rounded-md border border-input bg-background/80 px-3 py-2 text-sm text-foreground shadow-xs transition-[color,box-shadow] outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 dark:border-border/90 dark:bg-input/60"
                                 :default-value="props.user.role"
                             >
                                 <option
                                     v-for="role in availableRoles"
                                     :key="role"
                                     :value="role"
+                                    class="bg-popover text-popover-foreground"
                                 >
-                                    {{ role }}
+                                    {{ roleLabels[role] }}
                                 </option>
                             </select>
                             <InputError :message="errors.role" />
                         </div>
 
                         <div class="flex items-center gap-4">
-                            <Button :disabled="processing">
-                                Update role
+                            <Button type="submit" :disabled="processing">
+                                Rolle speichern
                             </Button>
                         </div>
                     </Form>

@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Admin\AdminController;
+use App\Http\Controllers\Admin\LanguageOptionController;
 use App\Http\Controllers\AgeGateController;
 use App\Http\Controllers\DiscoverController;
 use App\Http\Controllers\FollowController;
@@ -50,6 +51,24 @@ Route::middleware(['auth', 'age.gate', 'verified', 'onboarding.complete'])->grou
     Route::get('admin/project', [AdminController::class, 'project'])
         ->middleware('role:admin')
         ->name('admin.project');
+    Route::get('admin/options', [AdminController::class, 'options'])
+        ->middleware('role:admin')
+        ->name('admin.options');
+    Route::get('admin/options/languages', [LanguageOptionController::class, 'index'])
+        ->middleware('role:admin')
+        ->name('admin.options.languages');
+    Route::post('admin/options/languages', [LanguageOptionController::class, 'store'])
+        ->middleware('role:admin')
+        ->name('admin.options.languages.store');
+    Route::patch('admin/options/languages/{languageOption}', [LanguageOptionController::class, 'update'])
+        ->middleware('role:admin')
+        ->name('admin.options.languages.update');
+    Route::patch('admin/options/languages/{languageOption}/status', [LanguageOptionController::class, 'toggleStatus'])
+        ->middleware('role:admin')
+        ->name('admin.options.languages.status');
+    Route::get('admin/options/interests', [AdminController::class, 'interests'])
+        ->middleware('role:admin')
+        ->name('admin.options.interests');
     Route::get('admin/users/{user}', [AdminController::class, 'show'])
         ->middleware('role:admin')
         ->name('admin.users.show');

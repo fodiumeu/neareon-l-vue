@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { Head, usePage } from '@inertiajs/vue3';
+import AdminNavigation from '@/components/AdminNavigation.vue';
 import PageHeader from '@/components/PageHeader.vue';
 import PageSection from '@/components/PageSection.vue';
 import { Badge } from '@/components/ui/badge';
@@ -40,7 +41,7 @@ defineOptions({
                 href: '/admin',
             },
             {
-                title: 'Project',
+                title: 'Projekt',
                 href: '/admin/project',
             },
         ],
@@ -49,21 +50,23 @@ defineOptions({
 </script>
 
 <template>
-    <Head title="Project overview" />
+    <Head title="Projektübersicht" />
 
     <div class="flex h-full flex-1 flex-col gap-6 overflow-x-auto p-4">
         <PageHeader
-            title="Project overview"
-            :description="`Read-only project configuration inside ${page.props.project.adminLabel.toLowerCase()}.`"
+            title="Projektübersicht"
+            :description="`Zentrale Projektkonfiguration im Bereich ${page.props.project.adminLabel}.`"
         />
+
+        <AdminNavigation />
 
         <PageSection>
             <Card>
                 <CardHeader>
-                    <CardTitle>Project settings</CardTitle>
+                    <CardTitle>Projekteinstellungen</CardTitle>
                     <CardDescription>
-                        Core app and project values currently shared with the
-                        frontend.
+                        Zentrale App- und Projektwerte, die aktuell im Frontend
+                        bereitgestellt werden.
                     </CardDescription>
                 </CardHeader>
                 <CardContent class="space-y-3">
@@ -71,7 +74,7 @@ defineOptions({
                         <p
                             class="text-xs font-medium tracking-wide text-muted-foreground uppercase"
                         >
-                            App name
+                            App-Name
                         </p>
                         <p class="mt-1 text-sm font-medium">
                             {{ props.overview.appName }}
@@ -82,7 +85,7 @@ defineOptions({
                         <p
                             class="text-xs font-medium tracking-wide text-muted-foreground uppercase"
                         >
-                            Logo label
+                            Logo-Bezeichnung
                         </p>
                         <p class="mt-1 text-sm font-medium">
                             {{ props.overview.logo }}
@@ -93,7 +96,7 @@ defineOptions({
                         <p
                             class="text-xs font-medium tracking-wide text-muted-foreground uppercase"
                         >
-                            Admin label
+                            Admin-Bezeichnung
                         </p>
                         <p class="mt-1 text-sm font-medium">
                             {{ props.overview.adminLabel }}
@@ -104,7 +107,7 @@ defineOptions({
                         <p
                             class="text-xs font-medium tracking-wide text-muted-foreground uppercase"
                         >
-                            Tagline
+                            Slogan
                         </p>
                         <p class="mt-1 text-sm text-muted-foreground">
                             {{ props.overview.tagline }}
@@ -115,7 +118,7 @@ defineOptions({
                         <p
                             class="text-xs font-medium tracking-wide text-muted-foreground uppercase"
                         >
-                            Dashboard title
+                            Dashboard-Titel
                         </p>
                         <p class="mt-1 text-sm font-medium">
                             {{ page.props.project.dashboardTitle }}
@@ -126,7 +129,7 @@ defineOptions({
                         <p
                             class="text-xs font-medium tracking-wide text-muted-foreground uppercase"
                         >
-                            Dashboard description
+                            Dashboard-Beschreibung
                         </p>
                         <p class="mt-1 text-sm text-muted-foreground">
                             {{ page.props.project.dashboardDescription }}
@@ -137,13 +140,13 @@ defineOptions({
                         <p
                             class="text-xs font-medium tracking-wide text-muted-foreground uppercase"
                         >
-                            Show admin area
+                            Adminbereich anzeigen
                         </p>
                         <Badge variant="secondary" class="mt-2 capitalize">
                             {{
                                 props.overview.showAdminArea
-                                    ? 'enabled'
-                                    : 'disabled'
+                                    ? 'Aktiviert'
+                                    : 'Deaktiviert'
                             }}
                         </Badge>
                     </div>
@@ -152,13 +155,13 @@ defineOptions({
                         <p
                             class="text-xs font-medium tracking-wide text-muted-foreground uppercase"
                         >
-                            Show appearance settings
+                            Darstellungseinstellungen anzeigen
                         </p>
                         <Badge variant="secondary" class="mt-2 capitalize">
                             {{
                                 props.overview.showAppearanceSettings
-                                    ? 'enabled'
-                                    : 'disabled'
+                                    ? 'Aktiviert'
+                                    : 'Deaktiviert'
                             }}
                         </Badge>
                     </div>

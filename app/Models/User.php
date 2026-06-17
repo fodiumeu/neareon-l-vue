@@ -48,6 +48,22 @@ class User extends Authenticatable
     }
 
     /**
+     * Determine whether the user has at least the given role level.
+     */
+    public function hasAtLeastRole(UserRole $role): bool
+    {
+        return $this->role->level() >= $role->level();
+    }
+
+    /**
+     * Determine whether the user is a moderator.
+     */
+    public function isModerator(): bool
+    {
+        return $this->hasRole(UserRole::Moderator);
+    }
+
+    /**
      * Determine whether the user is an administrator.
      */
     public function isAdmin(): bool
@@ -56,11 +72,19 @@ class User extends Authenticatable
     }
 
     /**
+     * Determine whether the user is an owner.
+     */
+    public function isOwner(): bool
+    {
+        return $this->hasRole(UserRole::Owner);
+    }
+
+    /**
      * Determine whether the user can access admin-only areas.
      */
     public function canAccessAdmin(): bool
     {
-        return $this->isAdmin();
+        return $this->hasAtLeastRole(UserRole::Admin);
     }
 
     /**

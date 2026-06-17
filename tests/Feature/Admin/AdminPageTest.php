@@ -1,6 +1,9 @@
 <?php
 
+use App\Enums\UserRole;
 use App\Http\Controllers\Admin\AdminController;
+use App\Models\InterestOption;
+use App\Models\LanguageOption;
 use App\Models\Profile;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -45,6 +48,14 @@ test('guests are redirected to the login page for admin role updates', function 
     ])->assertRedirect(route('login'));
 });
 
+test('guests are redirected from admin option pages', function (string $uri) {
+    $this->get($uri)->assertRedirect(route('login'));
+})->with([
+    '/admin/options',
+    '/admin/options/languages',
+    '/admin/options/interests',
+]);
+
 test('members cannot access the admin area', function () {
     $user = User::factory()->create();
     completeOnboardingFor($user);
@@ -53,6 +64,34 @@ test('members cannot access the admin area', function () {
         ->get('/admin')
         ->assertForbidden();
 });
+
+test('moderators cannot access the admin area', function () {
+    $moderator = User::factory()->moderator()->create();
+    completeOnboardingFor($moderator);
+
+    $this->actingAs($moderator)
+        ->get('/admin')
+        ->assertForbidden();
+});
+
+test('members and moderators cannot access admin option pages', function (string $factoryState, string $uri) {
+    $userFactory = User::factory();
+    $user = $factoryState === 'moderator'
+        ? $userFactory->moderator()->create()
+        : $userFactory->create();
+    completeOnboardingFor($user);
+
+    $this->actingAs($user)
+        ->get($uri)
+        ->assertForbidden();
+})->with([
+    'member options' => ['member', '/admin/options'],
+    'member languages' => ['member', '/admin/options/languages'],
+    'member interests' => ['member', '/admin/options/interests'],
+    'moderator options' => ['moderator', '/admin/options'],
+    'moderator languages' => ['moderator', '/admin/options/languages'],
+    'moderator interests' => ['moderator', '/admin/options/interests'],
+]);
 
 test('members cannot access admin user details', function () {
     $member = User::factory()->create();
@@ -112,6 +151,144 @@ test('admins can still access the admin area when the project hides the admin na
             ->component('Dashboard')
             ->where('project.showAdminArea', false)
             ->where('auth.user.role', 'admin'),
+        );
+});
+
+test('owners can access admin routes protected by the admin role middleware', function () {
+    $owner = User::factory()->owner()->create();
+    completeOnboardingFor($owner);
+
+    $this->actingAs($owner)
+        ->get('/admin')
+        ->assertOk();
+});
+
+test('admins and owners can access admin option pages', function (string $factoryState, string $uri, string $component) {
+    $userFactory = User::factory();
+    $user = $factoryState === 'owner'
+        ? $userFactory->owner()->create()
+        : $userFactory->admin()->create();
+    completeOnboardingFor($user);
+
+    $this->actingAs($user)
+        ->get($uri)
+        ->assertOk()
+        ->assertInertia(fn (Assert $page) => $page->component($component));
+})->with([
+    'admin options' => ['admin', '/admin/options', 'admin/Options/Index'],
+    'admin languages' => ['admin', '/admin/options/languages', 'admin/Options/Languages'],
+    'admin interests' => ['admin', '/admin/options/interests', 'admin/Options/Interests'],
+    'owner options' => ['owner', '/admin/options', 'admin/Options/Index'],
+    'owner languages' => ['owner', '/admin/options/languages', 'admin/Options/Languages'],
+    'owner interests' => ['owner', '/admin/options/interests', 'admin/Options/Interests'],
+]);
+
+test('language option page loads ordered read-only language data', function () {
+    $admin = User::factory()->admin()->create();
+    completeOnboardingFor($admin);
+
+    LanguageOption::query()->create([
+        'code' => 'en',
+        'label' => 'Englisch',
+        'native_label' => 'English',
+        'sort_order' => 20,
+        'is_active' => true,
+    ]);
+    LanguageOption::query()->create([
+        'code' => 'de',
+        'label' => 'Deutsch',
+        'native_label' => 'Deutsch',
+        'sort_order' => 10,
+        'is_active' => true,
+    ]);
+    LanguageOption::query()->create([
+        'code' => 'la',
+        'label' => 'Latein',
+        'native_label' => null,
+        'sort_order' => 30,
+        'is_active' => false,
+    ]);
+
+    $this->actingAs($admin)
+        ->get(route('admin.options.languages'))
+        ->assertOk()
+        ->assertInertia(fn (Assert $page) => $page
+            ->component('admin/Options/Languages')
+            ->has('languages', 3)
+            ->where('languages.0.code', 'de')
+            ->where('languages.0.label', 'Deutsch')
+            ->where('languages.0.native_label', 'Deutsch')
+            ->where('languages.0.sort_order', 10)
+            ->where('languages.0.is_active', true)
+            ->where('languages.1.code', 'en')
+            ->where('languages.2.code', 'la')
+            ->where('languages.2.native_label', null)
+            ->where('languages.2.is_active', false),
+        );
+});
+
+test('language option page returns an empty list without language data', function () {
+    $owner = User::factory()->owner()->create();
+    completeOnboardingFor($owner);
+
+    $this->actingAs($owner)
+        ->get(route('admin.options.languages'))
+        ->assertOk()
+        ->assertInertia(fn (Assert $page) => $page
+            ->component('admin/Options/Languages')
+            ->has('languages', 0),
+        );
+});
+
+test('interest option page loads ordered read-only interest data', function () {
+    $admin = User::factory()->admin()->create();
+    completeOnboardingFor($admin);
+
+    InterestOption::query()->create([
+        'slug' => 'events',
+        'label' => 'Events',
+        'sort_order' => 20,
+        'is_active' => true,
+    ]);
+    InterestOption::query()->create([
+        'slug' => 'music',
+        'label' => 'Musik',
+        'sort_order' => 10,
+        'is_active' => true,
+    ]);
+    InterestOption::query()->create([
+        'slug' => 'former-topic',
+        'label' => 'Ehemaliges Thema',
+        'sort_order' => 30,
+        'is_active' => false,
+    ]);
+
+    $this->actingAs($admin)
+        ->get(route('admin.options.interests'))
+        ->assertOk()
+        ->assertInertia(fn (Assert $page) => $page
+            ->component('admin/Options/Interests')
+            ->has('interests', 3)
+            ->where('interests.0.slug', 'music')
+            ->where('interests.0.label', 'Musik')
+            ->where('interests.0.sort_order', 10)
+            ->where('interests.0.is_active', true)
+            ->where('interests.1.slug', 'events')
+            ->where('interests.2.slug', 'former-topic')
+            ->where('interests.2.is_active', false),
+        );
+});
+
+test('interest option page returns an empty list without interest data', function () {
+    $owner = User::factory()->owner()->create();
+    completeOnboardingFor($owner);
+
+    $this->actingAs($owner)
+        ->get(route('admin.options.interests'))
+        ->assertOk()
+        ->assertInertia(fn (Assert $page) => $page
+            ->component('admin/Options/Interests')
+            ->has('interests', 0),
         );
 });
 
@@ -185,6 +362,31 @@ test('admin user role update route is protected by the admin role middleware', f
     expect($route)->not->toBeNull();
     expect($route->uri())->toBe('admin/users/{user}/role');
     expect($route->gatherMiddleware())->toContain('role:admin');
+});
+
+test('admin option routes use the admin role middleware', function (string $routeName, string $uri) {
+    $route = Route::getRoutes()->getByName($routeName);
+
+    expect($route)->not->toBeNull();
+    expect($route->uri())->toBe($uri);
+    expect($route->gatherMiddleware())->toContain('role:admin');
+})->with([
+    ['admin.options', 'admin/options'],
+    ['admin.options.languages', 'admin/options/languages'],
+    ['admin.options.interests', 'admin/options/interests'],
+]);
+
+test('admin navigation contains the expected sections', function () {
+    $navigation = file_get_contents(resource_path('js/components/AdminNavigation.vue'));
+
+    expect($navigation)
+        ->toContain("title: 'Übersicht'")
+        ->toContain("title: 'Benutzer'")
+        ->toContain("title: 'Stammdaten'")
+        ->toContain("href: '/admin/options/languages'")
+        ->toContain("href: '/admin/options/interests'")
+        ->toContain("title: 'System'")
+        ->toContain("title: 'Projekt'");
 });
 
 test('admin page includes a minimal user overview payload', function () {
@@ -334,9 +536,35 @@ test('admin can promote another user to admin', function () {
             'role' => 'admin',
         ])
         ->assertRedirect("/admin/users/{$member->id}")
-        ->assertSessionHas('success', 'User role updated successfully.');
+        ->assertSessionHas('success', 'Die Benutzerrolle wurde aktualisiert.');
 
     expect($member->refresh()->role->value)->toBe('admin');
+});
+
+test('admin can assign moderator and owner roles', function () {
+    $admin = User::factory()->admin()->create();
+    $member = User::factory()->create();
+    completeOnboardingFor($admin);
+
+    $this->actingAs($admin)
+        ->from("/admin/users/{$member->id}")
+        ->patch("/admin/users/{$member->id}/role", [
+            'role' => UserRole::Moderator->value,
+        ])
+        ->assertRedirect("/admin/users/{$member->id}")
+        ->assertSessionHas('success', 'Die Benutzerrolle wurde aktualisiert.');
+
+    expect($member->refresh()->role)->toBe(UserRole::Moderator);
+
+    $this->actingAs($admin)
+        ->from("/admin/users/{$member->id}")
+        ->patch("/admin/users/{$member->id}/role", [
+            'role' => UserRole::Owner->value,
+        ])
+        ->assertRedirect("/admin/users/{$member->id}")
+        ->assertSessionHas('success', 'Die Benutzerrolle wurde aktualisiert.');
+
+    expect($member->refresh()->role)->toBe(UserRole::Owner);
 });
 
 test('admin can demote another admin when another admin remains', function () {
@@ -350,7 +578,7 @@ test('admin can demote another admin when another admin remains', function () {
             'role' => 'member',
         ])
         ->assertRedirect("/admin/users/{$otherAdmin->id}")
-        ->assertSessionHas('success', 'User role updated successfully.');
+        ->assertSessionHas('success', 'Die Benutzerrolle wurde aktualisiert.');
 
     expect($otherAdmin->refresh()->role->value)->toBe('member');
 });
@@ -366,7 +594,7 @@ test('admin cannot change their own role', function () {
             'role' => 'member',
         ])
         ->assertRedirect("/admin/users/{$admin->id}")
-        ->assertSessionHas('error', 'You cannot change your own role.');
+        ->assertSessionHas('error', 'Du kannst deine eigene Rolle nicht ändern.');
 
     expect($admin->refresh()->role->value)->toBe('admin');
 });
@@ -381,9 +609,24 @@ test('last admin cannot be demoted to member', function () {
             'role' => 'member',
         ])
         ->assertRedirect("/admin/users/{$admin->id}")
-        ->assertSessionHas('error', 'The last admin role cannot be removed.');
+        ->assertSessionHas('error', 'Die letzte administrative Rolle kann nicht entfernt werden.');
 
     expect($admin->refresh()->role->value)->toBe('admin');
+});
+
+test('last admin-capable user cannot be demoted below admin', function () {
+    $owner = User::factory()->owner()->create();
+    completeOnboardingFor($owner);
+
+    $this->actingAs($owner)
+        ->from("/admin/users/{$owner->id}")
+        ->patch("/admin/users/{$owner->id}/role", [
+            'role' => UserRole::Moderator->value,
+        ])
+        ->assertRedirect("/admin/users/{$owner->id}")
+        ->assertSessionHas('error', 'Die letzte administrative Rolle kann nicht entfernt werden.');
+
+    expect($owner->refresh()->role)->toBe(UserRole::Owner);
 });
 
 test('invalid roles are rejected', function () {
@@ -394,7 +637,7 @@ test('invalid roles are rejected', function () {
     $this->actingAs($admin)
         ->from("/admin/users/{$member->id}")
         ->patch("/admin/users/{$member->id}/role", [
-            'role' => 'owner',
+            'role' => 'superadmin',
         ])
         ->assertRedirect("/admin/users/{$member->id}")
         ->assertSessionHasErrors('role');

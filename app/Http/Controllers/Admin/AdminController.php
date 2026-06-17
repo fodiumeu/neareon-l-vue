@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Enums\UserRole;
 use App\Http\Controllers\Controller;
+use App\Models\InterestOption;
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -45,24 +46,58 @@ class AdminController extends Controller
     }
 
     /**
+     * Display the admin option catalog overview.
+     */
+    public function options(): Response
+    {
+        return Inertia::render('admin/Options/Index');
+    }
+
+    /**
+     * Display the interest option placeholder.
+     */
+    public function interests(): Response
+    {
+        return Inertia::render('admin/Options/Interests', [
+            'interests' => InterestOption::query()
+                ->select([
+                    'id',
+                    'slug',
+                    'label',
+                    'sort_order',
+                    'is_active',
+                ])
+                ->orderBy('sort_order')
+                ->orderBy('label')
+                ->get(),
+        ]);
+    }
+
+    /**
      * Update a user's role with minimal admin-only safety rules.
      */
     public function updateRole(Request $request, User $user): RedirectResponse
     {
         $validated = $request->validate([
             'role' => ['required', Rule::enum(UserRole::class)],
+        ], [
+            'role.required' => 'Bitte wähle eine Rolle aus.',
+            'role.enum' => 'Bitte wähle eine gültige Rolle aus.',
         ]);
+        $targetRole = UserRole::from($validated['role']);
 
         if (
-            $user->role === UserRole::Admin
-            && $validated['role'] === UserRole::Member->value
-            && User::query()->where('role', UserRole::Admin->value)->count() === 1
+            $user->canAccessAdmin()
+            && $targetRole->level() < UserRole::Admin->level()
+            && User::query()
+                ->whereIn('role', [UserRole::Admin->value, UserRole::Owner->value])
+                ->count() === 1
         ) {
-            return back()->with('error', 'The last admin role cannot be removed.');
+            return back()->with('error', 'Die letzte administrative Rolle kann nicht entfernt werden.');
         }
 
         if ($request->user()->is($user)) {
-            return back()->with('error', 'You cannot change your own role.');
+            return back()->with('error', 'Du kannst deine eigene Rolle nicht ändern.');
         }
 
         $user->update([
@@ -70,7 +105,7 @@ class AdminController extends Controller
         ]);
 
         return to_route('admin.users.show', $user)
-            ->with('success', 'User role updated successfully.');
+            ->with('success', 'Die Benutzerrolle wurde aktualisiert.');
     }
 
     /**

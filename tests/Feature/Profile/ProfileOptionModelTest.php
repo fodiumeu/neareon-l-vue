@@ -3,6 +3,7 @@
 use App\Models\InterestOption;
 use App\Models\LanguageOption;
 use App\Models\Profile;
+use App\Support\OnboardingOptions;
 use Database\Seeders\InterestOptionSeeder;
 use Database\Seeders\LanguageOptionSeeder;
 use Illuminate\Database\QueryException;
@@ -159,15 +160,33 @@ test('profile interest pairs are unique', function () {
 test('language option seeder creates the mvp catalog', function () {
     $this->seed(LanguageOptionSeeder::class);
 
-    expect(LanguageOption::query()->count())->toBeGreaterThan(0)
+    $languages = LanguageOption::query()
+        ->orderBy('sort_order')
+        ->get();
+
+    expect($languages)->toHaveCount(count(OnboardingOptions::languages()))
+        ->and($languages->pluck('code')->duplicates())->toBeEmpty()
+        ->and($languages->pluck('label')->duplicates())->toBeEmpty()
+        ->and($languages->pluck('label')->all())->toBe(OnboardingOptions::languages())
         ->and(LanguageOption::query()->where('code', 'de')->where('label', 'Deutsch')->exists())->toBeTrue()
-        ->and(LanguageOption::query()->where('code', 'nl')->where('label', 'Niederländisch')->exists())->toBeTrue();
+        ->and(LanguageOption::query()->where('code', 'nl')->where('label', 'Niederländisch')->exists())->toBeTrue()
+        ->and(LanguageOption::query()->where('code', 'hr')->where('label', 'Kroatisch')->exists())->toBeTrue()
+        ->and(LanguageOption::query()->where('code', 'fa')->where('label', 'Persisch/Farsi')->exists())->toBeTrue();
 });
 
 test('interest option seeder creates the mvp catalog', function () {
     $this->seed(InterestOptionSeeder::class);
 
-    expect(InterestOption::query()->count())->toBeGreaterThan(0)
+    $interests = InterestOption::query()
+        ->orderBy('sort_order')
+        ->get();
+
+    expect($interests)->toHaveCount(count(OnboardingOptions::interests()))
+        ->and($interests->pluck('slug')->duplicates())->toBeEmpty()
+        ->and($interests->pluck('label')->duplicates())->toBeEmpty()
+        ->and($interests->pluck('label')->all())->toBe(OnboardingOptions::interests())
         ->and(InterestOption::query()->where('slug', 'music')->where('label', 'Musik')->exists())->toBeTrue()
-        ->and(InterestOption::query()->where('slug', 'health')->where('label', 'Gesundheit')->exists())->toBeTrue();
+        ->and(InterestOption::query()->where('slug', 'health')->where('label', 'Gesundheit')->exists())->toBeTrue()
+        ->and(InterestOption::query()->where('slug', 'series')->where('label', 'Serien')->exists())->toBeTrue()
+        ->and(InterestOption::query()->where('slug', 'photography')->where('label', 'Fotografie')->exists())->toBeTrue();
 });

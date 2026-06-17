@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { Head, Link, usePage } from '@inertiajs/vue3';
+import AdminNavigation from '@/components/AdminNavigation.vue';
 import PageHeader from '@/components/PageHeader.vue';
 import PageSection from '@/components/PageSection.vue';
 import { Badge } from '@/components/ui/badge';
@@ -29,6 +30,13 @@ const page = usePage<{
     };
 }>();
 
+const roleLabels: Record<UserRole, string> = {
+    member: 'Mitglied',
+    moderator: 'Moderator',
+    admin: 'Administrator',
+    owner: 'Inhaber',
+};
+
 defineOptions({
     layout: {
         breadcrumbs: [
@@ -47,17 +55,18 @@ defineOptions({
     <div class="flex h-full flex-1 flex-col gap-6 overflow-x-auto p-4">
         <PageHeader
             :title="page.props.project.adminLabel"
-            description="Overview of the small platform areas currently available in this starter kit"
+            description="Verwalte Benutzerkonten und prüfe die zentralen Projekt- und Systeminformationen."
         />
 
-        <PageSection>
+        <AdminNavigation />
+
+        <PageSection id="benutzer">
             <div class="grid gap-6 xl:grid-cols-3">
                 <Card>
                     <CardHeader>
-                        <CardTitle>Users</CardTitle>
+                        <CardTitle>Benutzer</CardTitle>
                         <CardDescription>
-                            Read-only overview of existing user accounts and
-                            roles.
+                            Übersicht der vorhandenen Benutzerkonten und Rollen.
                         </CardDescription>
                     </CardHeader>
                     <CardContent class="space-y-3">
@@ -80,8 +89,8 @@ defineOptions({
                                 </p>
                             </div>
                             <div class="flex items-center sm:justify-end">
-                                <Badge variant="secondary" class="capitalize">
-                                    {{ user.role }}
+                                <Badge variant="secondary">
+                                    {{ roleLabels[user.role] }}
                                 </Badge>
                             </div>
                         </div>
@@ -90,44 +99,44 @@ defineOptions({
 
                 <Card>
                     <CardHeader>
-                        <CardTitle>Project overview</CardTitle>
+                        <CardTitle>Projektübersicht</CardTitle>
                         <CardDescription>
-                            Read-only overview of the current starter-kit
-                            project configuration.
+                            Aktuelle Konfiguration und freigegebene
+                            Projekteinstellungen.
                         </CardDescription>
                     </CardHeader>
                     <CardContent class="space-y-4">
                         <p class="text-sm text-muted-foreground">
-                            Review the shared app and project values currently
-                            exposed to the platform layer.
+                            Prüfe die gemeinsamen App- und Projektwerte der
+                            Plattform.
                         </p>
                         <Link
                             href="/admin/project"
                             class="inline-flex items-center text-sm font-medium underline decoration-transparent underline-offset-4 transition-colors hover:decoration-current"
                         >
-                            Open project overview
+                            Projektübersicht öffnen
                         </Link>
                     </CardContent>
                 </Card>
 
                 <Card>
                     <CardHeader>
-                        <CardTitle>System status</CardTitle>
+                        <CardTitle>Systemstatus</CardTitle>
                         <CardDescription>
-                            Read-only runtime and starter-kit status values for
-                            the current application.
+                            Laufzeit-, Framework- und Statusinformationen der
+                            Anwendung.
                         </CardDescription>
                     </CardHeader>
                     <CardContent class="space-y-4">
                         <p class="text-sm text-muted-foreground">
-                            Review environment, framework and core project
-                            configuration values.
+                            Prüfe Umgebung, Framework und zentrale
+                            Konfigurationswerte.
                         </p>
                         <Link
                             href="/admin/system"
                             class="inline-flex items-center text-sm font-medium underline decoration-transparent underline-offset-4 transition-colors hover:decoration-current"
                         >
-                            Open system status
+                            Systemstatus öffnen
                         </Link>
                     </CardContent>
                 </Card>
