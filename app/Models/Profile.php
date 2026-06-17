@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 #[Fillable([
     'user_id',
@@ -52,5 +53,25 @@ class Profile extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    /**
+     * Get the managed language options selected for the profile.
+     */
+    public function languageOptions(): BelongsToMany
+    {
+        return $this->belongsToMany(LanguageOption::class, 'profile_languages')
+            ->withPivot('position')
+            ->withTimestamps()
+            ->orderByPivot('position');
+    }
+
+    /**
+     * Get the managed interest options selected for the profile.
+     */
+    public function interestOptions(): BelongsToMany
+    {
+        return $this->belongsToMany(InterestOption::class, 'profile_interests')
+            ->withTimestamps();
     }
 }
