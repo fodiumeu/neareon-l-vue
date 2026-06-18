@@ -8,6 +8,10 @@ use App\Models\User;
 
 class ProfileVisibilityService
 {
+    public function __construct(
+        private readonly ContactStatusService $contactStatus,
+    ) {}
+
     /**
      * Build profile props without leaking hidden fields.
      *
@@ -26,6 +30,9 @@ class ProfileVisibilityService
             'is_following' => $isFollowing,
             'is_followed_by' => $isFollowedBy,
             'is_mutual' => $isMutual,
+            'contact_status' => $this->contactStatus
+                ->between($viewer, $profile->user, $isFollowing, $isFollowedBy)
+                ->value,
         ];
 
         if ($this->canView($profile->profile_visibility, $isOwnProfile, $isFollowing, $isMutual)) {

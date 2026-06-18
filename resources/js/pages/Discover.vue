@@ -1,9 +1,11 @@
 <script setup lang="ts">
 import { Head, Link } from '@inertiajs/vue3';
+import ContactStatusBadge from '@/components/ContactStatusBadge.vue';
 import PageHeader from '@/components/PageHeader.vue';
 import PageSection from '@/components/PageSection.vue';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+import type { ContactStatus } from '@/types';
 
 type DiscoverProfile = {
     username: string;
@@ -11,6 +13,7 @@ type DiscoverProfile = {
     is_following: boolean;
     is_followed_by: boolean;
     is_mutual: boolean;
+    contact_status: ContactStatus;
     display_name?: string;
     bio?: string | null;
     region?: string | null;
@@ -32,9 +35,6 @@ const visibleDetailCount = (profile: DiscoverProfile) =>
     Number(Boolean(profile.region)) +
     Number(Boolean(profile.languages?.length)) +
     Number(Boolean(profile.interests?.length));
-
-const hasAnySocialStatus = (profile: DiscoverProfile) =>
-    profile.is_mutual || profile.is_following || profile.is_followed_by;
 
 defineOptions({
     layout: {
@@ -133,14 +133,14 @@ defineOptions({
                             >
                                 {{ profile.region }}
                             </span>
+                            <ContactStatusBadge
+                                :status="profile.contact_status"
+                            />
                             <span
-                                v-if="profile.is_mutual"
-                                class="rounded-full border border-primary/30 bg-primary/10 px-3 py-1 text-xs font-medium text-primary"
-                            >
-                                Gegenseitiges Folgen
-                            </span>
-                            <span
-                                v-else-if="profile.is_following"
+                                v-if="
+                                    profile.is_following &&
+                                    profile.contact_status !== 'connected'
+                                "
                                 class="rounded-full border border-border bg-background/70 px-3 py-1 text-xs font-medium text-muted-foreground dark:bg-input/30"
                             >
                                 Du folgst
@@ -223,13 +223,6 @@ defineOptions({
                         </div>
 
                         <div class="mt-auto space-y-3">
-                            <p
-                                v-if="!hasAnySocialStatus(profile)"
-                                class="rounded-md border border-border bg-background/60 px-3 py-2 text-sm text-muted-foreground dark:bg-input/20"
-                            >
-                                Noch keine Follow-Verbindung sichtbar.
-                            </p>
-
                             <Button as-child variant="secondary" class="w-full">
                                 <Link :href="`/u/${profile.username}`">
                                     Profil ansehen

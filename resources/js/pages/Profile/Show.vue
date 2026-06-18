@@ -1,11 +1,13 @@
 <script setup lang="ts">
 import { Form, Head, Link } from '@inertiajs/vue3';
 import { computed } from 'vue';
+import ContactStatusBadge from '@/components/ContactStatusBadge.vue';
 import PageHeader from '@/components/PageHeader.vue';
 import PageSection from '@/components/PageSection.vue';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Spinner } from '@/components/ui/spinner';
+import type { ContactStatus } from '@/types';
 
 type PublicProfile = {
     username: string;
@@ -13,6 +15,7 @@ type PublicProfile = {
     is_following: boolean;
     is_followed_by: boolean;
     is_mutual: boolean;
+    contact_status: ContactStatus;
     display_name?: string;
     bio?: string | null;
     region?: string | null;
@@ -35,7 +38,6 @@ const hasVisibleDetails = computed(
         Boolean(props.profile.languages?.length) ||
         Boolean(props.profile.interests?.length),
 );
-
 defineOptions({
     layout: {
         breadcrumbs: [
@@ -93,14 +95,16 @@ defineOptions({
                                     >
                                         Eigenes Profil
                                     </span>
+                                    <ContactStatusBadge
+                                        v-if="!props.profile.isOwnProfile"
+                                        :status="props.profile.contact_status"
+                                    />
                                     <span
-                                        v-if="props.profile.is_mutual"
-                                        class="rounded-full border border-primary/30 bg-primary/10 px-3 py-1 text-xs font-medium text-primary"
-                                    >
-                                        Gegenseitiges Folgen
-                                    </span>
-                                    <span
-                                        v-else-if="props.profile.is_following"
+                                        v-if="
+                                            props.profile.is_following &&
+                                            props.profile.contact_status !==
+                                                'connected'
+                                        "
                                         class="rounded-full border border-border bg-background/70 px-3 py-1 text-xs font-medium text-muted-foreground dark:bg-input/30"
                                     >
                                         Du folgst

@@ -1,6 +1,7 @@
 <?php
 
 use App\Enums\ProfileVisibility;
+use App\Models\ContactRequest;
 use App\Models\Follow;
 use App\Models\Profile;
 use App\Models\User;
@@ -44,9 +45,38 @@ test('users with a profile can open another public profile', function () {
             ->component('Profile/Show')
             ->where('profile.username', 'public_member')
             ->where('profile.display_name', 'Public Member')
-            ->where('profile.bio', 'Oeffentliche Kurzinfo.'),
+            ->where('profile.bio', 'Oeffentliche Kurzinfo.')
+            ->where('profile.contact_status', 'none'),
         );
 });
+
+test('public profiles include contact request status from the viewer perspective', function (
+    string $direction,
+    string $expectedStatus,
+) {
+    $viewer = User::factory()->create();
+    createOnboardedProfile($viewer);
+    $owner = User::factory()->create();
+    $profile = Profile::factory()->for($owner)->create([
+        'username' => "public_{$direction}",
+        'profile_visibility' => ProfileVisibility::Public,
+    ]);
+
+    ContactRequest::factory()
+        ->for($direction === 'outgoing' ? $viewer : $owner, 'sender')
+        ->for($direction === 'outgoing' ? $owner : $viewer, 'receiver')
+        ->create();
+
+    $this->actingAs($viewer)
+        ->get(route('public-profile.show', $profile->username))
+        ->assertOk()
+        ->assertInertia(fn (Assert $page) => $page
+            ->where('profile.contact_status', $expectedStatus),
+        );
+})->with([
+    'outgoing request' => ['outgoing', 'outgoing_request'],
+    'incoming request' => ['incoming', 'incoming_request'],
+]);
 
 test('missing public profile usernames return not found', function () {
     $viewer = User::factory()->create();
@@ -86,11 +116,37 @@ test('users can see their own profile fields fully', function () {
         ->assertOk()
         ->assertInertia(fn (Assert $page) => $page
             ->where('profile.isOwnProfile', true)
+            ->where('profile.contact_status', 'none')
             ->where('profile.display_name', 'Own Profile')
             ->where('profile.bio', 'Private own bio.')
             ->where('profile.region', 'Berlin')
             ->where('profile.languages', ['Deutsch', 'Englisch'])
             ->where('profile.interests', ['Musik', 'Events']),
+        );
+});
+
+test('public profiles report a mutual follow as connected', function () {
+    $viewer = User::factory()->create();
+    createOnboardedProfile($viewer);
+    $owner = User::factory()->create();
+    $profile = Profile::factory()->for($owner)->create([
+        'username' => 'public_connected',
+        'profile_visibility' => ProfileVisibility::Public,
+    ]);
+    Follow::query()->create([
+        'follower_id' => $viewer->id,
+        'followed_id' => $owner->id,
+    ]);
+    Follow::query()->create([
+        'follower_id' => $owner->id,
+        'followed_id' => $viewer->id,
+    ]);
+
+    $this->actingAs($viewer)
+        ->get(route('public-profile.show', $profile->username))
+        ->assertOk()
+        ->assertInertia(fn (Assert $page) => $page
+            ->where('profile.contact_status', 'connected'),
         );
 });
 

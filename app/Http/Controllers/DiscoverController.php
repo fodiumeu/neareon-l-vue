@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\ContactRequestStatus;
 use App\Models\Profile;
 use App\Services\ProfileVisibilityService;
 use App\Support\NextUserRoute;
@@ -26,6 +27,15 @@ class DiscoverController extends Controller
         if (! $viewer->profile()->exists()) {
             return NextUserRoute::redirect($viewer);
         }
+
+        $viewer->loadMissing([
+            'sentContactRequests' => fn ($query) => $query
+                ->where('status', ContactRequestStatus::Pending->value)
+                ->select(['id', 'sender_id', 'receiver_id', 'status']),
+            'receivedContactRequests' => fn ($query) => $query
+                ->where('status', ContactRequestStatus::Pending->value)
+                ->select(['id', 'sender_id', 'receiver_id', 'status']),
+        ]);
 
         $profiles = Profile::query()
             ->with(['user', 'languageOptions', 'interestOptions'])

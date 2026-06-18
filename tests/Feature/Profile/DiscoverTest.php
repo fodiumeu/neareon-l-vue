@@ -1,6 +1,7 @@
 <?php
 
 use App\Enums\ProfileVisibility;
+use App\Models\ContactRequest;
 use App\Models\Follow;
 use App\Models\Profile;
 use App\Models\User;
@@ -63,7 +64,43 @@ test('discover lists public profiles', function () {
         ->assertInertia(fn (Assert $page) => $page
             ->has('profiles', 1)
             ->where('profiles.0.username', 'public_discover')
-            ->where('profiles.0.display_name', 'Public Discover'),
+            ->where('profiles.0.display_name', 'Public Discover')
+            ->where('profiles.0.contact_status', 'none'),
+        );
+});
+
+test('discover includes outgoing and incoming contact request statuses', function () {
+    $viewer = User::factory()->create();
+    createOnboardedProfile($viewer);
+    $outgoingUser = User::factory()->create();
+    Profile::factory()->for($outgoingUser)->create([
+        'username' => 'outgoing_status',
+        'display_name' => 'Outgoing Status',
+        'profile_visibility' => ProfileVisibility::Public,
+    ]);
+    $incomingUser = User::factory()->create();
+    Profile::factory()->for($incomingUser)->create([
+        'username' => 'incoming_status',
+        'display_name' => 'Incoming Status',
+        'profile_visibility' => ProfileVisibility::Public,
+    ]);
+    ContactRequest::factory()
+        ->for($viewer, 'sender')
+        ->for($outgoingUser, 'receiver')
+        ->create();
+    ContactRequest::factory()
+        ->for($incomingUser, 'sender')
+        ->for($viewer, 'receiver')
+        ->create();
+
+    $this->actingAs($viewer)
+        ->get(route('discover'))
+        ->assertOk()
+        ->assertInertia(fn (Assert $page) => $page
+            ->where('profiles.0.username', 'incoming_status')
+            ->where('profiles.0.contact_status', 'incoming_request')
+            ->where('profiles.1.username', 'outgoing_status')
+            ->where('profiles.1.contact_status', 'outgoing_request'),
         );
 });
 
@@ -301,7 +338,8 @@ test('discover includes follow status for each visible profile', function () {
             ->where('profiles.0.username', 'status_discover')
             ->where('profiles.0.is_following', true)
             ->where('profiles.0.is_followed_by', true)
-            ->where('profiles.0.is_mutual', true),
+            ->where('profiles.0.is_mutual', true)
+            ->where('profiles.0.contact_status', 'connected'),
         );
 });
 
