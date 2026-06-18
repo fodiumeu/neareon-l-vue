@@ -112,6 +112,22 @@ class User extends Authenticatable
     }
 
     /**
+     * Get the contact requests sent by the user.
+     */
+    public function sentContactRequests(): HasMany
+    {
+        return $this->hasMany(ContactRequest::class, 'sender_id');
+    }
+
+    /**
+     * Get the contact requests received by the user.
+     */
+    public function receivedContactRequests(): HasMany
+    {
+        return $this->hasMany(ContactRequest::class, 'receiver_id');
+    }
+
+    /**
      * Get the users this user follows.
      */
     public function following(): BelongsToMany
