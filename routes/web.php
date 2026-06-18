@@ -34,8 +34,14 @@ Route::middleware(['auth', 'age.gate', 'verified'])->group(function () {
 });
 
 Route::middleware(['auth', 'age.gate', 'verified', 'onboarding.complete'])->group(function () {
+    Route::get('contact-requests', [ContactRequestController::class, 'index'])
+        ->name('contact-requests.index');
     Route::post('contact-requests', [ContactRequestController::class, 'store'])
         ->name('contact-requests.store');
+    Route::patch('contact-requests/{contactRequest}/accept', [ContactRequestController::class, 'accept'])
+        ->name('contact-requests.accept');
+    Route::patch('contact-requests/{contactRequest}/decline', [ContactRequestController::class, 'decline'])
+        ->name('contact-requests.decline');
     Route::get('discover', [DiscoverController::class, 'index'])->name('discover');
     Route::get('profile', [ProfileController::class, 'me'])->name('neareon-profile.show');
     Route::get('profile/edit', [ProfileController::class, 'edit'])->name('neareon-profile.edit');
