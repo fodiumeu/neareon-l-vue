@@ -218,7 +218,7 @@ test('users cannot create a second profile through details step', function () {
         ->and($user->fresh()->profile->username)->toBe('first_profile');
 });
 
-test('interests step stores selected interests as an array', function () {
+test('interests step stores selected interests in pivots only', function () {
     $user = User::factory()->create();
     $profile = Profile::factory()->for($user)->create([
         'interests' => null,
@@ -231,7 +231,7 @@ test('interests step stores selected interests as an array', function () {
         ])
         ->assertRedirect(route('onboarding.languages'));
 
-    expect($profile->refresh()->interests)->toBe(['Musik', 'Events'])
+    expect($profile->refresh()->interests)->toBeNull()
         ->and($profile->interestOptions()->pluck('slug')->sort()->values()->all())
         ->toBe(['events', 'music']);
 });
@@ -334,11 +334,11 @@ test('interests step removes duplicates', function () {
         ])
         ->assertRedirect(route('onboarding.languages'));
 
-    expect($profile->refresh()->interests)->toBe(['Musik', 'Events']);
-    expect($profile->interestOptions()->count())->toBe(2);
+    expect($profile->refresh()->interests)->toBeNull()
+        ->and($profile->interestOptions()->count())->toBe(2);
 });
 
-test('languages step stores languages as an array', function () {
+test('languages step stores languages in pivots only', function () {
     $user = User::factory()->create();
     $profile = Profile::factory()->for($user)->create([
         'interests' => ['Musik'],
@@ -353,7 +353,7 @@ test('languages step stores languages as an array', function () {
 
     $profile->refresh();
 
-    expect($profile->languages)->toBe(['Deutsch', 'Englisch'])
+    expect($profile->languages)->toBeNull()
         ->and($profile->languageOptions()->pluck('code')->all())
         ->toBe(['de', 'en'])
         ->and($profile->languageOptions()->get()->pluck('pivot.position')->all())
@@ -474,7 +474,11 @@ test('languages step keeps first language as main language', function () {
         ])
         ->assertRedirect(route('dashboard'));
 
-    expect($profile->refresh()->languages[0])->toBe('Englisch');
+    expect($profile->refresh()->languages)->toBeNull()
+        ->and($profile->languageOptions()->pluck('code')->all())
+        ->toBe(['en', 'de'])
+        ->and($profile->languageOptions()->get()->pluck('pivot.position')->all())
+        ->toBe([1, 2]);
 });
 
 test('incomplete onboarding cannot access app areas', function () {

@@ -18,14 +18,23 @@ class ProfileOptionSyncService
     public function update(Profile $profile, array $attributes): void
     {
         DB::transaction(function () use ($profile, $attributes): void {
-            $profile->update($attributes);
+            $hasLanguages = array_key_exists('languages', $attributes);
+            $languages = $attributes['languages'] ?? null;
+            $hasInterests = array_key_exists('interests', $attributes);
+            $interests = $attributes['interests'] ?? null;
 
-            if (array_key_exists('languages', $attributes)) {
-                $this->syncLanguages($profile, $attributes['languages']);
+            unset($attributes['languages'], $attributes['interests']);
+
+            if ($attributes !== []) {
+                $profile->update($attributes);
             }
 
-            if (array_key_exists('interests', $attributes)) {
-                $this->syncInterests($profile, $attributes['interests']);
+            if ($hasLanguages) {
+                $this->syncLanguages($profile, $languages);
+            }
+
+            if ($hasInterests) {
+                $this->syncInterests($profile, $interests);
             }
         });
     }
@@ -52,6 +61,10 @@ class ProfileOptionSyncService
                 throw new UnexpectedValueException(
                     "Language option [{$value}] could not be synchronized.",
                 );
+            }
+
+            if (array_key_exists($option->id, $records)) {
+                continue;
             }
 
             $records[$option->id] = ['position' => $index + 1];
@@ -84,9 +97,9 @@ class ProfileOptionSyncService
                 );
             }
 
-            $optionIds[] = $option->id;
+            $optionIds[$option->id] = $option->id;
         }
 
-        $profile->interestOptions()->sync($optionIds);
+        $profile->interestOptions()->sync(array_values($optionIds));
     }
 }

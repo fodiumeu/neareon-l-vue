@@ -269,8 +269,8 @@ test('users can update languages and interests', function () {
 
     $profile->refresh();
 
-    expect($profile->languages)->toBe(['de', 'en', 'es'])
-        ->and($profile->interests)->toBe(['community', 'technology'])
+    expect($profile->languages)->toBe(['de', 'en'])
+        ->and($profile->interests)->toBe(['community', 'events'])
         ->and($profile->languageOptions()->pluck('code')->all())
         ->toBe(['de', 'en', 'es'])
         ->and($profile->languageOptions()->get()->pluck('pivot.position')->all())
@@ -281,7 +281,7 @@ test('users can update languages and interests', function () {
         ->and($profile->interestOptions()->count())->toBe(2);
 });
 
-test('comma separated languages and interests are stored as arrays', function () {
+test('comma separated languages and interests are synchronized to pivots', function () {
     $user = User::factory()->create();
     $profile = Profile::factory()->for($user)->create();
 
@@ -295,10 +295,11 @@ test('comma separated languages and interests are stored as arrays', function ()
     $profile->refresh();
 
     expect($profile->languages)->toBe(['de', 'en'])
-        ->and($profile->interests)->toBe(['music', 'events', 'technology'])
+        ->and($profile->interests)->toBe(['community', 'events'])
         ->and($profile->languageOptions()->pluck('code')->all())
         ->toBe(['de', 'en'])
-        ->and($profile->interestOptions()->count())->toBe(3);
+        ->and($profile->interestOptions()->pluck('slug')->sort()->values()->all())
+        ->toBe(['events', 'music', 'technology']);
 });
 
 test('inactive options are only exposed when already selected', function () {
@@ -375,8 +376,13 @@ test('legacy labels are normalized to stable option keys when saved', function (
         ]))
         ->assertRedirect(route('neareon-profile.edit'));
 
-    expect($profile->refresh()->languages)->toBe(['de', 'la'])
-        ->and($profile->interests)->toBe(['music', 'former-topic']);
+    $profile->refresh();
+
+    expect($profile->languages)->toBe(['Deutsch', 'Latein'])
+        ->and($profile->interests)->toBe(['Musik', 'Ehemaliges Thema'])
+        ->and($profile->languageOptions()->pluck('code')->all())->toBe(['de', 'la'])
+        ->and($profile->interestOptions()->pluck('slug')->sort()->values()->all())
+        ->toBe(['former-topic', 'music']);
 });
 
 test('arbitrary languages and interests are rejected', function () {
