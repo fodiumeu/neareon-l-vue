@@ -2,7 +2,7 @@
 
 namespace App\Http\Requests;
 
-use App\Support\OnboardingOptions;
+use App\Models\InterestOption;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -35,7 +35,12 @@ class StoreOnboardingInterestsRequest extends FormRequest
     {
         return [
             'interests' => ['required', 'array', 'min:1', 'max:20'],
-            'interests.*' => ['required', 'string', Rule::in(OnboardingOptions::interests())],
+            'interests.*' => [
+                'required',
+                'string',
+                Rule::exists(InterestOption::class, 'label')
+                    ->where('is_active', true),
+            ],
         ];
     }
 
@@ -50,7 +55,7 @@ class StoreOnboardingInterestsRequest extends FormRequest
             'interests.required' => 'Bitte wähle mindestens ein Interesse aus.',
             'interests.min' => 'Bitte wähle mindestens ein Interesse aus.',
             'interests.max' => 'Bitte wähle maximal 20 Interessen aus.',
-            'interests.*.in' => 'Bitte wähle nur vorgeschlagene Interessen aus.',
+            'interests.*.exists' => 'Bitte wähle nur verfügbare Interessen aus.',
         ];
     }
 

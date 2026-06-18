@@ -7,6 +7,7 @@ use App\Http\Requests\UpdateProfileRequest;
 use App\Models\InterestOption;
 use App\Models\LanguageOption;
 use App\Models\Profile;
+use App\Services\ProfileOptionSyncService;
 use App\Services\ProfileVisibilityService;
 use App\Support\NextUserRoute;
 use Illuminate\Http\RedirectResponse;
@@ -18,6 +19,7 @@ class ProfileController extends Controller
 {
     public function __construct(
         private readonly ProfileVisibilityService $profileVisibility,
+        private readonly ProfileOptionSyncService $profileOptions,
     ) {}
 
     /**
@@ -151,7 +153,7 @@ class ProfileController extends Controller
             return NextUserRoute::redirect($request->user());
         }
 
-        $profile->update($request->validated());
+        $this->profileOptions->update($profile, $request->validated());
 
         return to_route('neareon-profile.edit')
             ->with('success', 'Profil wurde gespeichert.');

@@ -6,8 +6,10 @@ use App\Enums\ProfileVisibility;
 use App\Http\Requests\StoreOnboardingDetailsRequest;
 use App\Http\Requests\StoreOnboardingInterestsRequest;
 use App\Http\Requests\StoreOnboardingLanguagesRequest;
+use App\Models\InterestOption;
+use App\Models\LanguageOption;
+use App\Services\ProfileOptionSyncService;
 use App\Support\NextUserRoute;
-use App\Support\OnboardingOptions;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -15,6 +17,10 @@ use Inertia\Response;
 
 class OnboardingController extends Controller
 {
+    public function __construct(
+        private readonly ProfileOptionSyncService $profileOptions,
+    ) {}
+
     /**
      * Redirect to the next required onboarding step.
      */
@@ -75,7 +81,11 @@ class OnboardingController extends Controller
         }
 
         return Inertia::render('Onboarding/Interests', [
-            'interests' => OnboardingOptions::interests(),
+            'interests' => InterestOption::query()
+                ->where('is_active', true)
+                ->orderBy('sort_order')
+                ->orderBy('label')
+                ->pluck('label'),
         ]);
     }
 
@@ -93,7 +103,7 @@ class OnboardingController extends Controller
             return NextUserRoute::redirect($user);
         }
 
-        $profile->update([
+        $this->profileOptions->update($profile, [
             'interests' => $request->validated('interests'),
         ]);
 
@@ -116,7 +126,11 @@ class OnboardingController extends Controller
         }
 
         return Inertia::render('Onboarding/Languages', [
-            'languages' => OnboardingOptions::languages(),
+            'languages' => LanguageOption::query()
+                ->where('is_active', true)
+                ->orderBy('sort_order')
+                ->orderBy('label')
+                ->pluck('label'),
         ]);
     }
 
@@ -135,7 +149,7 @@ class OnboardingController extends Controller
             return NextUserRoute::redirect($user);
         }
 
-        $profile->update([
+        $this->profileOptions->update($profile, [
             'languages' => $request->validated('languages'),
         ]);
 

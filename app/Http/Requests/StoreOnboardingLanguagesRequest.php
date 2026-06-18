@@ -2,7 +2,7 @@
 
 namespace App\Http\Requests;
 
-use App\Support\OnboardingOptions;
+use App\Models\LanguageOption;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -37,7 +37,13 @@ class StoreOnboardingLanguagesRequest extends FormRequest
     {
         return [
             'languages' => ['required', 'array', 'min:1', 'max:5'],
-            'languages.*' => ['required', 'string', 'distinct', Rule::in(OnboardingOptions::languages())],
+            'languages.*' => [
+                'required',
+                'string',
+                'distinct',
+                Rule::exists(LanguageOption::class, 'label')
+                    ->where('is_active', true),
+            ],
         ];
     }
 
@@ -53,7 +59,7 @@ class StoreOnboardingLanguagesRequest extends FormRequest
             'languages.min' => 'Bitte wähle deine Hauptsprache aus.',
             'languages.max' => 'Bitte wähle maximal 5 Sprachen aus.',
             'languages.*.distinct' => 'Bitte wähle jede Sprache nur einmal aus.',
-            'languages.*.in' => 'Bitte wähle nur vorgeschlagene Sprachen aus.',
+            'languages.*.exists' => 'Bitte wähle nur verfügbare Sprachen aus.',
         ];
     }
 

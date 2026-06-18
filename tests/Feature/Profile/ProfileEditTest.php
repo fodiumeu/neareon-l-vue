@@ -237,6 +237,24 @@ test('users can intentionally clear their bio', function () {
 test('users can update languages and interests', function () {
     $user = User::factory()->create();
     $profile = Profile::factory()->for($user)->create();
+    $profile->languageOptions()->attach(
+        LanguageOption::query()->where('code', 'es')->firstOrFail(),
+        ['position' => 1],
+    );
+    $profile->languageOptions()->attach(
+        LanguageOption::query()->where('code', 'de')->firstOrFail(),
+        ['position' => 2],
+    );
+    $profile->interestOptions()->attach(
+        InterestOption::query()->where('slug', 'music')->firstOrFail(),
+    );
+
+    $this->actingAs($user)
+        ->patch(route('neareon-profile.update'), validProfileUpdatePayload([
+            'languages' => ['de', 'en', 'es'],
+            'interests' => ['community', 'technology'],
+        ]))
+        ->assertRedirect(route('neareon-profile.edit'));
 
     $this->actingAs($user)
         ->patch(route('neareon-profile.update'), validProfileUpdatePayload([
@@ -248,7 +266,15 @@ test('users can update languages and interests', function () {
     $profile->refresh();
 
     expect($profile->languages)->toBe(['de', 'en', 'es'])
-        ->and($profile->interests)->toBe(['community', 'technology']);
+        ->and($profile->interests)->toBe(['community', 'technology'])
+        ->and($profile->languageOptions()->pluck('code')->all())
+        ->toBe(['de', 'en', 'es'])
+        ->and($profile->languageOptions()->get()->pluck('pivot.position')->all())
+        ->toBe([1, 2, 3])
+        ->and($profile->interestOptions()->pluck('slug')->sort()->values()->all())
+        ->toBe(['community', 'technology'])
+        ->and($profile->languageOptions()->count())->toBe(3)
+        ->and($profile->interestOptions()->count())->toBe(2);
 });
 
 test('comma separated languages and interests are stored as arrays', function () {
@@ -265,7 +291,10 @@ test('comma separated languages and interests are stored as arrays', function ()
     $profile->refresh();
 
     expect($profile->languages)->toBe(['de', 'en'])
-        ->and($profile->interests)->toBe(['music', 'events', 'technology']);
+        ->and($profile->interests)->toBe(['music', 'events', 'technology'])
+        ->and($profile->languageOptions()->pluck('code')->all())
+        ->toBe(['de', 'en'])
+        ->and($profile->interestOptions()->count())->toBe(3);
 });
 
 test('inactive options are only exposed when already selected', function () {

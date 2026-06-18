@@ -1,10 +1,21 @@
 <?php
 
 use App\Enums\ProfileVisibility;
+use App\Models\InterestOption;
+use App\Models\LanguageOption;
 use App\Models\Profile;
 use App\Models\User;
 use App\Support\OnboardingOptions;
+use Database\Seeders\InterestOptionSeeder;
+use Database\Seeders\LanguageOptionSeeder;
 use Inertia\Testing\AssertableInertia as Assert;
+
+beforeEach(function () {
+    $this->seed([
+        LanguageOptionSeeder::class,
+        InterestOptionSeeder::class,
+    ]);
+});
 
 test('guests cannot open onboarding', function () {
     $this->get(route('onboarding.create'))
@@ -206,7 +217,29 @@ test('interests step stores selected interests as an array', function () {
         ])
         ->assertRedirect(route('onboarding.languages'));
 
-    expect($profile->refresh()->interests)->toBe(['Musik', 'Events']);
+    expect($profile->refresh()->interests)->toBe(['Musik', 'Events'])
+        ->and($profile->interestOptions()->pluck('slug')->sort()->values()->all())
+        ->toBe(['events', 'music']);
+});
+
+test('interests step shows only active managed options in configured order', function () {
+    $user = User::factory()->create();
+    Profile::factory()->for($user)->create([
+        'interests' => null,
+        'languages' => null,
+    ]);
+    InterestOption::query()->where('slug', 'music')->update(['sort_order' => 100]);
+    InterestOption::query()->where('slug', 'events')->update(['sort_order' => 1]);
+    InterestOption::query()->where('slug', 'sport')->update(['is_active' => false]);
+
+    $this->actingAs($user)
+        ->get(route('onboarding.interests'))
+        ->assertOk()
+        ->assertInertia(fn (Assert $page) => $page
+            ->where('interests.0', 'Events')
+            ->where('interests.23', 'Musik')
+            ->where('interests', fn ($interests) => ! $interests->contains('Sport')),
+        );
 });
 
 test('interests step requires at least one interest', function () {
@@ -257,6 +290,23 @@ test('interests step rejects unavailable interests', function () {
         ->assertSessionHasErrors('interests.0');
 });
 
+test('interests step rejects inactive managed options', function () {
+    $user = User::factory()->create();
+    Profile::factory()->for($user)->create([
+        'interests' => null,
+        'languages' => null,
+    ]);
+    InterestOption::query()->where('slug', 'music')->update(['is_active' => false]);
+
+    $this->actingAs($user)
+        ->from(route('onboarding.interests'))
+        ->post(route('onboarding.interests.store'), [
+            'interests' => ['Musik'],
+        ])
+        ->assertRedirect(route('onboarding.interests'))
+        ->assertSessionHasErrors('interests.0');
+});
+
 test('interests step removes duplicates', function () {
     $user = User::factory()->create();
     $profile = Profile::factory()->for($user)->create([
@@ -271,6 +321,7 @@ test('interests step removes duplicates', function () {
         ->assertRedirect(route('onboarding.languages'));
 
     expect($profile->refresh()->interests)->toBe(['Musik', 'Events']);
+    expect($profile->interestOptions()->count())->toBe(2);
 });
 
 test('languages step stores languages as an array', function () {
@@ -286,7 +337,33 @@ test('languages step stores languages as an array', function () {
         ])
         ->assertRedirect(route('dashboard'));
 
-    expect($profile->refresh()->languages)->toBe(['Deutsch', 'Englisch']);
+    $profile->refresh();
+
+    expect($profile->languages)->toBe(['Deutsch', 'Englisch'])
+        ->and($profile->languageOptions()->pluck('code')->all())
+        ->toBe(['de', 'en'])
+        ->and($profile->languageOptions()->get()->pluck('pivot.position')->all())
+        ->toBe([1, 2]);
+});
+
+test('languages step shows only active managed options in configured order', function () {
+    $user = User::factory()->create();
+    Profile::factory()->for($user)->create([
+        'interests' => ['Musik'],
+        'languages' => null,
+    ]);
+    LanguageOption::query()->where('code', 'de')->update(['sort_order' => 100]);
+    LanguageOption::query()->where('code', 'hr')->update(['sort_order' => 1]);
+    LanguageOption::query()->where('code', 'en')->update(['is_active' => false]);
+
+    $this->actingAs($user)
+        ->get(route('onboarding.languages'))
+        ->assertOk()
+        ->assertInertia(fn (Assert $page) => $page
+            ->where('languages.0', 'Kroatisch')
+            ->where('languages.19', 'Deutsch')
+            ->where('languages', fn ($languages) => ! $languages->contains('Englisch')),
+        );
 });
 
 test('languages step requires a main language', function () {
@@ -348,6 +425,23 @@ test('languages step rejects unavailable languages', function () {
         ->from(route('onboarding.languages'))
         ->post(route('onboarding.languages.store'), [
             'languages' => ['Klingonisch'],
+        ])
+        ->assertRedirect(route('onboarding.languages'))
+        ->assertSessionHasErrors('languages.0');
+});
+
+test('languages step rejects inactive managed options', function () {
+    $user = User::factory()->create();
+    Profile::factory()->for($user)->create([
+        'interests' => ['Musik'],
+        'languages' => null,
+    ]);
+    LanguageOption::query()->where('code', 'de')->update(['is_active' => false]);
+
+    $this->actingAs($user)
+        ->from(route('onboarding.languages'))
+        ->post(route('onboarding.languages.store'), [
+            'languages' => ['Deutsch'],
         ])
         ->assertRedirect(route('onboarding.languages'))
         ->assertSessionHasErrors('languages.0');
