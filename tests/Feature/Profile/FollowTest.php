@@ -30,7 +30,7 @@ test('users without a profile cannot follow and are redirected to onboarding', f
 
 test('users with a profile can follow another profile', function () {
     $viewer = User::factory()->create();
-    Profile::factory()->for($viewer)->create();
+    createOnboardedProfile($viewer);
 
     $target = User::factory()->create();
     $targetProfile = Profile::factory()->for($target)->create([
@@ -47,7 +47,7 @@ test('users with a profile can follow another profile', function () {
 
 test('users can unfollow another profile', function () {
     $viewer = User::factory()->create();
-    Profile::factory()->for($viewer)->create();
+    createOnboardedProfile($viewer);
 
     $target = User::factory()->create();
     $targetProfile = Profile::factory()->for($target)->create([
@@ -69,7 +69,7 @@ test('users can unfollow another profile', function () {
 
 test('self follow is prevented', function () {
     $user = User::factory()->create();
-    $profile = Profile::factory()->for($user)->create([
+    $profile = createOnboardedProfile($user, [
         'username' => 'self_follow',
     ]);
 
@@ -82,7 +82,7 @@ test('self follow is prevented', function () {
 
 test('duplicate follow is prevented', function () {
     $viewer = User::factory()->create();
-    Profile::factory()->for($viewer)->create();
+    createOnboardedProfile($viewer);
 
     $target = User::factory()->create();
     $targetProfile = Profile::factory()->for($target)->create([
@@ -105,7 +105,7 @@ test('duplicate follow is prevented', function () {
 
 test('following a missing username returns not found', function () {
     $viewer = User::factory()->create();
-    Profile::factory()->for($viewer)->create();
+    createOnboardedProfile($viewer);
 
     $this->actingAs($viewer)
         ->post(route('public-profile.follow', 'missing_follow_target'))
@@ -130,7 +130,7 @@ test('mutual follow is detected', function () {
 
 test('own public profile does not expose a follow action state', function () {
     $user = User::factory()->create();
-    $profile = Profile::factory()->for($user)->create([
+    $profile = createOnboardedProfile($user, [
         'username' => 'own_follow_state',
     ]);
 
@@ -147,7 +147,7 @@ test('own public profile does not expose a follow action state', function () {
 
 test('public profile follow status props are correct', function () {
     $viewer = User::factory()->create();
-    Profile::factory()->for($viewer)->create();
+    createOnboardedProfile($viewer);
 
     $target = User::factory()->create();
     $targetProfile = Profile::factory()->for($target)->create([
@@ -185,7 +185,7 @@ test('public profile follow status props are correct', function () {
 
 test('mutual fields are hidden without mutual follow', function () {
     $viewer = User::factory()->create();
-    Profile::factory()->for($viewer)->create();
+    createOnboardedProfile($viewer);
 
     $target = User::factory()->create();
     $targetProfile = Profile::factory()->for($target)->create([
@@ -221,7 +221,7 @@ test('mutual fields are hidden without mutual follow', function () {
 
 test('mutual fields are visible with mutual follow', function () {
     $viewer = User::factory()->create();
-    Profile::factory()->for($viewer)->create();
+    createOnboardedProfile($viewer);
 
     $target = User::factory()->create();
     $targetProfile = Profile::factory()->for($target)->create([
@@ -269,7 +269,7 @@ test('mutual fields are visible with mutual follow', function () {
 
 test('private fields remain hidden even with mutual follow', function () {
     $viewer = User::factory()->create();
-    Profile::factory()->for($viewer)->create();
+    createOnboardedProfile($viewer);
 
     $target = User::factory()->create();
     $targetProfile = Profile::factory()->for($target)->create([

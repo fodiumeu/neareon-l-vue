@@ -15,6 +15,8 @@ beforeEach(function () {
         LanguageOptionSeeder::class,
         InterestOptionSeeder::class,
     ]);
+
+    Profile::created(fn (Profile $profile) => attachManagedProfileOptionsFromJson($profile));
 });
 
 test('guests cannot open onboarding', function () {
@@ -36,6 +38,18 @@ test('users with details but without interests are redirected to onboarding inte
         'interests' => null,
         'languages' => null,
     ]);
+
+    $this->actingAs($user)
+        ->get(route('onboarding.create'))
+        ->assertRedirect(route('onboarding.interests'));
+});
+
+test('json values without pivots do not complete onboarding steps', function () {
+    $user = User::factory()->create();
+    Profile::withoutEvents(fn () => Profile::factory()->for($user)->create([
+        'interests' => ['Musik'],
+        'languages' => ['Deutsch'],
+    ]));
 
     $this->actingAs($user)
         ->get(route('onboarding.create'))

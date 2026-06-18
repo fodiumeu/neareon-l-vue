@@ -74,7 +74,7 @@ class OnboardingController extends Controller
         $user = $request->user();
         $profile = $user->profile()->first();
 
-        $hasInterests = $profile !== null && $profile->interests !== null && $profile->interests !== [];
+        $hasInterests = $profile?->interestOptions()->exists() ?? false;
 
         if ($profile === null || $hasInterests) {
             return NextUserRoute::redirect($user);
@@ -97,7 +97,7 @@ class OnboardingController extends Controller
         $user = $request->user();
         $profile = $user->profile()->first();
 
-        $hasInterests = $profile !== null && $profile->interests !== null && $profile->interests !== [];
+        $hasInterests = $profile?->interestOptions()->exists() ?? false;
 
         if ($profile === null || $hasInterests) {
             return NextUserRoute::redirect($user);
@@ -118,8 +118,8 @@ class OnboardingController extends Controller
         $user = $request->user();
         $profile = $user->profile()->first();
 
-        $hasInterests = $profile !== null && $profile->interests !== null && $profile->interests !== [];
-        $hasLanguages = $profile !== null && $profile->languages !== null && $profile->languages !== [];
+        $hasInterests = $profile?->interestOptions()->exists() ?? false;
+        $hasLanguages = $profile?->languageOptions()->exists() ?? false;
 
         if (! $hasInterests || $hasLanguages) {
             return NextUserRoute::redirect($user);
@@ -142,8 +142,8 @@ class OnboardingController extends Controller
         $user = $request->user();
         $profile = $user->profile()->first();
 
-        $hasInterests = $profile !== null && $profile->interests !== null && $profile->interests !== [];
-        $hasLanguages = $profile !== null && $profile->languages !== null && $profile->languages !== [];
+        $hasInterests = $profile?->interestOptions()->exists() ?? false;
+        $hasLanguages = $profile?->languageOptions()->exists() ?? false;
 
         if (! $hasInterests || $hasLanguages) {
             return NextUserRoute::redirect($user);

@@ -12,7 +12,7 @@ test('guests cannot open their own profile page', function () {
 
 test('users without age gate are redirected from their own profile page to age gate', function () {
     $user = User::factory()->withoutAgeGate()->create();
-    Profile::factory()->for($user)->create();
+    createOnboardedProfile($user);
 
     $this->actingAs($user)
         ->get(route('neareon-profile.show'))
@@ -29,7 +29,7 @@ test('users with age gate but without onboarding are redirected from their own p
 
 test('onboarded users can open their own profile page', function () {
     $user = User::factory()->create();
-    $profile = Profile::factory()->for($user)->create([
+    $profile = createOnboardedProfile($user, [
         'username' => 'own_route_profile',
         'display_name' => 'Own Route Profile',
     ]);
@@ -87,7 +87,7 @@ test('own profile page shows private own fields and edit link', function () {
 
 test('public username profile route still works without own edit link', function () {
     $viewer = User::factory()->create();
-    Profile::factory()->for($viewer)->create();
+    createOnboardedProfile($viewer);
 
     $profile = Profile::factory()->create([
         'username' => 'still_public_username',

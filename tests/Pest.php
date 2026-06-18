@@ -3,6 +3,7 @@
 use App\Models\InterestOption;
 use App\Models\LanguageOption;
 use App\Models\Profile;
+use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -91,4 +92,69 @@ function attachManagedProfileOptions(
 
         $profile->interestOptions()->attach($option);
     }
+}
+
+/**
+ * Mirror existing JSON option values into pivots for legacy test fixtures.
+ */
+function attachManagedProfileOptionsFromJson(Profile $profile): void
+{
+    $languageOptions = LanguageOption::query()
+        ->whereIn('code', $profile->languages ?? [])
+        ->orWhereIn('label', $profile->languages ?? [])
+        ->get();
+    $interestOptions = InterestOption::query()
+        ->whereIn('slug', $profile->interests ?? [])
+        ->orWhereIn('label', $profile->interests ?? [])
+        ->get();
+
+    foreach ($profile->languages ?? [] as $index => $value) {
+        $option = $languageOptions->first(
+            fn (LanguageOption $option): bool => $option->code === $value
+                || $option->label === $value,
+        );
+
+        if ($option !== null) {
+            $profile->languageOptions()->syncWithoutDetaching([
+                $option->id => ['position' => $index + 1],
+            ]);
+        }
+    }
+
+    foreach ($profile->interests ?? [] as $value) {
+        $option = $interestOptions->first(
+            fn (InterestOption $option): bool => $option->slug === $value
+                || $option->label === $value,
+        );
+
+        if ($option !== null) {
+            $profile->interestOptions()->syncWithoutDetaching([$option->id]);
+        }
+    }
+}
+
+/**
+ * Mark a test profile as onboarded through managed option pivots.
+ */
+function completeManagedProfile(Profile $profile): Profile
+{
+    attachManagedProfileOptions(
+        $profile,
+        [['code' => 'de', 'label' => 'Deutsch', 'position' => 1]],
+        [['slug' => 'community', 'label' => 'Community']],
+    );
+
+    return $profile;
+}
+
+/**
+ * Create a test profile with completed managed-option onboarding.
+ *
+ * @param  array<string, mixed>  $attributes
+ */
+function createOnboardedProfile(User $user, array $attributes = []): Profile
+{
+    return completeManagedProfile(
+        Profile::factory()->for($user)->create($attributes),
+    );
 }

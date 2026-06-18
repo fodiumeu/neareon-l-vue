@@ -2,6 +2,7 @@
 
 use App\Enums\UserRole;
 use App\Http\Controllers\Admin\AdminController;
+use App\Http\Middleware\EnsureOnboardingIsComplete;
 use App\Models\InterestOption;
 use App\Models\LanguageOption;
 use App\Models\Profile;
@@ -10,6 +11,10 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use Inertia\Testing\AssertableInertia as Assert;
+
+beforeEach(function () {
+    $this->withoutMiddleware(EnsureOnboardingIsComplete::class);
+});
 
 uses(RefreshDatabase::class);
 

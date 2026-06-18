@@ -28,7 +28,7 @@ test('users without their own profile are redirected to onboarding from public p
 
 test('users with a profile can open another public profile', function () {
     $viewer = User::factory()->create();
-    Profile::factory()->for($viewer)->create();
+    createOnboardedProfile($viewer);
 
     $profile = Profile::factory()->create([
         'username' => 'public_member',
@@ -50,7 +50,7 @@ test('users with a profile can open another public profile', function () {
 
 test('missing public profile usernames return not found', function () {
     $viewer = User::factory()->create();
-    Profile::factory()->for($viewer)->create();
+    createOnboardedProfile($viewer);
 
     $this->actingAs($viewer)
         ->get(route('public-profile.show', 'missing_user'))
@@ -98,7 +98,7 @@ test('users can see their own profile fields fully', function () {
 
 test('other users can see public profile fields', function () {
     $viewer = User::factory()->create();
-    Profile::factory()->for($viewer)->create();
+    createOnboardedProfile($viewer);
 
     $profile = Profile::factory()->create([
         'username' => 'all_public',
@@ -133,7 +133,7 @@ test('other users can see public profile fields', function () {
 
 test('other users cannot receive private profile fields', function () {
     $viewer = User::factory()->create();
-    Profile::factory()->for($viewer)->create();
+    createOnboardedProfile($viewer);
 
     $profile = Profile::factory()->create([
         'username' => 'private_fields',
@@ -163,7 +163,7 @@ test('other users cannot receive private profile fields', function () {
 
 test('other users cannot receive mutual fields before follow exists', function () {
     $viewer = User::factory()->create();
-    Profile::factory()->for($viewer)->create();
+    createOnboardedProfile($viewer);
 
     $profile = Profile::factory()->create([
         'username' => 'mutual_fields',
@@ -193,7 +193,7 @@ test('other users cannot receive mutual fields before follow exists', function (
 
 test('other users cannot receive followers fields before follow exists', function () {
     $viewer = User::factory()->create();
-    Profile::factory()->for($viewer)->create();
+    createOnboardedProfile($viewer);
 
     $profile = Profile::factory()->create([
         'username' => 'followers_hidden_fields',
@@ -223,7 +223,7 @@ test('other users cannot receive followers fields before follow exists', functio
 
 test('other users can receive followers fields after following', function () {
     $viewer = User::factory()->create();
-    Profile::factory()->for($viewer)->create();
+    createOnboardedProfile($viewer);
 
     $owner = User::factory()->create();
     $profile = Profile::factory()->for($owner)->create([
@@ -264,7 +264,7 @@ test('other users can receive followers fields after following', function () {
 
 test('public profile props do not include private user data', function () {
     $viewer = User::factory()->create();
-    Profile::factory()->for($viewer)->create();
+    createOnboardedProfile($viewer);
 
     $owner = User::factory()->create([
         'email' => 'owner@example.com',
@@ -289,7 +289,7 @@ test('public profile props do not include private user data', function () {
 
 test('public profile props do not include technical ids', function () {
     $viewer = User::factory()->create();
-    Profile::factory()->for($viewer)->create();
+    createOnboardedProfile($viewer);
 
     $profile = Profile::factory()->create([
         'username' => 'no_ids',

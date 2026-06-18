@@ -4,6 +4,10 @@ use App\Models\Profile;
 use App\Models\User;
 use Inertia\Testing\AssertableInertia as Assert;
 
+beforeEach(function () {
+    Profile::created(fn (Profile $profile) => completeManagedProfile($profile));
+});
+
 test('welcome page receives the shared project tagline', function () {
     config([
         'app.project.tagline' => 'Project-ready starter foundation',

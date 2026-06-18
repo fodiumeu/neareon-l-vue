@@ -48,6 +48,8 @@ beforeEach(function () {
             'is_active' => true,
         ]);
     }
+
+    Profile::created(fn (Profile $profile) => attachManagedProfileOptionsFromJson($profile));
 });
 
 function validProfileUpdatePayload(array $overrides = []): array
@@ -237,6 +239,8 @@ test('users can intentionally clear their bio', function () {
 test('users can update languages and interests', function () {
     $user = User::factory()->create();
     $profile = Profile::factory()->for($user)->create();
+    $profile->languageOptions()->detach();
+    $profile->interestOptions()->detach();
     $profile->languageOptions()->attach(
         LanguageOption::query()->where('code', 'es')->firstOrFail(),
         ['position' => 1],
@@ -299,7 +303,7 @@ test('comma separated languages and interests are stored as arrays', function ()
 
 test('inactive options are only exposed when already selected', function () {
     $user = User::factory()->create();
-    Profile::factory()->for($user)->create([
+    $profile = Profile::factory()->for($user)->create([
         'languages' => ['Deutsch', 'Latein'],
         'interests' => ['Musik', 'Ehemaliges Thema'],
     ]);
@@ -316,6 +320,7 @@ test('inactive options are only exposed when already selected', function () {
         'sort_order' => 5,
         'is_active' => false,
     ]);
+    attachManagedProfileOptionsFromJson($profile);
     LanguageOption::query()->create([
         'code' => 'xx',
         'label' => 'Nicht gewählt',
@@ -361,6 +366,7 @@ test('legacy labels are normalized to stable option keys when saved', function (
         'sort_order' => 5,
         'is_active' => false,
     ]);
+    attachManagedProfileOptionsFromJson($profile);
 
     $this->actingAs($user)
         ->patch(route('neareon-profile.update'), validProfileUpdatePayload([

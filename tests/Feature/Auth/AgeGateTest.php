@@ -5,6 +5,10 @@ use App\Models\Profile;
 use App\Models\User;
 use Inertia\Testing\AssertableInertia as Assert;
 
+beforeEach(function () {
+    Profile::created(fn (Profile $profile) => completeManagedProfile($profile));
+});
+
 test('guests cannot open age gate', function () {
     $this->get(route('age-gate.show'))
         ->assertRedirect(route('login'));

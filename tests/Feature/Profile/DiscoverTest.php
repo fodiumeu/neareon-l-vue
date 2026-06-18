@@ -21,7 +21,7 @@ test('users without a profile are redirected to onboarding from discover', funct
 
 test('users with a profile can open discover', function () {
     $user = User::factory()->create();
-    Profile::factory()->for($user)->create();
+    createOnboardedProfile($user);
 
     $this->actingAs($user)
         ->get(route('discover'))
@@ -34,7 +34,7 @@ test('users with a profile can open discover', function () {
 
 test('discover does not list the current users own profile', function () {
     $user = User::factory()->create();
-    Profile::factory()->for($user)->create([
+    createOnboardedProfile($user, [
         'username' => 'own_discover',
         'display_name' => 'Own Discover',
     ]);
@@ -49,7 +49,7 @@ test('discover does not list the current users own profile', function () {
 
 test('discover lists public profiles', function () {
     $viewer = User::factory()->create();
-    Profile::factory()->for($viewer)->create();
+    createOnboardedProfile($viewer);
 
     Profile::factory()->create([
         'username' => 'public_discover',
@@ -69,7 +69,7 @@ test('discover lists public profiles', function () {
 
 test('discover does not list private profiles', function () {
     $viewer = User::factory()->create();
-    Profile::factory()->for($viewer)->create();
+    createOnboardedProfile($viewer);
 
     Profile::factory()->create([
         'username' => 'private_discover',
@@ -87,7 +87,7 @@ test('discover does not list private profiles', function () {
 
 test('discover does not list mutual profiles without mutual follow', function () {
     $viewer = User::factory()->create();
-    Profile::factory()->for($viewer)->create();
+    createOnboardedProfile($viewer);
 
     $target = User::factory()->create();
     Profile::factory()->for($target)->create([
@@ -111,7 +111,7 @@ test('discover does not list mutual profiles without mutual follow', function ()
 
 test('discover lists mutual profiles with mutual follow', function () {
     $viewer = User::factory()->create();
-    Profile::factory()->for($viewer)->create();
+    createOnboardedProfile($viewer);
 
     $target = User::factory()->create();
     Profile::factory()->for($target)->create([
@@ -142,7 +142,7 @@ test('discover lists mutual profiles with mutual follow', function () {
 
 test('discover does not deliver private profile fields', function () {
     $viewer = User::factory()->create();
-    Profile::factory()->for($viewer)->create();
+    createOnboardedProfile($viewer);
 
     Profile::factory()->create([
         'username' => 'public_private_fields',
@@ -173,7 +173,7 @@ test('discover does not deliver private profile fields', function () {
 
 test('discover does not deliver followers fields before follow exists', function () {
     $viewer = User::factory()->create();
-    Profile::factory()->for($viewer)->create();
+    createOnboardedProfile($viewer);
 
     Profile::factory()->create([
         'username' => 'followers_hidden_discover',
@@ -204,7 +204,7 @@ test('discover does not deliver followers fields before follow exists', function
 
 test('discover delivers followers fields after follow exists', function () {
     $viewer = User::factory()->create();
-    Profile::factory()->for($viewer)->create();
+    createOnboardedProfile($viewer);
 
     $target = User::factory()->create();
     $profile = Profile::factory()->for($target)->create([
@@ -246,7 +246,7 @@ test('discover delivers followers fields after follow exists', function () {
 
 test('discover delivers managed option labels in language position order', function () {
     $viewer = User::factory()->create();
-    Profile::factory()->for($viewer)->create();
+    createOnboardedProfile($viewer);
 
     $profile = Profile::factory()->create([
         'username' => 'visible_fields',
@@ -284,7 +284,7 @@ test('discover delivers managed option labels in language position order', funct
 
 test('discover includes follow status for each visible profile', function () {
     $viewer = User::factory()->create();
-    Profile::factory()->for($viewer)->create();
+    createOnboardedProfile($viewer);
 
     $target = User::factory()->create();
     Profile::factory()->for($target)->create([
@@ -315,7 +315,7 @@ test('discover includes follow status for each visible profile', function () {
 
 test('discover does not deliver sensitive or technical data', function () {
     $viewer = User::factory()->create();
-    Profile::factory()->for($viewer)->create();
+    createOnboardedProfile($viewer);
 
     $owner = User::factory()->create([
         'email' => 'discover-owner@example.com',

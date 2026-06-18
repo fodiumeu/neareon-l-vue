@@ -33,11 +33,11 @@ class NextUserRoute
             return 'onboarding.details';
         }
 
-        if ($profile->interests === null || $profile->interests === []) {
+        if (! $profile->interestOptions()->exists()) {
             return 'onboarding.interests';
         }
 
-        if ($profile->languages === null || $profile->languages === []) {
+        if (! $profile->languageOptions()->exists()) {
             return 'onboarding.languages';
         }
 

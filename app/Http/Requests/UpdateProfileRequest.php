@@ -45,18 +45,12 @@ class UpdateProfileRequest extends FormRequest
     public function rules(): array
     {
         $profile = $this->user()?->profile;
-        $storedLanguages = $profile?->languages ?? [];
-        $storedInterests = $profile?->interests ?? [];
-        $selectedLanguageCodes = LanguageOption::query()
-            ->whereIn('code', $storedLanguages)
-            ->orWhereIn('label', $storedLanguages)
-            ->pluck('code')
-            ->all();
-        $selectedInterestSlugs = InterestOption::query()
-            ->whereIn('slug', $storedInterests)
-            ->orWhereIn('label', $storedInterests)
-            ->pluck('slug')
-            ->all();
+        $selectedLanguageCodes = $profile?->languageOptions()
+            ->pluck('language_options.code')
+            ->all() ?? [];
+        $selectedInterestSlugs = $profile?->interestOptions()
+            ->pluck('interest_options.slug')
+            ->all() ?? [];
         $profileVisibility = [
             ProfileVisibility::Public->value,
             ProfileVisibility::Mutuals->value,

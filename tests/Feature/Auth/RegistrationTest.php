@@ -7,6 +7,7 @@ use Laravel\Fortify\Features;
 
 beforeEach(function () {
     $this->skipUnlessFortifyHas(Features::registration());
+    Profile::created(fn (Profile $profile) => completeManagedProfile($profile));
 });
 
 test('registration screen can be rendered', function () {

@@ -53,6 +53,8 @@ class ProfileController extends Controller
             return NextUserRoute::redirect($request->user());
         }
 
+        $profile->load(['languageOptions', 'interestOptions']);
+
         $profileVisibilityOptions = [
             ['value' => ProfileVisibility::Public->value, 'label' => 'Alle'],
             ['value' => ProfileVisibility::Mutuals->value, 'label' => 'Gegenseitige Kontakte'],
@@ -64,29 +66,25 @@ class ProfileController extends Controller
             ['value' => ProfileVisibility::Mutuals->value, 'label' => 'Gegenseitige Kontakte'],
             ['value' => ProfileVisibility::Private->value, 'label' => 'Nur ich'],
         ];
-        $storedLanguages = $profile->languages ?? [];
-        $storedInterests = $profile->interests ?? [];
+        $selectedLanguageIds = $profile->languageOptions->modelKeys();
+        $selectedInterestIds = $profile->interestOptions->modelKeys();
         $languageOptions = LanguageOption::query()
-            ->where(function ($query) use ($storedLanguages): void {
+            ->where(function ($query) use ($selectedLanguageIds): void {
                 $query->where('is_active', true)
                     ->when(
-                        $storedLanguages !== [],
-                        fn ($query) => $query
-                            ->orWhereIn('code', $storedLanguages)
-                            ->orWhereIn('label', $storedLanguages),
+                        $selectedLanguageIds !== [],
+                        fn ($query) => $query->orWhereIn('id', $selectedLanguageIds),
                     );
             })
             ->orderBy('sort_order')
             ->orderBy('label')
             ->get(['code', 'label', 'native_label', 'is_active']);
         $interestOptions = InterestOption::query()
-            ->where(function ($query) use ($storedInterests): void {
+            ->where(function ($query) use ($selectedInterestIds): void {
                 $query->where('is_active', true)
                     ->when(
-                        $storedInterests !== [],
-                        fn ($query) => $query
-                            ->orWhereIn('slug', $storedInterests)
-                            ->orWhereIn('label', $storedInterests),
+                        $selectedInterestIds !== [],
+                        fn ($query) => $query->orWhereIn('id', $selectedInterestIds),
                     );
             })
             ->orderBy('sort_order')
@@ -98,24 +96,8 @@ class ProfileController extends Controller
                 'display_name' => $profile->display_name,
                 'bio' => $profile->bio,
                 'region' => $profile->region,
-                'languages' => collect($storedLanguages)
-                    ->map(fn (string $value): ?string => $languageOptions
-                        ->first(fn (LanguageOption $option): bool => in_array($value, [
-                            $option->code,
-                            $option->label,
-                        ], true))
-                        ?->code)
-                    ->filter()
-                    ->values(),
-                'interests' => collect($storedInterests)
-                    ->map(fn (string $value): ?string => $interestOptions
-                        ->first(fn (InterestOption $option): bool => in_array($value, [
-                            $option->slug,
-                            $option->label,
-                        ], true))
-                        ?->slug)
-                    ->filter()
-                    ->values(),
+                'languages' => $profile->languageOptions->pluck('code')->values(),
+                'interests' => $profile->interestOptions->pluck('slug')->values(),
                 'profile_visibility' => $profile->profile_visibility->value,
                 'interests_visibility' => $profile->interests_visibility->value,
                 'languages_visibility' => $profile->languages_visibility->value,

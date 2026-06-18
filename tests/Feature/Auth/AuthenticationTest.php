@@ -5,6 +5,10 @@ use App\Models\User;
 use Illuminate\Support\Facades\RateLimiter;
 use Laravel\Fortify\Features;
 
+beforeEach(function () {
+    Profile::created(fn (Profile $profile) => completeManagedProfile($profile));
+});
+
 test('login screen can be rendered', function () {
     $response = $this->get(route('login'));
 
