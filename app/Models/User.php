@@ -128,6 +128,32 @@ class User extends Authenticatable
     }
 
     /**
+     * Get the user's conversation participant records.
+     */
+    public function conversationParticipants(): HasMany
+    {
+        return $this->hasMany(ConversationParticipant::class);
+    }
+
+    /**
+     * Get the conversations the user participates in.
+     */
+    public function conversations(): BelongsToMany
+    {
+        return $this->belongsToMany(Conversation::class, 'conversation_participants')
+            ->withPivot('joined_at')
+            ->withTimestamps();
+    }
+
+    /**
+     * Get the messages sent by the user.
+     */
+    public function sentMessages(): HasMany
+    {
+        return $this->hasMany(Message::class, 'sender_id');
+    }
+
+    /**
      * Get the users this user follows.
      */
     public function following(): BelongsToMany
