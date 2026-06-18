@@ -53,6 +53,8 @@ Route::middleware(['auth', 'age.gate', 'verified', 'onboarding.complete'])->grou
         ->name('messages.index');
     Route::get('messages/{conversation}', [MessageController::class, 'show'])
         ->name('messages.show');
+    Route::post('messages/{conversation}', [MessageController::class, 'store'])
+        ->name('messages.store');
     Route::get('profile', [ProfileController::class, 'me'])->name('neareon-profile.show');
     Route::get('profile/edit', [ProfileController::class, 'edit'])->name('neareon-profile.edit');
     Route::patch('profile', [ProfileController::class, 'update'])->name('neareon-profile.update');

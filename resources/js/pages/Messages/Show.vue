@@ -1,9 +1,13 @@
 <script setup lang="ts">
-import { Head } from '@inertiajs/vue3';
+import { Form, Head } from '@inertiajs/vue3';
+import InputError from '@/components/InputError.vue';
 import PageHeader from '@/components/PageHeader.vue';
 import PageSection from '@/components/PageSection.vue';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+import { Label } from '@/components/ui/label';
+import { Spinner } from '@/components/ui/spinner';
 
 type ConversationMessage = {
     id: number;
@@ -133,6 +137,41 @@ defineOptions({
                     </CardContent>
                 </Card>
             </div>
+        </PageSection>
+
+        <PageSection>
+            <Card
+                class="bg-card/95 shadow-md shadow-black/5 dark:shadow-black/25"
+            >
+                <CardContent>
+                    <Form
+                        :action="`/messages/${conversation.conversation_id}`"
+                        method="post"
+                        reset-on-success
+                        v-slot="{ errors, processing }"
+                        class="space-y-4"
+                    >
+                        <div class="grid gap-2">
+                            <Label for="message">Nachricht</Label>
+                            <textarea
+                                id="message"
+                                name="message"
+                                rows="5"
+                                maxlength="5000"
+                                required
+                                class="flex min-h-28 w-full resize-y rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-xs transition-[color,box-shadow] outline-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-input/20"
+                                placeholder="Schreibe eine Nachricht …"
+                            />
+                            <InputError :message="errors.message" />
+                        </div>
+
+                        <Button type="submit" :disabled="processing">
+                            <Spinner v-if="processing" />
+                            Nachricht senden
+                        </Button>
+                    </Form>
+                </CardContent>
+            </Card>
         </PageSection>
     </div>
 </template>

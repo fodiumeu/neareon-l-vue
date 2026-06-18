@@ -2,9 +2,12 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\StoreMessageRequest;
 use App\Models\Conversation;
 use App\Models\ConversationParticipant;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
 use Symfony\Component\HttpFoundation\Response as HttpResponse;
@@ -109,5 +112,24 @@ class MessageController extends Controller
                     ]),
             ],
         ]);
+    }
+
+    /**
+     * Store a new message in a conversation.
+     */
+    public function store(
+        StoreMessageRequest $request,
+        Conversation $conversation,
+    ): RedirectResponse {
+        DB::transaction(function () use ($request, $conversation): void {
+            $conversation->messages()->create([
+                'sender_id' => $request->user()->id,
+                'body' => $request->validated('message'),
+            ]);
+
+            $conversation->touch();
+        });
+
+        return to_route('messages.show', $conversation);
     }
 }
