@@ -4,6 +4,7 @@ use App\Http\Controllers\Admin\AdminController;
 use App\Http\Controllers\Admin\InterestOptionController;
 use App\Http\Controllers\Admin\LanguageOptionController;
 use App\Http\Controllers\AgeGateController;
+use App\Http\Controllers\ContactController;
 use App\Http\Controllers\ContactRequestController;
 use App\Http\Controllers\DiscoverController;
 use App\Http\Controllers\FollowController;
@@ -34,6 +35,8 @@ Route::middleware(['auth', 'age.gate', 'verified'])->group(function () {
 });
 
 Route::middleware(['auth', 'age.gate', 'verified', 'onboarding.complete'])->group(function () {
+    Route::get('contacts', [ContactController::class, 'index'])
+        ->name('contacts.index');
     Route::get('contact-requests', [ContactRequestController::class, 'index'])
         ->name('contact-requests.index');
     Route::post('contact-requests', [ContactRequestController::class, 'store'])
