@@ -7,6 +7,7 @@ use App\Models\ConversationParticipant;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
+use Symfony\Component\HttpFoundation\Response as HttpResponse;
 
 class MessageController extends Controller
 {
@@ -48,6 +49,65 @@ class MessageController extends Controller
 
         return Inertia::render('Messages/Index', [
             'conversations' => $conversations,
+        ]);
+    }
+
+    /**
+     * Show a conversation to one of its participants.
+     */
+    public function show(Request $request, Conversation $conversation): Response
+    {
+        $viewer = $request->user();
+
+        abort_unless(
+            $conversation->participants()
+                ->where('user_id', $viewer->id)
+                ->exists(),
+            HttpResponse::HTTP_FORBIDDEN,
+        );
+
+        $conversation->load([
+            'participants:id,conversation_id,user_id',
+            'participants.user:id,name',
+            'participants.user.profile:user_id,display_name,username',
+            'messages' => fn ($query) => $query
+                ->select([
+                    'id',
+                    'conversation_id',
+                    'sender_id',
+                    'body',
+                    'created_at',
+                ])
+                ->oldest(),
+            'messages.sender:id,name',
+            'messages.sender.profile:user_id,display_name,username',
+        ]);
+
+        $otherParticipant = $conversation->participants->first(
+            fn (ConversationParticipant $participant): bool => $participant->user_id !== $viewer->id,
+        );
+        $otherUser = $otherParticipant?->user;
+
+        return Inertia::render('Messages/Show', [
+            'conversation' => [
+                'conversation_id' => $conversation->id,
+                'other_participant' => [
+                    'display_name' => $otherUser?->profile?->display_name
+                        ?? $otherUser?->name,
+                    'username' => $otherUser?->profile?->username,
+                ],
+                'messages' => $conversation->messages
+                    ->map(fn ($message): array => [
+                        'id' => $message->id,
+                        'body' => $message->body,
+                        'created_at' => $message->created_at->toIso8601String(),
+                        'sender' => [
+                            'display_name' => $message->sender->profile?->display_name
+                                ?? $message->sender->name,
+                            'username' => $message->sender->profile?->username,
+                        ],
+                    ]),
+            ],
         ]);
     }
 }

@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import { Head } from '@inertiajs/vue3';
+import { Head, Link } from '@inertiajs/vue3';
 import PageHeader from '@/components/PageHeader.vue';
 import PageSection from '@/components/PageSection.vue';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 
 type Conversation = {
@@ -129,6 +130,14 @@ defineOptions({
                                 {{ formatDate(conversation.updated_at) }}
                             </span>
                         </div>
+
+                        <Button as-child variant="secondary" class="w-full">
+                            <Link
+                                :href="`/messages/${conversation.conversation_id}`"
+                            >
+                                Unterhaltung öffnen
+                            </Link>
+                        </Button>
                     </CardContent>
                 </Card>
             </div>

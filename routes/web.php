@@ -51,6 +51,8 @@ Route::middleware(['auth', 'age.gate', 'verified', 'onboarding.complete'])->grou
     Route::get('discover', [DiscoverController::class, 'index'])->name('discover');
     Route::get('messages', [MessageController::class, 'index'])
         ->name('messages.index');
+    Route::get('messages/{conversation}', [MessageController::class, 'show'])
+        ->name('messages.show');
     Route::get('profile', [ProfileController::class, 'me'])->name('neareon-profile.show');
     Route::get('profile/edit', [ProfileController::class, 'edit'])->name('neareon-profile.edit');
     Route::patch('profile', [ProfileController::class, 'update'])->name('neareon-profile.update');
