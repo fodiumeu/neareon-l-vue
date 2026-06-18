@@ -4,6 +4,7 @@ use App\Http\Controllers\Admin\AdminController;
 use App\Http\Controllers\Admin\InterestOptionController;
 use App\Http\Controllers\Admin\LanguageOptionController;
 use App\Http\Controllers\AgeGateController;
+use App\Http\Controllers\ContactRequestController;
 use App\Http\Controllers\DiscoverController;
 use App\Http\Controllers\FollowController;
 use App\Http\Controllers\OnboardingController;
@@ -33,6 +34,8 @@ Route::middleware(['auth', 'age.gate', 'verified'])->group(function () {
 });
 
 Route::middleware(['auth', 'age.gate', 'verified', 'onboarding.complete'])->group(function () {
+    Route::post('contact-requests', [ContactRequestController::class, 'store'])
+        ->name('contact-requests.store');
     Route::get('discover', [DiscoverController::class, 'index'])->name('discover');
     Route::get('profile', [ProfileController::class, 'me'])->name('neareon-profile.show');
     Route::get('profile/edit', [ProfileController::class, 'edit'])->name('neareon-profile.edit');
