@@ -23,6 +23,7 @@ class ConversationParticipant extends Model
     {
         return [
             'joined_at' => 'datetime',
+            'last_read_at' => 'datetime',
         ];
     }
 
