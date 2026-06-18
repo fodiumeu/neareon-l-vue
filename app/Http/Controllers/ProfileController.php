@@ -32,6 +32,8 @@ class ProfileController extends Controller
             return NextUserRoute::redirect($user);
         }
 
+        $profile->loadMissing(['user', 'languageOptions', 'interestOptions']);
+
         return Inertia::render('Profile/Show', [
             'profile' => $this->profileVisibility->visibleProfileData($profile, $user),
             'editProfileHref' => '/profile/edit',
@@ -168,7 +170,7 @@ class ProfileController extends Controller
         }
 
         $profile = Profile::query()
-            ->with('user')
+            ->with(['user', 'languageOptions', 'interestOptions'])
             ->where('username', $username)
             ->firstOrFail();
 

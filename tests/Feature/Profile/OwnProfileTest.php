@@ -29,7 +29,7 @@ test('users with age gate but without onboarding are redirected from their own p
 
 test('onboarded users can open their own profile page', function () {
     $user = User::factory()->create();
-    Profile::factory()->for($user)->create([
+    $profile = Profile::factory()->for($user)->create([
         'username' => 'own_route_profile',
         'display_name' => 'Own Route Profile',
     ]);
@@ -47,7 +47,7 @@ test('onboarded users can open their own profile page', function () {
 
 test('own profile page shows private own fields and edit link', function () {
     $user = User::factory()->create();
-    Profile::factory()->for($user)->create([
+    $profile = Profile::factory()->for($user)->create([
         'username' => 'private_own_route',
         'display_name' => 'Private Own Route',
         'bio' => 'Nur fuer mich sichtbar.',
@@ -59,6 +59,17 @@ test('own profile page shows private own fields and edit link', function () {
         'languages_visibility' => ProfileVisibility::Private,
         'interests_visibility' => ProfileVisibility::Private,
     ]);
+    attachManagedProfileOptions(
+        $profile,
+        [
+            ['code' => 'de', 'label' => 'Deutsch', 'position' => 1],
+            ['code' => 'en', 'label' => 'Englisch', 'position' => 2],
+        ],
+        [
+            ['slug' => 'music', 'label' => 'Musik'],
+            ['slug' => 'events', 'label' => 'Events'],
+        ],
+    );
 
     $this->actingAs($user)
         ->get(route('neareon-profile.show'))

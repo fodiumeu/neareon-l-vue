@@ -28,7 +28,7 @@ class DiscoverController extends Controller
         }
 
         $profiles = Profile::query()
-            ->with('user')
+            ->with(['user', 'languageOptions', 'interestOptions'])
             ->where('user_id', '!=', $viewer->id)
             ->orderBy('display_name')
             ->get()

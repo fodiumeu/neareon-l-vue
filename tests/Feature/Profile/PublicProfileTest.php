@@ -71,6 +71,17 @@ test('users can see their own profile fields fully', function () {
         'languages_visibility' => ProfileVisibility::Private,
         'interests_visibility' => ProfileVisibility::Private,
     ]);
+    attachManagedProfileOptions(
+        $profile,
+        [
+            ['code' => 'de', 'label' => 'Deutsch', 'position' => 1],
+            ['code' => 'en', 'label' => 'Englisch', 'position' => 2],
+        ],
+        [
+            ['slug' => 'music', 'label' => 'Musik'],
+            ['slug' => 'events', 'label' => 'Events'],
+        ],
+    );
 
     $this->actingAs($user)
         ->get(route('public-profile.show', $profile->username))
@@ -101,6 +112,11 @@ test('other users can see public profile fields', function () {
         'languages_visibility' => ProfileVisibility::Public,
         'interests_visibility' => ProfileVisibility::Public,
     ]);
+    attachManagedProfileOptions(
+        $profile,
+        [['code' => 'de', 'label' => 'Deutsch', 'position' => 1]],
+        [['slug' => 'community', 'label' => 'Community']],
+    );
 
     $this->actingAs($viewer)
         ->get(route('public-profile.show', $profile->username))
@@ -222,6 +238,11 @@ test('other users can receive followers fields after following', function () {
         'languages_visibility' => ProfileVisibility::Followers,
         'interests_visibility' => ProfileVisibility::Followers,
     ]);
+    attachManagedProfileOptions(
+        $profile,
+        [['code' => 'de', 'label' => 'Deutsch', 'position' => 1]],
+        [['slug' => 'community', 'label' => 'Community']],
+    );
 
     Follow::query()->create([
         'follower_id' => $viewer->id,

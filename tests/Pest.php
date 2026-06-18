@@ -1,5 +1,8 @@
 <?php
 
+use App\Models\InterestOption;
+use App\Models\LanguageOption;
+use App\Models\Profile;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -47,4 +50,45 @@ expect()->extend('toBeOne', function () {
 function something()
 {
     // ..
+}
+
+/**
+ * Attach managed language and interest options to a profile for feature tests.
+ *
+ * @param  list<array{code: string, label: string, position: int}>  $languages
+ * @param  list<array{slug: string, label: string, sort_order?: int}>  $interests
+ */
+function attachManagedProfileOptions(
+    Profile $profile,
+    array $languages = [],
+    array $interests = [],
+): void {
+    foreach ($languages as $language) {
+        $option = LanguageOption::query()->firstOrCreate(
+            ['code' => $language['code']],
+            [
+                'label' => $language['label'],
+                'native_label' => $language['label'],
+                'sort_order' => $language['position'],
+                'is_active' => true,
+            ],
+        );
+
+        $profile->languageOptions()->attach($option, [
+            'position' => $language['position'],
+        ]);
+    }
+
+    foreach ($interests as $index => $interest) {
+        $option = InterestOption::query()->firstOrCreate(
+            ['slug' => $interest['slug']],
+            [
+                'label' => $interest['label'],
+                'sort_order' => $interest['sort_order'] ?? $index + 1,
+                'is_active' => true,
+            ],
+        );
+
+        $profile->interestOptions()->attach($option);
+    }
 }

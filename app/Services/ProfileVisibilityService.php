@@ -38,11 +38,18 @@ class ProfileVisibilityService
         }
 
         if ($this->canView($profile->languages_visibility, $isOwnProfile, $isFollowing, $isMutual)) {
-            $data['languages'] = $profile->languages;
+            $data['languages'] = $profile->languageOptions
+                ->pluck('label')
+                ->values()
+                ->all();
         }
 
         if ($this->canView($profile->interests_visibility, $isOwnProfile, $isFollowing, $isMutual)) {
-            $data['interests'] = $profile->interests;
+            $data['interests'] = $profile->interestOptions
+                ->sortBy('sort_order')
+                ->pluck('label')
+                ->values()
+                ->all();
         }
 
         return $data;

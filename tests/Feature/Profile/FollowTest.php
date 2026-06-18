@@ -200,7 +200,6 @@ test('mutual fields are hidden without mutual follow', function () {
         'languages_visibility' => ProfileVisibility::Mutuals,
         'interests_visibility' => ProfileVisibility::Mutuals,
     ]);
-
     Follow::query()->create([
         'follower_id' => $viewer->id,
         'followed_id' => $target->id,
@@ -237,6 +236,14 @@ test('mutual fields are visible with mutual follow', function () {
         'languages_visibility' => ProfileVisibility::Mutuals,
         'interests_visibility' => ProfileVisibility::Mutuals,
     ]);
+    attachManagedProfileOptions(
+        $targetProfile,
+        [
+            ['code' => 'de', 'label' => 'Deutsch', 'position' => 1],
+            ['code' => 'en', 'label' => 'Englisch', 'position' => 2],
+        ],
+        [['slug' => 'events', 'label' => 'Events']],
+    );
 
     Follow::query()->create([
         'follower_id' => $viewer->id,

@@ -207,7 +207,7 @@ test('discover delivers followers fields after follow exists', function () {
     Profile::factory()->for($viewer)->create();
 
     $target = User::factory()->create();
-    Profile::factory()->for($target)->create([
+    $profile = Profile::factory()->for($target)->create([
         'username' => 'followers_visible_discover',
         'display_name' => 'Followers Visible Discover',
         'bio' => 'Basis sichtbar.',
@@ -219,6 +219,11 @@ test('discover delivers followers fields after follow exists', function () {
         'languages_visibility' => ProfileVisibility::Followers,
         'interests_visibility' => ProfileVisibility::Followers,
     ]);
+    attachManagedProfileOptions(
+        $profile,
+        [['code' => 'de', 'label' => 'Deutsch', 'position' => 1]],
+        [['slug' => 'community', 'label' => 'Community']],
+    );
 
     Follow::query()->create([
         'follower_id' => $viewer->id,
@@ -239,22 +244,30 @@ test('discover delivers followers fields after follow exists', function () {
         );
 });
 
-test('discover delivers visible profile fields', function () {
+test('discover delivers managed option labels in language position order', function () {
     $viewer = User::factory()->create();
     Profile::factory()->for($viewer)->create();
 
-    Profile::factory()->create([
+    $profile = Profile::factory()->create([
         'username' => 'visible_fields',
         'display_name' => 'Visible Fields',
         'bio' => 'Sichtbare Kurzinfo.',
         'region' => 'Berlin',
-        'languages' => ['Deutsch', 'Englisch'],
-        'interests' => ['Community'],
+        'languages' => ['en', 'de'],
+        'interests' => ['Technik'],
         'profile_visibility' => ProfileVisibility::Public,
         'region_visibility' => ProfileVisibility::Public,
         'languages_visibility' => ProfileVisibility::Public,
         'interests_visibility' => ProfileVisibility::Public,
     ]);
+    attachManagedProfileOptions(
+        $profile,
+        [
+            ['code' => 'en', 'label' => 'Englisch', 'position' => 2],
+            ['code' => 'de', 'label' => 'Deutsch', 'position' => 1],
+        ],
+        [['slug' => 'technology', 'label' => 'Technologie']],
+    );
 
     $this->actingAs($viewer)
         ->get(route('discover'))
@@ -265,7 +278,7 @@ test('discover delivers visible profile fields', function () {
             ->where('profiles.0.bio', 'Sichtbare Kurzinfo.')
             ->where('profiles.0.region', 'Berlin')
             ->where('profiles.0.languages', ['Deutsch', 'Englisch'])
-            ->where('profiles.0.interests', ['Community']),
+            ->where('profiles.0.interests', ['Technologie']),
         );
 });
 
