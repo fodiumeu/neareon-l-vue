@@ -43,6 +43,44 @@ class ContactRequestController extends Controller
     }
 
     /**
+     * Show the authenticated user's sent contact requests.
+     */
+    public function sent(Request $request): Response
+    {
+        $contactRequests = $request->user()
+            ->sentContactRequests()
+            ->select([
+                'id',
+                'sender_id',
+                'receiver_id',
+                'message',
+                'status',
+                'created_at',
+            ])
+            ->with([
+                'receiver:id,name',
+                'receiver.profile:user_id,display_name,username',
+            ])
+            ->latest()
+            ->get()
+            ->map(fn (ContactRequest $contactRequest): array => [
+                'id' => $contactRequest->id,
+                'message' => $contactRequest->message,
+                'status' => $contactRequest->status->value,
+                'created_at' => $contactRequest->created_at->toIso8601String(),
+                'receiver' => [
+                    'display_name' => $contactRequest->receiver->profile?->display_name
+                        ?? $contactRequest->receiver->name,
+                    'username' => $contactRequest->receiver->profile?->username,
+                ],
+            ]);
+
+        return Inertia::render('ContactRequests/Sent', [
+            'contactRequests' => $contactRequests,
+        ]);
+    }
+
+    /**
      * Store a new contact request.
      */
     public function store(StoreContactRequestRequest $request): RedirectResponse

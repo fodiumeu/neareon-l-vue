@@ -39,6 +39,8 @@ Route::middleware(['auth', 'age.gate', 'verified', 'onboarding.complete'])->grou
         ->name('contacts.index');
     Route::get('contact-requests', [ContactRequestController::class, 'index'])
         ->name('contact-requests.index');
+    Route::get('contact-requests/sent', [ContactRequestController::class, 'sent'])
+        ->name('contact-requests.sent');
     Route::post('contact-requests', [ContactRequestController::class, 'store'])
         ->name('contact-requests.store');
     Route::patch('contact-requests/{contactRequest}/accept', [ContactRequestController::class, 'accept'])
