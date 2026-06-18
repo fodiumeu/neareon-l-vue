@@ -59,28 +59,34 @@ test('profile visibility fields use database defaults', function () {
         ->and($profile->social_counts_visibility)->toBe(ProfileVisibility::Public);
 });
 
-test('profile languages and interests are cast to arrays', function () {
-    $profile = Profile::factory()->create([
-        'languages' => ['de', 'en'],
-        'interests' => ['music', 'technology'],
-    ])->fresh();
+test('profile languages and interests are managed through relations', function () {
+    $profile = Profile::factory()->create();
 
-    expect($profile->languages)->toBe(['de', 'en'])
-        ->and($profile->interests)->toBe(['music', 'technology']);
+    attachManagedProfileOptions(
+        $profile,
+        [
+            ['code' => 'de', 'label' => 'Deutsch', 'position' => 1],
+            ['code' => 'en', 'label' => 'Englisch', 'position' => 2],
+        ],
+        [
+            ['slug' => 'music', 'label' => 'Musik'],
+            ['slug' => 'technology', 'label' => 'Technologie'],
+        ],
+    );
+
+    expect($profile->languageOptions()->pluck('code')->all())->toBe(['de', 'en'])
+        ->and($profile->interestOptions()->pluck('slug')->sort()->values()->all())
+        ->toBe(['music', 'technology']);
 });
 
 test('profile optional fields can be null', function () {
     $profile = Profile::factory()->create([
         'bio' => null,
         'region' => null,
-        'languages' => null,
-        'interests' => null,
     ])->fresh();
 
     expect($profile->bio)->toBeNull()
-        ->and($profile->region)->toBeNull()
-        ->and($profile->languages)->toBeNull()
-        ->and($profile->interests)->toBeNull();
+        ->and($profile->region)->toBeNull();
 });
 
 test('deleting a user cascades to the related profile', function () {

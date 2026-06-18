@@ -27,8 +27,6 @@ class ProfileFactory extends Factory
             'display_name' => fake()->name(),
             'bio' => fake()->sentence(),
             'region' => fake()->city(),
-            'languages' => ['de', 'en'],
-            'interests' => ['community', 'events'],
             'profile_visibility' => ProfileVisibility::Public,
             'interests_visibility' => ProfileVisibility::Public,
             'languages_visibility' => ProfileVisibility::Public,

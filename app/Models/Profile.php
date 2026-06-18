@@ -16,8 +16,6 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
     'display_name',
     'bio',
     'region',
-    'languages',
-    'interests',
     'profile_visibility',
     'interests_visibility',
     'languages_visibility',
@@ -37,9 +35,7 @@ class Profile extends Model
     protected function casts(): array
     {
         return [
-            'interests' => 'array',
             'interests_visibility' => ProfileVisibility::class,
-            'languages' => 'array',
             'languages_visibility' => ProfileVisibility::class,
             'profile_visibility' => ProfileVisibility::class,
             'region_visibility' => ProfileVisibility::class,

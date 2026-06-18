@@ -52,8 +52,6 @@ test('own profile page shows private own fields and edit link', function () {
         'display_name' => 'Private Own Route',
         'bio' => 'Nur fuer mich sichtbar.',
         'region' => 'Berlin',
-        'languages' => ['Deutsch', 'Englisch'],
-        'interests' => ['Musik', 'Events'],
         'profile_visibility' => ProfileVisibility::Private,
         'region_visibility' => ProfileVisibility::Private,
         'languages_visibility' => ProfileVisibility::Private,

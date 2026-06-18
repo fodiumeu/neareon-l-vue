@@ -64,6 +64,8 @@ function attachManagedProfileOptions(
     array $languages = [],
     array $interests = [],
 ): void {
+    $languageRecords = [];
+
     foreach ($languages as $language) {
         $option = LanguageOption::query()->firstOrCreate(
             ['code' => $language['code']],
@@ -75,10 +77,12 @@ function attachManagedProfileOptions(
             ],
         );
 
-        $profile->languageOptions()->attach($option, [
+        $languageRecords[$option->id] = [
             'position' => $language['position'],
-        ]);
+        ];
     }
+
+    $interestIds = [];
 
     foreach ($interests as $index => $interest) {
         $option = InterestOption::query()->firstOrCreate(
@@ -90,47 +94,11 @@ function attachManagedProfileOptions(
             ],
         );
 
-        $profile->interestOptions()->attach($option);
-    }
-}
-
-/**
- * Mirror existing JSON option values into pivots for legacy test fixtures.
- */
-function attachManagedProfileOptionsFromJson(Profile $profile): void
-{
-    $languageOptions = LanguageOption::query()
-        ->whereIn('code', $profile->languages ?? [])
-        ->orWhereIn('label', $profile->languages ?? [])
-        ->get();
-    $interestOptions = InterestOption::query()
-        ->whereIn('slug', $profile->interests ?? [])
-        ->orWhereIn('label', $profile->interests ?? [])
-        ->get();
-
-    foreach ($profile->languages ?? [] as $index => $value) {
-        $option = $languageOptions->first(
-            fn (LanguageOption $option): bool => $option->code === $value
-                || $option->label === $value,
-        );
-
-        if ($option !== null) {
-            $profile->languageOptions()->syncWithoutDetaching([
-                $option->id => ['position' => $index + 1],
-            ]);
-        }
+        $interestIds[$option->id] = $option->id;
     }
 
-    foreach ($profile->interests ?? [] as $value) {
-        $option = $interestOptions->first(
-            fn (InterestOption $option): bool => $option->slug === $value
-                || $option->label === $value,
-        );
-
-        if ($option !== null) {
-            $profile->interestOptions()->syncWithoutDetaching([$option->id]);
-        }
-    }
+    $profile->languageOptions()->sync($languageRecords);
+    $profile->interestOptions()->sync(array_values($interestIds));
 }
 
 /**

@@ -49,7 +49,7 @@ beforeEach(function () {
         ]);
     }
 
-    Profile::created(fn (Profile $profile) => attachManagedProfileOptionsFromJson($profile));
+    Profile::created(fn (Profile $profile) => completeManagedProfile($profile));
 });
 
 function validProfileUpdatePayload(array $overrides = []): array
@@ -83,17 +83,26 @@ test('users without a profile are redirected to onboarding from profile editing'
 
 test('users with a profile can open profile editing', function () {
     $user = User::factory()->create();
-    Profile::factory()->for($user)->create([
+    $profile = Profile::factory()->for($user)->create([
         'display_name' => 'Existing Member',
         'bio' => 'Existing Bio',
-        'languages' => ['Deutsch', 'Englisch'],
-        'interests' => ['Musik', 'Events'],
         'profile_visibility' => ProfileVisibility::Mutuals,
         'interests_visibility' => ProfileVisibility::Private,
         'languages_visibility' => ProfileVisibility::Public,
         'region_visibility' => ProfileVisibility::Private,
         'social_counts_visibility' => ProfileVisibility::Mutuals,
     ]);
+    attachManagedProfileOptions(
+        $profile,
+        [
+            ['code' => 'de', 'label' => 'Deutsch', 'position' => 1],
+            ['code' => 'en', 'label' => 'Englisch', 'position' => 2],
+        ],
+        [
+            ['slug' => 'music', 'label' => 'Musik'],
+            ['slug' => 'events', 'label' => 'Events'],
+        ],
+    );
 
     $this->actingAs($user)
         ->get(route('neareon-profile.edit'))
@@ -190,8 +199,8 @@ test('changing visibility keeps an existing bio when bio is submitted unchanged'
             'display_name' => $profile->display_name,
             'bio' => 'Bleibende Bio.',
             'region' => $profile->region,
-            'languages' => implode(', ', $profile->languages ?? []),
-            'interests' => implode(', ', $profile->interests ?? []),
+            'languages' => $profile->languageOptions()->pluck('code')->all(),
+            'interests' => $profile->interestOptions()->pluck('slug')->all(),
             'region_visibility' => ProfileVisibility::Private->value,
         ]))
         ->assertRedirect(route('neareon-profile.edit'));
@@ -208,8 +217,8 @@ test('missing bio input does not clear an existing bio', function () {
     $payload = validProfileUpdatePayload([
         'display_name' => $profile->display_name,
         'region' => $profile->region,
-        'languages' => implode(', ', $profile->languages ?? []),
-        'interests' => implode(', ', $profile->interests ?? []),
+        'languages' => $profile->languageOptions()->pluck('code')->all(),
+        'interests' => $profile->interestOptions()->pluck('slug')->all(),
         'region_visibility' => ProfileVisibility::Private->value,
     ]);
     unset($payload['bio']);
@@ -269,9 +278,7 @@ test('users can update languages and interests', function () {
 
     $profile->refresh();
 
-    expect($profile->languages)->toBe(['de', 'en'])
-        ->and($profile->interests)->toBe(['community', 'events'])
-        ->and($profile->languageOptions()->pluck('code')->all())
+    expect($profile->languageOptions()->pluck('code')->all())
         ->toBe(['de', 'en', 'es'])
         ->and($profile->languageOptions()->get()->pluck('pivot.position')->all())
         ->toBe([1, 2, 3])
@@ -294,9 +301,7 @@ test('comma separated languages and interests are synchronized to pivots', funct
 
     $profile->refresh();
 
-    expect($profile->languages)->toBe(['de', 'en'])
-        ->and($profile->interests)->toBe(['community', 'events'])
-        ->and($profile->languageOptions()->pluck('code')->all())
+    expect($profile->languageOptions()->pluck('code')->all())
         ->toBe(['de', 'en'])
         ->and($profile->interestOptions()->pluck('slug')->sort()->values()->all())
         ->toBe(['events', 'music', 'technology']);
@@ -304,10 +309,7 @@ test('comma separated languages and interests are synchronized to pivots', funct
 
 test('inactive options are only exposed when already selected', function () {
     $user = User::factory()->create();
-    $profile = Profile::factory()->for($user)->create([
-        'languages' => ['Deutsch', 'Latein'],
-        'interests' => ['Musik', 'Ehemaliges Thema'],
-    ]);
+    $profile = Profile::factory()->for($user)->create();
     LanguageOption::query()->create([
         'code' => 'la',
         'label' => 'Latein',
@@ -321,7 +323,17 @@ test('inactive options are only exposed when already selected', function () {
         'sort_order' => 5,
         'is_active' => false,
     ]);
-    attachManagedProfileOptionsFromJson($profile);
+    attachManagedProfileOptions(
+        $profile,
+        [
+            ['code' => 'de', 'label' => 'Deutsch', 'position' => 1],
+            ['code' => 'la', 'label' => 'Latein', 'position' => 2],
+        ],
+        [
+            ['slug' => 'music', 'label' => 'Musik'],
+            ['slug' => 'former-topic', 'label' => 'Ehemaliges Thema'],
+        ],
+    );
     LanguageOption::query()->create([
         'code' => 'xx',
         'label' => 'Nicht gewählt',
@@ -348,12 +360,9 @@ test('inactive options are only exposed when already selected', function () {
         );
 });
 
-test('legacy labels are normalized to stable option keys when saved', function () {
+test('selected inactive options can be saved with stable option keys', function () {
     $user = User::factory()->create();
-    $profile = Profile::factory()->for($user)->create([
-        'languages' => ['Deutsch', 'Latein'],
-        'interests' => ['Musik', 'Ehemaliges Thema'],
-    ]);
+    $profile = Profile::factory()->for($user)->create();
     LanguageOption::query()->create([
         'code' => 'la',
         'label' => 'Latein',
@@ -367,7 +376,17 @@ test('legacy labels are normalized to stable option keys when saved', function (
         'sort_order' => 5,
         'is_active' => false,
     ]);
-    attachManagedProfileOptionsFromJson($profile);
+    attachManagedProfileOptions(
+        $profile,
+        [
+            ['code' => 'de', 'label' => 'Deutsch', 'position' => 1],
+            ['code' => 'la', 'label' => 'Latein', 'position' => 2],
+        ],
+        [
+            ['slug' => 'music', 'label' => 'Musik'],
+            ['slug' => 'former-topic', 'label' => 'Ehemaliges Thema'],
+        ],
+    );
 
     $this->actingAs($user)
         ->patch(route('neareon-profile.update'), validProfileUpdatePayload([
@@ -376,11 +395,7 @@ test('legacy labels are normalized to stable option keys when saved', function (
         ]))
         ->assertRedirect(route('neareon-profile.edit'));
 
-    $profile->refresh();
-
-    expect($profile->languages)->toBe(['Deutsch', 'Latein'])
-        ->and($profile->interests)->toBe(['Musik', 'Ehemaliges Thema'])
-        ->and($profile->languageOptions()->pluck('code')->all())->toBe(['de', 'la'])
+    expect($profile->languageOptions()->pluck('code')->all())->toBe(['de', 'la'])
         ->and($profile->interestOptions()->pluck('slug')->sort()->values()->all())
         ->toBe(['former-topic', 'music']);
 });
@@ -398,8 +413,8 @@ test('arbitrary languages and interests are rejected', function () {
         ->assertRedirect(route('neareon-profile.edit'))
         ->assertSessionHasErrors(['languages.1', 'interests.1']);
 
-    expect($profile->refresh()->languages)->not->toContain('tlh')
-        ->and($profile->interests)->not->toContain('unknown');
+    expect($profile->languageOptions()->pluck('code')->all())->not->toContain('tlh')
+        ->and($profile->interestOptions()->pluck('slug')->all())->not->toContain('unknown');
 });
 
 test('users can update visibility fields', function () {

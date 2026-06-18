@@ -15,9 +15,25 @@ beforeEach(function () {
         LanguageOptionSeeder::class,
         InterestOptionSeeder::class,
     ]);
-
-    Profile::created(fn (Profile $profile) => attachManagedProfileOptionsFromJson($profile));
 });
+
+function createProfileWithOnboardingInterests(User $user): Profile
+{
+    $profile = Profile::factory()->for($user)->create();
+
+    attachManagedProfileOptions(
+        $profile,
+        [],
+        [['slug' => 'music', 'label' => 'Musik']],
+    );
+
+    return $profile;
+}
+
+function createCompletedOnboardingProfile(User $user): Profile
+{
+    return completeManagedProfile(Profile::factory()->for($user)->create());
+}
 
 test('guests cannot open onboarding', function () {
     $this->get(route('onboarding.create'))
@@ -34,22 +50,16 @@ test('users without a profile are redirected to onboarding details', function ()
 
 test('users with details but without interests are redirected to onboarding interests', function () {
     $user = User::factory()->create();
-    Profile::factory()->for($user)->create([
-        'interests' => null,
-        'languages' => null,
-    ]);
+    Profile::factory()->for($user)->create();
 
     $this->actingAs($user)
         ->get(route('onboarding.create'))
         ->assertRedirect(route('onboarding.interests'));
 });
 
-test('json values without pivots do not complete onboarding steps', function () {
+test('profile details without option pivots do not complete onboarding steps', function () {
     $user = User::factory()->create();
-    Profile::withoutEvents(fn () => Profile::factory()->for($user)->create([
-        'interests' => ['Musik'],
-        'languages' => ['Deutsch'],
-    ]));
+    Profile::factory()->for($user)->create();
 
     $this->actingAs($user)
         ->get(route('onboarding.create'))
@@ -58,10 +68,7 @@ test('json values without pivots do not complete onboarding steps', function () 
 
 test('users with details and interests but without languages are redirected to onboarding languages', function () {
     $user = User::factory()->create();
-    Profile::factory()->for($user)->create([
-        'interests' => ['Musik'],
-        'languages' => null,
-    ]);
+    createProfileWithOnboardingInterests($user);
 
     $this->actingAs($user)
         ->get(route('onboarding.create'))
@@ -70,10 +77,7 @@ test('users with details and interests but without languages are redirected to o
 
 test('users with complete onboarding are redirected to dashboard', function () {
     $user = User::factory()->create();
-    Profile::factory()->for($user)->create([
-        'interests' => ['Musik'],
-        'languages' => ['Deutsch'],
-    ]);
+    createCompletedOnboardingProfile($user);
 
     $this->actingAs($user)
         ->get(route('onboarding.create'))
@@ -91,10 +95,7 @@ test('direct later onboarding steps redirect to the correct previous step', func
         ->get(route('onboarding.languages'))
         ->assertRedirect(route('onboarding.details'));
 
-    Profile::factory()->for($user)->create([
-        'interests' => null,
-        'languages' => null,
-    ]);
+    Profile::factory()->for($user)->create();
 
     $this->actingAs($user)
         ->get(route('onboarding.languages'))
@@ -103,10 +104,7 @@ test('direct later onboarding steps redirect to the correct previous step', func
 
 test('completed users are redirected away from onboarding steps', function () {
     $user = User::factory()->create();
-    Profile::factory()->for($user)->create([
-        'interests' => ['Musik'],
-        'languages' => ['Deutsch'],
-    ]);
+    createCompletedOnboardingProfile($user);
 
     $this->actingAs($user)
         ->get(route('onboarding.details'))
@@ -203,8 +201,6 @@ test('users cannot create a second profile through details step', function () {
     $user = User::factory()->create();
     Profile::factory()->for($user)->create([
         'username' => 'first_profile',
-        'interests' => null,
-        'languages' => null,
     ]);
 
     $this->actingAs($user)
@@ -220,10 +216,7 @@ test('users cannot create a second profile through details step', function () {
 
 test('interests step stores selected interests in pivots only', function () {
     $user = User::factory()->create();
-    $profile = Profile::factory()->for($user)->create([
-        'interests' => null,
-        'languages' => null,
-    ]);
+    $profile = Profile::factory()->for($user)->create();
 
     $this->actingAs($user)
         ->post(route('onboarding.interests.store'), [
@@ -231,17 +224,13 @@ test('interests step stores selected interests in pivots only', function () {
         ])
         ->assertRedirect(route('onboarding.languages'));
 
-    expect($profile->refresh()->interests)->toBeNull()
-        ->and($profile->interestOptions()->pluck('slug')->sort()->values()->all())
+    expect($profile->interestOptions()->pluck('slug')->sort()->values()->all())
         ->toBe(['events', 'music']);
 });
 
 test('interests step shows only active managed options in configured order', function () {
     $user = User::factory()->create();
-    Profile::factory()->for($user)->create([
-        'interests' => null,
-        'languages' => null,
-    ]);
+    Profile::factory()->for($user)->create();
     InterestOption::query()->where('slug', 'music')->update(['sort_order' => 100]);
     InterestOption::query()->where('slug', 'events')->update(['sort_order' => 1]);
     InterestOption::query()->where('slug', 'sport')->update(['is_active' => false]);
@@ -258,10 +247,7 @@ test('interests step shows only active managed options in configured order', fun
 
 test('interests step requires at least one interest', function () {
     $user = User::factory()->create();
-    Profile::factory()->for($user)->create([
-        'interests' => null,
-        'languages' => null,
-    ]);
+    Profile::factory()->for($user)->create();
 
     $this->actingAs($user)
         ->from(route('onboarding.interests'))
@@ -274,10 +260,7 @@ test('interests step requires at least one interest', function () {
 
 test('interests step rejects more than twenty interests', function () {
     $user = User::factory()->create();
-    Profile::factory()->for($user)->create([
-        'interests' => null,
-        'languages' => null,
-    ]);
+    Profile::factory()->for($user)->create();
 
     $this->actingAs($user)
         ->from(route('onboarding.interests'))
@@ -290,10 +273,7 @@ test('interests step rejects more than twenty interests', function () {
 
 test('interests step rejects unavailable interests', function () {
     $user = User::factory()->create();
-    Profile::factory()->for($user)->create([
-        'interests' => null,
-        'languages' => null,
-    ]);
+    Profile::factory()->for($user)->create();
 
     $this->actingAs($user)
         ->from(route('onboarding.interests'))
@@ -306,10 +286,7 @@ test('interests step rejects unavailable interests', function () {
 
 test('interests step rejects inactive managed options', function () {
     $user = User::factory()->create();
-    Profile::factory()->for($user)->create([
-        'interests' => null,
-        'languages' => null,
-    ]);
+    Profile::factory()->for($user)->create();
     InterestOption::query()->where('slug', 'music')->update(['is_active' => false]);
 
     $this->actingAs($user)
@@ -323,10 +300,7 @@ test('interests step rejects inactive managed options', function () {
 
 test('interests step removes duplicates', function () {
     $user = User::factory()->create();
-    $profile = Profile::factory()->for($user)->create([
-        'interests' => null,
-        'languages' => null,
-    ]);
+    $profile = Profile::factory()->for($user)->create();
 
     $this->actingAs($user)
         ->post(route('onboarding.interests.store'), [
@@ -334,16 +308,12 @@ test('interests step removes duplicates', function () {
         ])
         ->assertRedirect(route('onboarding.languages'));
 
-    expect($profile->refresh()->interests)->toBeNull()
-        ->and($profile->interestOptions()->count())->toBe(2);
+    expect($profile->interestOptions()->count())->toBe(2);
 });
 
 test('languages step stores languages in pivots only', function () {
     $user = User::factory()->create();
-    $profile = Profile::factory()->for($user)->create([
-        'interests' => ['Musik'],
-        'languages' => null,
-    ]);
+    $profile = createProfileWithOnboardingInterests($user);
 
     $this->actingAs($user)
         ->post(route('onboarding.languages.store'), [
@@ -351,10 +321,7 @@ test('languages step stores languages in pivots only', function () {
         ])
         ->assertRedirect(route('dashboard'));
 
-    $profile->refresh();
-
-    expect($profile->languages)->toBeNull()
-        ->and($profile->languageOptions()->pluck('code')->all())
+    expect($profile->languageOptions()->pluck('code')->all())
         ->toBe(['de', 'en'])
         ->and($profile->languageOptions()->get()->pluck('pivot.position')->all())
         ->toBe([1, 2]);
@@ -362,10 +329,7 @@ test('languages step stores languages in pivots only', function () {
 
 test('languages step shows only active managed options in configured order', function () {
     $user = User::factory()->create();
-    Profile::factory()->for($user)->create([
-        'interests' => ['Musik'],
-        'languages' => null,
-    ]);
+    createProfileWithOnboardingInterests($user);
     LanguageOption::query()->where('code', 'de')->update(['sort_order' => 100]);
     LanguageOption::query()->where('code', 'hr')->update(['sort_order' => 1]);
     LanguageOption::query()->where('code', 'en')->update(['is_active' => false]);
@@ -382,10 +346,7 @@ test('languages step shows only active managed options in configured order', fun
 
 test('languages step requires a main language', function () {
     $user = User::factory()->create();
-    Profile::factory()->for($user)->create([
-        'interests' => ['Musik'],
-        'languages' => null,
-    ]);
+    createProfileWithOnboardingInterests($user);
 
     $this->actingAs($user)
         ->from(route('onboarding.languages'))
@@ -398,10 +359,7 @@ test('languages step requires a main language', function () {
 
 test('languages step rejects more than five languages', function () {
     $user = User::factory()->create();
-    Profile::factory()->for($user)->create([
-        'interests' => ['Musik'],
-        'languages' => null,
-    ]);
+    createProfileWithOnboardingInterests($user);
 
     $this->actingAs($user)
         ->from(route('onboarding.languages'))
@@ -414,10 +372,7 @@ test('languages step rejects more than five languages', function () {
 
 test('languages step rejects duplicate languages', function () {
     $user = User::factory()->create();
-    Profile::factory()->for($user)->create([
-        'interests' => ['Musik'],
-        'languages' => null,
-    ]);
+    createProfileWithOnboardingInterests($user);
 
     $this->actingAs($user)
         ->from(route('onboarding.languages'))
@@ -430,10 +385,7 @@ test('languages step rejects duplicate languages', function () {
 
 test('languages step rejects unavailable languages', function () {
     $user = User::factory()->create();
-    Profile::factory()->for($user)->create([
-        'interests' => ['Musik'],
-        'languages' => null,
-    ]);
+    createProfileWithOnboardingInterests($user);
 
     $this->actingAs($user)
         ->from(route('onboarding.languages'))
@@ -446,10 +398,7 @@ test('languages step rejects unavailable languages', function () {
 
 test('languages step rejects inactive managed options', function () {
     $user = User::factory()->create();
-    Profile::factory()->for($user)->create([
-        'interests' => ['Musik'],
-        'languages' => null,
-    ]);
+    createProfileWithOnboardingInterests($user);
     LanguageOption::query()->where('code', 'de')->update(['is_active' => false]);
 
     $this->actingAs($user)
@@ -463,10 +412,7 @@ test('languages step rejects inactive managed options', function () {
 
 test('languages step keeps first language as main language', function () {
     $user = User::factory()->create();
-    $profile = Profile::factory()->for($user)->create([
-        'interests' => ['Musik'],
-        'languages' => null,
-    ]);
+    $profile = createProfileWithOnboardingInterests($user);
 
     $this->actingAs($user)
         ->post(route('onboarding.languages.store'), [
@@ -474,8 +420,7 @@ test('languages step keeps first language as main language', function () {
         ])
         ->assertRedirect(route('dashboard'));
 
-    expect($profile->refresh()->languages)->toBeNull()
-        ->and($profile->languageOptions()->pluck('code')->all())
+    expect($profile->languageOptions()->pluck('code')->all())
         ->toBe(['en', 'de'])
         ->and($profile->languageOptions()->get()->pluck('pivot.position')->all())
         ->toBe([1, 2]);
@@ -483,10 +428,7 @@ test('languages step keeps first language as main language', function () {
 
 test('incomplete onboarding cannot access app areas', function () {
     $user = User::factory()->create();
-    Profile::factory()->for($user)->create([
-        'interests' => ['Musik'],
-        'languages' => null,
-    ]);
+    createProfileWithOnboardingInterests($user);
 
     $this->actingAs($user)
         ->get(route('dashboard'))
@@ -503,10 +445,7 @@ test('incomplete onboarding cannot access app areas', function () {
 
 test('complete onboarding can access app areas', function () {
     $user = User::factory()->create();
-    Profile::factory()->for($user)->create([
-        'interests' => ['Musik'],
-        'languages' => ['Deutsch'],
-    ]);
+    createCompletedOnboardingProfile($user);
 
     $this->actingAs($user)
         ->get(route('dashboard'))
