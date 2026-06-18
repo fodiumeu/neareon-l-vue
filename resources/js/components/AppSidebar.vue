@@ -25,6 +25,9 @@ const page = usePage<{
     auth: {
         user: User | null;
     };
+    contactRequests: {
+        pendingReceivedCount: number;
+    };
     project: {
         adminLabel: string;
         showAdminArea: boolean;
@@ -47,6 +50,8 @@ const visibleMainNavItems = computed(() =>
     filterItemsByUserAccess(
         getMainNavItems({
             adminLabel: page.props.project.adminLabel,
+            pendingContactRequestsCount:
+                page.props.contactRequests.pendingReceivedCount,
             showAdminArea: page.props.project.showAdminArea,
         }),
     ),

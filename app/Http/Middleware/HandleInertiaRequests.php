@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Enums\ContactRequestStatus;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
 
@@ -64,6 +65,11 @@ class HandleInertiaRequests extends Middleware
             ],
             'auth' => [
                 'user' => $request->user(),
+            ],
+            'contactRequests' => [
+                'pendingReceivedCount' => fn (): int => $request->user()?->receivedContactRequests()
+                    ->where('status', ContactRequestStatus::Pending->value)
+                    ->count() ?? 0,
             ],
             'flash' => [
                 'success' => $request->session()->get('success'),

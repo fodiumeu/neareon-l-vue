@@ -1,6 +1,9 @@
 import {
+    ContactRound,
+    Inbox,
     LayoutGrid,
     Search,
+    Send,
     Settings,
     Shield,
     UserCircle,
@@ -11,11 +14,13 @@ import type { NavItem } from '@/types';
 
 type ProjectNavigationOptions = {
     adminLabel: string;
+    pendingContactRequestsCount: number;
     showAdminArea: boolean;
 };
 
 export const getMainNavItems = ({
     adminLabel,
+    pendingContactRequestsCount,
     showAdminArea,
 }: ProjectNavigationOptions): NavItem[] => [
     {
@@ -27,6 +32,22 @@ export const getMainNavItems = ({
         title: 'Entdecken',
         href: '/discover',
         icon: Search,
+    },
+    {
+        title: 'Kontakte',
+        href: '/contacts',
+        icon: ContactRound,
+    },
+    {
+        title: 'Kontaktanfragen',
+        href: '/contact-requests',
+        icon: Inbox,
+        badge: pendingContactRequestsCount,
+    },
+    {
+        title: 'Gesendete Anfragen',
+        href: '/contact-requests/sent',
+        icon: Send,
     },
     {
         title: 'Profil',
