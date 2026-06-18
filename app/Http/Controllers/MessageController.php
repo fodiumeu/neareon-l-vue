@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Requests\StoreMessageRequest;
 use App\Models\Conversation;
 use App\Models\ConversationParticipant;
+use App\Services\ConversationReadService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -14,6 +15,10 @@ use Symfony\Component\HttpFoundation\Response as HttpResponse;
 
 class MessageController extends Controller
 {
+    public function __construct(
+        private readonly ConversationReadService $conversationReads,
+    ) {}
+
     /**
      * Show the authenticated user's conversation list.
      */
@@ -30,8 +35,12 @@ class MessageController extends Controller
                 'participants.user.profile:user_id,display_name,username',
             ])
             ->orderByDesc('conversations.updated_at')
-            ->get()
-            ->map(function (Conversation $conversation) use ($viewer): array {
+            ->get();
+        $unreadCounts = $this->conversationReads
+            ->countUnreadMessagesFor($conversations, $viewer);
+
+        $conversations = $conversations
+            ->map(function (Conversation $conversation) use ($viewer, $unreadCounts): array {
                 $otherParticipant = $conversation->participants->first(
                     fn (ConversationParticipant $participant): bool => $participant->user_id !== $viewer->id,
                 );
@@ -42,6 +51,7 @@ class MessageController extends Controller
                     'participant_count' => $conversation->participants_count,
                     'created_at' => $conversation->created_at->toIso8601String(),
                     'updated_at' => $conversation->updated_at->toIso8601String(),
+                    'unread_count' => $unreadCounts[$conversation->id],
                     'other_participant' => [
                         'display_name' => $otherUser?->profile?->display_name
                             ?? $otherUser?->name,

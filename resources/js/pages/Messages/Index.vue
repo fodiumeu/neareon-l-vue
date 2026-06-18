@@ -3,6 +3,7 @@ import { Head, Link } from '@inertiajs/vue3';
 import PageHeader from '@/components/PageHeader.vue';
 import PageSection from '@/components/PageSection.vue';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 
@@ -11,6 +12,7 @@ type Conversation = {
     participant_count: number;
     created_at: string;
     updated_at: string;
+    unread_count: number;
     other_participant: {
         display_name: string | null;
         username: string | null;
@@ -29,6 +31,8 @@ const participantLabel = (conversation: Conversation) =>
 
 const avatarInitial = (conversation: Conversation) =>
     participantLabel(conversation).charAt(0).toUpperCase();
+
+const unreadLabel = (count: number) => (count >= 100 ? '99+' : count);
 
 const formatDate = (value: string) =>
     new Intl.DateTimeFormat('de-DE', {
@@ -108,12 +112,23 @@ defineOptions({
                                 </p>
                             </div>
 
-                            <time
-                                :datetime="conversation.updated_at"
-                                class="shrink-0 text-xs text-muted-foreground"
-                            >
-                                {{ formatDate(conversation.updated_at) }}
-                            </time>
+                            <div class="flex shrink-0 items-center gap-2">
+                                <Badge
+                                    v-if="conversation.unread_count > 0"
+                                    class="min-w-7 px-2 py-1 text-sm font-semibold"
+                                    :aria-label="`${conversation.unread_count} ungelesene Nachrichten`"
+                                    data-test="conversation-unread-badge"
+                                >
+                                    {{ unreadLabel(conversation.unread_count) }}
+                                </Badge>
+
+                                <time
+                                    :datetime="conversation.updated_at"
+                                    class="text-xs text-muted-foreground"
+                                >
+                                    {{ formatDate(conversation.updated_at) }}
+                                </time>
+                            </div>
                         </div>
 
                         <div

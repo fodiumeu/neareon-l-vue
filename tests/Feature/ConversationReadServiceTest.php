@@ -7,6 +7,7 @@ use App\Models\Message;
 use App\Models\User;
 use App\Services\ConversationReadService;
 use Carbon\CarbonInterface;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Schema;
 
@@ -161,6 +162,48 @@ test('the unread count is zero when no foreign message is unread', function () {
         ->countUnreadMessages($conversation, $viewer);
 
     expect($count)->toBe(0);
+});
+
+test('unread messages are counted for multiple conversations at once', function () {
+    $viewer = User::factory()->create();
+    $sender = User::factory()->create();
+    $firstConversation = Conversation::factory()->create();
+    $secondConversation = Conversation::factory()->create();
+    createReadStateParticipant($firstConversation, $viewer);
+    createReadStateParticipant(
+        $secondConversation,
+        $viewer,
+        Carbon::parse('2026-06-18 11:00:00'),
+    );
+    createReadStateMessage(
+        $firstConversation,
+        $sender,
+        '2026-06-18 10:00:00',
+    );
+    createReadStateMessage(
+        $secondConversation,
+        $sender,
+        '2026-06-18 10:00:00',
+    );
+    createReadStateMessage(
+        $secondConversation,
+        $sender,
+        '2026-06-18 12:00:00',
+    );
+
+    $counts = app(ConversationReadService::class)
+        ->countUnreadMessagesFor(
+            new Collection([
+                $firstConversation,
+                $secondConversation,
+            ]),
+            $viewer,
+        );
+
+    expect($counts)->toBe([
+        $firstConversation->id => 1,
+        $secondConversation->id => 1,
+    ]);
 });
 
 test('the read state migration can be rolled back and applied again', function () {
