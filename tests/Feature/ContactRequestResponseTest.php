@@ -2,6 +2,8 @@
 
 use App\Enums\ContactRequestStatus;
 use App\Models\ContactRequest;
+use App\Models\Conversation;
+use App\Models\ConversationParticipant;
 use App\Models\Follow;
 use App\Models\User;
 use Illuminate\Support\Facades\Route;
@@ -39,7 +41,11 @@ test('the receiver can accept a pending contact request', function () {
         ->and($sender->isFollowing($receiver))->toBeTrue()
         ->and($receiver->isFollowing($sender))->toBeTrue()
         ->and($sender->isMutualWith($receiver))->toBeTrue()
-        ->and(Follow::query()->count())->toBe(2);
+        ->and(Follow::query()->count())->toBe(2)
+        ->and(Conversation::query()->count())->toBe(1)
+        ->and(ConversationParticipant::query()
+            ->pluck('user_id')
+            ->all())->toEqualCanonicalizing([$sender->id, $receiver->id]);
 });
 
 test('accepting preserves an existing follow and creates only the missing direction', function (
@@ -111,6 +117,33 @@ test('accepting does not duplicate an existing mutual follow', function () {
         ->and(Follow::query()->count())->toBe(2);
 });
 
+test('accepting reuses an existing direct conversation without duplicates', function () {
+    $sender = User::factory()->create();
+    $receiver = User::factory()->create();
+    createOnboardedProfile($receiver);
+    $contactRequest = ContactRequest::factory()
+        ->for($sender, 'sender')
+        ->for($receiver, 'receiver')
+        ->create();
+    $existingConversation = Conversation::factory()->create();
+    ConversationParticipant::factory()
+        ->for($existingConversation)
+        ->for($sender)
+        ->create();
+    ConversationParticipant::factory()
+        ->for($existingConversation)
+        ->for($receiver)
+        ->create();
+
+    respondToContactRequest($this, $receiver, $contactRequest, 'accept')
+        ->assertRedirect(route('contact-requests.index'))
+        ->assertSessionHas('success', 'Kontaktanfrage angenommen.');
+
+    expect(Conversation::query()->count())->toBe(1)
+        ->and(Conversation::query()->sole()->is($existingConversation))->toBeTrue()
+        ->and(ConversationParticipant::query()->count())->toBe(2);
+});
+
 test('the receiver can decline a pending contact request', function () {
     $sender = User::factory()->create();
     $receiver = User::factory()->create();
@@ -128,7 +161,46 @@ test('the receiver can decline a pending contact request', function () {
 
     expect($contactRequest->status)->toBe(ContactRequestStatus::Declined)
         ->and($contactRequest->responded_at)->not->toBeNull()
-        ->and(Follow::query()->exists())->toBeFalse();
+        ->and(Follow::query()->exists())->toBeFalse()
+        ->and(Conversation::query()->exists())->toBeFalse();
+});
+
+test('accepting rolls back status follows and conversation when conversation creation fails', function () {
+    $this->withoutExceptionHandling();
+
+    $sender = User::factory()->create();
+    $receiver = User::factory()->create();
+    createOnboardedProfile($receiver);
+    $contactRequest = ContactRequest::factory()
+        ->for($sender, 'sender')
+        ->for($receiver, 'receiver')
+        ->create();
+    $participantCreations = 0;
+
+    ConversationParticipant::creating(
+        function () use (&$participantCreations): void {
+            $participantCreations++;
+
+            if ($participantCreations === 2) {
+                throw new LogicException('Simulated participant creation failure.');
+            }
+        },
+    );
+
+    try {
+        respondToContactRequest($this, $receiver, $contactRequest, 'accept');
+    } catch (LogicException $exception) {
+        expect($exception->getMessage())
+            ->toBe('Simulated participant creation failure.');
+    } finally {
+        ConversationParticipant::flushEventListeners();
+    }
+
+    expect($contactRequest->refresh()->status)->toBe(ContactRequestStatus::Pending)
+        ->and($contactRequest->responded_at)->toBeNull()
+        ->and(Follow::query()->exists())->toBeFalse()
+        ->and(Conversation::query()->exists())->toBeFalse()
+        ->and(ConversationParticipant::query()->exists())->toBeFalse();
 });
 
 test('the sender cannot respond to a contact request', function (string $action) {

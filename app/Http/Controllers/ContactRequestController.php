@@ -6,6 +6,7 @@ use App\Enums\ContactRequestStatus;
 use App\Http\Requests\StoreContactRequestRequest;
 use App\Models\ContactRequest;
 use App\Models\User;
+use App\Services\ConversationService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -15,6 +16,10 @@ use Symfony\Component\HttpFoundation\Response as HttpResponse;
 
 class ContactRequestController extends Controller
 {
+    public function __construct(
+        private readonly ConversationService $conversations,
+    ) {}
+
     /**
      * Show the authenticated user's pending received contact requests.
      */
@@ -176,6 +181,11 @@ class ContactRequestController extends Controller
                     ->firstOrCreate([
                         'followed_id' => $lockedContactRequest->sender_id,
                     ]);
+
+                $this->conversations->getOrCreateDirectConversation(
+                    $lockedContactRequest->sender,
+                    $lockedContactRequest->receiver,
+                );
             }
         });
     }
