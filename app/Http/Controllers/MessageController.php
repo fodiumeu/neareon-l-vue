@@ -79,6 +79,8 @@ class MessageController extends Controller
             HttpResponse::HTTP_FORBIDDEN,
         );
 
+        $this->conversationReads->markAsRead($conversation, $viewer);
+
         $conversation->load([
             'participants:id,conversation_id,user_id',
             'participants.user:id,name',

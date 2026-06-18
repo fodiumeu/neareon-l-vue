@@ -5,6 +5,8 @@ use App\Models\ConversationParticipant;
 use App\Models\Message;
 use App\Models\Profile;
 use App\Models\User;
+use App\Services\ConversationReadService;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Route;
 use Inertia\Testing\AssertableInertia as Assert;
 
@@ -51,6 +53,76 @@ test('a non-participant receives forbidden for a conversation', function () {
     $this->actingAs($viewer)
         ->get(route('messages.show', $conversation))
         ->assertForbidden();
+});
+
+test('opening a conversation marks it as read for the current user only', function () {
+    $viewer = User::factory()->create();
+    createOnboardedProfile($viewer);
+    $otherUser = User::factory()->create();
+    $conversation = Conversation::factory()->create();
+    $viewerParticipant = participateInConversation($conversation, $viewer);
+    $otherParticipant = participateInConversation($conversation, $otherUser);
+    $openedAt = Carbon::parse('2026-06-18 14:00:00');
+
+    Carbon::setTestNow($openedAt);
+
+    try {
+        $this->actingAs($viewer)
+            ->get(route('messages.show', $conversation))
+            ->assertOk();
+    } finally {
+        Carbon::setTestNow();
+    }
+
+    expect($viewerParticipant->fresh()->last_read_at?->equalTo($openedAt))
+        ->toBeTrue()
+        ->and($otherParticipant->fresh()->last_read_at)->toBeNull();
+});
+
+test('opening a conversation does not change read state in other conversations', function () {
+    $viewer = User::factory()->create();
+    createOnboardedProfile($viewer);
+    $conversation = Conversation::factory()->create();
+    participateInConversation($conversation, $viewer);
+    participateInConversation($conversation, User::factory()->create());
+    $otherConversation = Conversation::factory()->create();
+    $otherParticipant = participateInConversation(
+        $otherConversation,
+        $viewer,
+    );
+
+    $this->actingAs($viewer)
+        ->get(route('messages.show', $conversation))
+        ->assertOk();
+
+    expect($otherParticipant->fresh()->last_read_at)->toBeNull();
+});
+
+test('opening a conversation reduces its unread count to zero', function () {
+    $viewer = User::factory()->create();
+    createOnboardedProfile($viewer);
+    $otherUser = User::factory()->create();
+    $conversation = Conversation::factory()->create();
+    participateInConversation($conversation, $viewer);
+    participateInConversation($conversation, $otherUser);
+    Message::factory()
+        ->count(3)
+        ->for($conversation)
+        ->for($otherUser, 'sender')
+        ->create([
+            'created_at' => now()->subMinute(),
+        ]);
+    $readService = app(ConversationReadService::class);
+
+    expect($readService->countUnreadMessages($conversation, $viewer))
+        ->toBe(3);
+
+    $this->actingAs($viewer)
+        ->get(route('messages.show', $conversation))
+        ->assertOk();
+
+    expect($readService->countUnreadMessages($conversation, $viewer))
+        ->toBe(0);
 });
 
 test('conversation messages are loaded oldest first with sender data', function () {
