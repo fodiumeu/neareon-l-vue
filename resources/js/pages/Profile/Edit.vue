@@ -13,8 +13,8 @@ type ProfileForm = {
     display_name: string;
     bio: string | null;
     region: string | null;
-    languages: string;
-    interests: string;
+    languages: string[];
+    interests: string[];
     profile_visibility: string;
     interests_visibility: string;
     languages_visibility: string;
@@ -27,8 +27,16 @@ type VisibilityOption = {
     label: string;
 };
 
+type ProfileOption = {
+    value: string;
+    label: string;
+    is_active: boolean;
+};
+
 defineProps<{
     profile: ProfileForm;
+    languageOptions: ProfileOption[];
+    interestOptions: ProfileOption[];
     fieldVisibilityOptions: VisibilityOption[];
     profileVisibilityOptions: VisibilityOption[];
 }>();
@@ -103,31 +111,77 @@ defineOptions({
                         </div>
 
                         <div class="grid gap-2">
-                            <Label for="languages">Sprachen</Label>
-                            <Input
-                                id="languages"
-                                name="languages"
-                                type="text"
-                                :default-value="profile.languages"
-                                placeholder="Deutsch, Englisch"
-                            />
+                            <Label>Sprachen</Label>
+                            <div
+                                class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3"
+                            >
+                                <Label
+                                    v-for="option in languageOptions"
+                                    :key="option.value"
+                                    class="flex cursor-pointer items-center gap-3 rounded-md border border-input bg-background/70 px-3 py-2 text-sm transition-colors hover:border-ring/70 hover:bg-accent/70"
+                                >
+                                    <input
+                                        type="checkbox"
+                                        name="languages[]"
+                                        :value="option.value"
+                                        :checked="
+                                            profile.languages.includes(
+                                                option.value,
+                                            )
+                                        "
+                                        class="size-4 rounded border-input accent-primary"
+                                    />
+                                    <span class="leading-5">
+                                        {{ option.label }}
+                                        <span
+                                            v-if="!option.is_active"
+                                            class="text-muted-foreground"
+                                        >
+                                            (inaktiv)
+                                        </span>
+                                    </span>
+                                </Label>
+                            </div>
                             <p class="text-sm text-muted-foreground">
-                                Kommagetrennt, maximal 20 Einträge.
+                                Wähle maximal 20 Sprachen aus.
                             </p>
                             <InputError :message="errors.languages" />
                         </div>
 
                         <div class="grid gap-2">
-                            <Label for="interests">Interessen</Label>
-                            <Input
-                                id="interests"
-                                name="interests"
-                                type="text"
-                                :default-value="profile.interests"
-                                placeholder="Musik, Events, Technik"
-                            />
+                            <Label>Interessen</Label>
+                            <div
+                                class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3"
+                            >
+                                <Label
+                                    v-for="option in interestOptions"
+                                    :key="option.value"
+                                    class="flex cursor-pointer items-center gap-3 rounded-md border border-input bg-background/70 px-3 py-2 text-sm transition-colors hover:border-ring/70 hover:bg-accent/70"
+                                >
+                                    <input
+                                        type="checkbox"
+                                        name="interests[]"
+                                        :value="option.value"
+                                        :checked="
+                                            profile.interests.includes(
+                                                option.value,
+                                            )
+                                        "
+                                        class="size-4 rounded border-input accent-primary"
+                                    />
+                                    <span class="leading-5">
+                                        {{ option.label }}
+                                        <span
+                                            v-if="!option.is_active"
+                                            class="text-muted-foreground"
+                                        >
+                                            (inaktiv)
+                                        </span>
+                                    </span>
+                                </Label>
+                            </div>
                             <p class="text-sm text-muted-foreground">
-                                Kommagetrennt, maximal 20 Einträge.
+                                Wähle maximal 20 Interessen aus.
                             </p>
                             <InputError :message="errors.interests" />
                         </div>

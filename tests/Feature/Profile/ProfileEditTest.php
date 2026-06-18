@@ -1,9 +1,54 @@
 <?php
 
 use App\Enums\ProfileVisibility;
+use App\Models\InterestOption;
+use App\Models\LanguageOption;
 use App\Models\Profile;
 use App\Models\User;
 use Inertia\Testing\AssertableInertia as Assert;
+
+beforeEach(function () {
+    LanguageOption::query()->create([
+        'code' => 'de',
+        'label' => 'Deutsch',
+        'native_label' => 'Deutsch',
+        'sort_order' => 1,
+        'is_active' => true,
+    ]);
+    LanguageOption::query()->create([
+        'code' => 'en',
+        'label' => 'Englisch',
+        'native_label' => 'English',
+        'sort_order' => 2,
+        'is_active' => true,
+    ]);
+    LanguageOption::query()->create([
+        'code' => 'es',
+        'label' => 'Spanisch',
+        'native_label' => 'Español',
+        'sort_order' => 3,
+        'is_active' => true,
+    ]);
+
+    foreach ([
+        'music' => 'Musik',
+        'events' => 'Events',
+        'community' => 'Community',
+        'technology' => 'Technik',
+    ] as $slug => $label) {
+        InterestOption::query()->create([
+            'slug' => $slug,
+            'label' => $label,
+            'sort_order' => match ($slug) {
+                'music' => 1,
+                'events' => 2,
+                'community' => 3,
+                'technology' => 4,
+            },
+            'is_active' => true,
+        ]);
+    }
+});
 
 function validProfileUpdatePayload(array $overrides = []): array
 {
@@ -11,8 +56,8 @@ function validProfileUpdatePayload(array $overrides = []): array
         'display_name' => 'Updated Member',
         'bio' => 'Eine kurze aktualisierte Info.',
         'region' => 'Hamburg',
-        'languages' => 'Deutsch, Englisch',
-        'interests' => 'Musik, Events',
+        'languages' => ['de', 'en'],
+        'interests' => ['music', 'events'],
         'profile_visibility' => ProfileVisibility::Public->value,
         'interests_visibility' => ProfileVisibility::Public->value,
         'languages_visibility' => ProfileVisibility::Public->value,
@@ -55,8 +100,19 @@ test('users with a profile can open profile editing', function () {
             ->component('Profile/Edit')
             ->where('profile.display_name', 'Existing Member')
             ->where('profile.bio', 'Existing Bio')
-            ->where('profile.languages', 'Deutsch, Englisch')
-            ->where('profile.interests', 'Musik, Events')
+            ->where('profile.languages', ['de', 'en'])
+            ->where('profile.interests', ['music', 'events'])
+            ->where('languageOptions', [
+                ['value' => 'de', 'label' => 'Deutsch', 'is_active' => true],
+                ['value' => 'en', 'label' => 'Englisch (English)', 'is_active' => true],
+                ['value' => 'es', 'label' => 'Spanisch (Español)', 'is_active' => true],
+            ])
+            ->where('interestOptions', [
+                ['value' => 'music', 'label' => 'Musik', 'is_active' => true],
+                ['value' => 'events', 'label' => 'Events', 'is_active' => true],
+                ['value' => 'community', 'label' => 'Community', 'is_active' => true],
+                ['value' => 'technology', 'label' => 'Technik', 'is_active' => true],
+            ])
             ->where('profile.profile_visibility', 'mutuals')
             ->where('profile.interests_visibility', 'private')
             ->where('profile.languages_visibility', 'public')
@@ -184,15 +240,15 @@ test('users can update languages and interests', function () {
 
     $this->actingAs($user)
         ->patch(route('neareon-profile.update'), validProfileUpdatePayload([
-            'languages' => ['Deutsch', 'Englisch', 'Spanisch'],
-            'interests' => ['Community', 'Technik'],
+            'languages' => ['de', 'en', 'es'],
+            'interests' => ['community', 'technology'],
         ]))
         ->assertRedirect(route('neareon-profile.edit'));
 
     $profile->refresh();
 
-    expect($profile->languages)->toBe(['Deutsch', 'Englisch', 'Spanisch'])
-        ->and($profile->interests)->toBe(['Community', 'Technik']);
+    expect($profile->languages)->toBe(['de', 'en', 'es'])
+        ->and($profile->interests)->toBe(['community', 'technology']);
 });
 
 test('comma separated languages and interests are stored as arrays', function () {
@@ -201,15 +257,108 @@ test('comma separated languages and interests are stored as arrays', function ()
 
     $this->actingAs($user)
         ->patch(route('neareon-profile.update'), validProfileUpdatePayload([
-            'languages' => 'Deutsch, Englisch, , Deutsch',
-            'interests' => 'Musik, Events, Technik',
+            'languages' => 'de, en, , de',
+            'interests' => 'music, events, technology',
         ]))
         ->assertRedirect(route('neareon-profile.edit'));
 
     $profile->refresh();
 
-    expect($profile->languages)->toBe(['Deutsch', 'Englisch'])
-        ->and($profile->interests)->toBe(['Musik', 'Events', 'Technik']);
+    expect($profile->languages)->toBe(['de', 'en'])
+        ->and($profile->interests)->toBe(['music', 'events', 'technology']);
+});
+
+test('inactive options are only exposed when already selected', function () {
+    $user = User::factory()->create();
+    Profile::factory()->for($user)->create([
+        'languages' => ['Deutsch', 'Latein'],
+        'interests' => ['Musik', 'Ehemaliges Thema'],
+    ]);
+    LanguageOption::query()->create([
+        'code' => 'la',
+        'label' => 'Latein',
+        'native_label' => null,
+        'sort_order' => 4,
+        'is_active' => false,
+    ]);
+    InterestOption::query()->create([
+        'slug' => 'former-topic',
+        'label' => 'Ehemaliges Thema',
+        'sort_order' => 5,
+        'is_active' => false,
+    ]);
+    LanguageOption::query()->create([
+        'code' => 'xx',
+        'label' => 'Nicht gewählt',
+        'native_label' => null,
+        'sort_order' => 5,
+        'is_active' => false,
+    ]);
+
+    $this->actingAs($user)
+        ->get(route('neareon-profile.edit'))
+        ->assertOk()
+        ->assertInertia(fn (Assert $page) => $page
+            ->where('languageOptions.3', [
+                'value' => 'la',
+                'label' => 'Latein',
+                'is_active' => false,
+            ])
+            ->where('interestOptions.4', [
+                'value' => 'former-topic',
+                'label' => 'Ehemaliges Thema',
+                'is_active' => false,
+            ])
+            ->missing('languageOptions.4'),
+        );
+});
+
+test('legacy labels are normalized to stable option keys when saved', function () {
+    $user = User::factory()->create();
+    $profile = Profile::factory()->for($user)->create([
+        'languages' => ['Deutsch', 'Latein'],
+        'interests' => ['Musik', 'Ehemaliges Thema'],
+    ]);
+    LanguageOption::query()->create([
+        'code' => 'la',
+        'label' => 'Latein',
+        'native_label' => null,
+        'sort_order' => 4,
+        'is_active' => false,
+    ]);
+    InterestOption::query()->create([
+        'slug' => 'former-topic',
+        'label' => 'Ehemaliges Thema',
+        'sort_order' => 5,
+        'is_active' => false,
+    ]);
+
+    $this->actingAs($user)
+        ->patch(route('neareon-profile.update'), validProfileUpdatePayload([
+            'languages' => ['de', 'la'],
+            'interests' => ['music', 'former-topic'],
+        ]))
+        ->assertRedirect(route('neareon-profile.edit'));
+
+    expect($profile->refresh()->languages)->toBe(['de', 'la'])
+        ->and($profile->interests)->toBe(['music', 'former-topic']);
+});
+
+test('arbitrary languages and interests are rejected', function () {
+    $user = User::factory()->create();
+    $profile = Profile::factory()->for($user)->create();
+
+    $this->actingAs($user)
+        ->from(route('neareon-profile.edit'))
+        ->patch(route('neareon-profile.update'), validProfileUpdatePayload([
+            'languages' => ['de', 'tlh'],
+            'interests' => ['music', 'unknown'],
+        ]))
+        ->assertRedirect(route('neareon-profile.edit'))
+        ->assertSessionHasErrors(['languages.1', 'interests.1']);
+
+    expect($profile->refresh()->languages)->not->toContain('tlh')
+        ->and($profile->interests)->not->toContain('unknown');
 });
 
 test('users can update visibility fields', function () {

@@ -3,6 +3,8 @@
 namespace App\Http\Requests;
 
 use App\Enums\ProfileVisibility;
+use App\Models\InterestOption;
+use App\Models\LanguageOption;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -42,6 +44,19 @@ class UpdateProfileRequest extends FormRequest
      */
     public function rules(): array
     {
+        $profile = $this->user()?->profile;
+        $storedLanguages = $profile?->languages ?? [];
+        $storedInterests = $profile?->interests ?? [];
+        $selectedLanguageCodes = LanguageOption::query()
+            ->whereIn('code', $storedLanguages)
+            ->orWhereIn('label', $storedLanguages)
+            ->pluck('code')
+            ->all();
+        $selectedInterestSlugs = InterestOption::query()
+            ->whereIn('slug', $storedInterests)
+            ->orWhereIn('label', $storedInterests)
+            ->pluck('slug')
+            ->all();
         $profileVisibility = [
             ProfileVisibility::Public->value,
             ProfileVisibility::Mutuals->value,
@@ -59,9 +74,27 @@ class UpdateProfileRequest extends FormRequest
             'bio' => ['nullable', 'string', 'max:280'],
             'region' => ['nullable', 'string', 'max:120'],
             'languages' => ['nullable', 'array', 'max:20'],
-            'languages.*' => ['string', 'max:40'],
+            'languages.*' => [
+                'string',
+                'max:40',
+                Rule::exists(LanguageOption::class, 'code')
+                    ->where(fn ($query) => $query->where('is_active', true)
+                        ->when(
+                            $selectedLanguageCodes !== [],
+                            fn ($query) => $query->orWhereIn('code', $selectedLanguageCodes),
+                        )),
+            ],
             'interests' => ['nullable', 'array', 'max:20'],
-            'interests.*' => ['string', 'max:40'],
+            'interests.*' => [
+                'string',
+                'max:40',
+                Rule::exists(InterestOption::class, 'slug')
+                    ->where(fn ($query) => $query->where('is_active', true)
+                        ->when(
+                            $selectedInterestSlugs !== [],
+                            fn ($query) => $query->orWhereIn('slug', $selectedInterestSlugs),
+                        )),
+            ],
             'profile_visibility' => ['required', Rule::in($profileVisibility)],
             'interests_visibility' => ['required', Rule::in($fieldVisibility)],
             'languages_visibility' => ['required', Rule::in($fieldVisibility)],
@@ -84,8 +117,10 @@ class UpdateProfileRequest extends FormRequest
             'region.max' => 'Die Region darf maximal 120 Zeichen lang sein.',
             'languages.max' => 'Bitte gib maximal 20 Sprachen an.',
             'languages.*.max' => 'Ein Spracheintrag darf maximal 40 Zeichen lang sein.',
+            'languages.*.exists' => 'Bitte wähle eine verfügbare Sprache aus.',
             'interests.max' => 'Bitte gib maximal 20 Interessen an.',
             'interests.*.max' => 'Ein Interesse darf maximal 40 Zeichen lang sein.',
+            'interests.*.exists' => 'Bitte wähle ein verfügbares Interesse aus.',
             '*.required' => 'Bitte wähle eine Sichtbarkeit aus.',
             '*.in' => 'Bitte wähle eine gültige Sichtbarkeit aus.',
         ];
