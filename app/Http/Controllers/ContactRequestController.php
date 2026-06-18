@@ -125,6 +125,20 @@ class ContactRequestController extends Controller
                 'status' => $status,
                 'responded_at' => now(),
             ]);
+
+            if ($status === ContactRequestStatus::Accepted) {
+                $lockedContactRequest->sender
+                    ->followingRelationships()
+                    ->firstOrCreate([
+                        'followed_id' => $lockedContactRequest->receiver_id,
+                    ]);
+
+                $lockedContactRequest->receiver
+                    ->followingRelationships()
+                    ->firstOrCreate([
+                        'followed_id' => $lockedContactRequest->sender_id,
+                    ]);
+            }
         });
     }
 

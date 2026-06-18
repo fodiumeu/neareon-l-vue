@@ -36,7 +36,79 @@ test('the receiver can accept a pending contact request', function () {
 
     expect($contactRequest->status)->toBe(ContactRequestStatus::Accepted)
         ->and($contactRequest->responded_at)->not->toBeNull()
-        ->and(Follow::query()->exists())->toBeFalse();
+        ->and($sender->isFollowing($receiver))->toBeTrue()
+        ->and($receiver->isFollowing($sender))->toBeTrue()
+        ->and($sender->isMutualWith($receiver))->toBeTrue()
+        ->and(Follow::query()->count())->toBe(2);
+});
+
+test('accepting preserves an existing follow and creates only the missing direction', function (
+    string $existingDirection,
+) {
+    $sender = User::factory()->create();
+    $receiver = User::factory()->create();
+    createOnboardedProfile($receiver);
+    $contactRequest = ContactRequest::factory()
+        ->for($sender, 'sender')
+        ->for($receiver, 'receiver')
+        ->create();
+
+    $existingFollow = Follow::query()->create(
+        $existingDirection === 'sender-to-receiver'
+            ? [
+                'follower_id' => $sender->id,
+                'followed_id' => $receiver->id,
+            ]
+            : [
+                'follower_id' => $receiver->id,
+                'followed_id' => $sender->id,
+            ],
+    );
+
+    respondToContactRequest($this, $receiver, $contactRequest, 'accept')
+        ->assertRedirect(route('contact-requests.index'));
+
+    expect(Follow::query()->whereKey($existingFollow->id)->exists())->toBeTrue()
+        ->and($sender->isFollowing($receiver))->toBeTrue()
+        ->and($receiver->isFollowing($sender))->toBeTrue()
+        ->and($sender->isMutualWith($receiver))->toBeTrue()
+        ->and(Follow::query()->count())->toBe(2);
+})->with([
+    'sender already follows receiver' => 'sender-to-receiver',
+    'receiver already follows sender' => 'receiver-to-sender',
+]);
+
+test('accepting does not duplicate an existing mutual follow', function () {
+    $sender = User::factory()->create();
+    $receiver = User::factory()->create();
+    createOnboardedProfile($receiver);
+    $contactRequest = ContactRequest::factory()
+        ->for($sender, 'sender')
+        ->for($receiver, 'receiver')
+        ->create();
+
+    Follow::query()->create([
+        'follower_id' => $sender->id,
+        'followed_id' => $receiver->id,
+    ]);
+    Follow::query()->create([
+        'follower_id' => $receiver->id,
+        'followed_id' => $sender->id,
+    ]);
+
+    respondToContactRequest($this, $receiver, $contactRequest, 'accept')
+        ->assertRedirect(route('contact-requests.index'));
+
+    expect($sender->isMutualWith($receiver))->toBeTrue()
+        ->and(Follow::query()
+            ->where('follower_id', $sender->id)
+            ->where('followed_id', $receiver->id)
+            ->count())->toBe(1)
+        ->and(Follow::query()
+            ->where('follower_id', $receiver->id)
+            ->where('followed_id', $sender->id)
+            ->count())->toBe(1)
+        ->and(Follow::query()->count())->toBe(2);
 });
 
 test('the receiver can decline a pending contact request', function () {
