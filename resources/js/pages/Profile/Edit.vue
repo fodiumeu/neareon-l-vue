@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { Form, Head } from '@inertiajs/vue3';
+import AppBackButton from '@/components/AppBackButton.vue';
 import InputError from '@/components/InputError.vue';
 import PageHeader from '@/components/PageHeader.vue';
 import PageSection from '@/components/PageSection.vue';
@@ -65,6 +66,8 @@ defineOptions({
     <Head title="Profil bearbeiten" />
 
     <div class="flex h-full flex-1 flex-col gap-6 overflow-x-auto p-4">
+        <AppBackButton fallback="/profile" label="Zurück zum Profil" />
+
         <PageHeader
             title="Profil bearbeiten"
             description="Passe deine NEAREON-Profildaten und Sichtbarkeit an."

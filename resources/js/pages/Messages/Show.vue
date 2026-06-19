@@ -1,5 +1,13 @@
 <script setup lang="ts">
 import { Form, Head } from '@inertiajs/vue3';
+import {
+    computed,
+    nextTick,
+    onBeforeUnmount,
+    onMounted,
+    ref,
+    watch,
+} from 'vue';
 import AppBackButton from '@/components/AppBackButton.vue';
 import InputError from '@/components/InputError.vue';
 import PageHeader from '@/components/PageHeader.vue';
@@ -35,6 +43,12 @@ const props = defineProps<{
     conversation: Conversation;
 }>();
 
+const conversationEnd = ref<HTMLElement | null>(null);
+const messageInput = ref<HTMLTextAreaElement | null>(null);
+const previousScrollRestoration = window.history.scrollRestoration;
+
+window.history.scrollRestoration = 'manual';
+
 const participantLabel =
     props.conversation.other_participant.display_name ??
     (props.conversation.other_participant.username
@@ -43,6 +57,52 @@ const participantLabel =
 
 const avatarInitial = (message: ConversationMessage) =>
     message.sender.display_name.charAt(0).toUpperCase();
+
+const latestMessageId = computed(
+    () =>
+        props.conversation.messages[props.conversation.messages.length - 1]
+            ?.id ?? null,
+);
+
+const scrollToConversationEnd = async (behavior: ScrollBehavior = 'smooth') => {
+    await nextTick();
+    conversationEnd.value?.scrollIntoView({
+        behavior,
+        block: 'end',
+    });
+};
+
+const waitForNextPaint = () =>
+    new Promise<void>((resolve) => {
+        window.requestAnimationFrame(() => resolve());
+    });
+
+const scrollToInitialConversationEnd = async () => {
+    await nextTick();
+    await document.fonts.ready;
+    await waitForNextPaint();
+    await waitForNextPaint();
+    await scrollToConversationEnd('auto');
+};
+
+const handleMessageSent = async () => {
+    await scrollToConversationEnd();
+    messageInput.value?.focus();
+};
+
+onMounted(() => {
+    void scrollToInitialConversationEnd();
+});
+
+onBeforeUnmount(() => {
+    window.history.scrollRestoration = previousScrollRestoration;
+});
+
+watch(latestMessageId, (current, previous) => {
+    if (current !== previous) {
+        void scrollToConversationEnd();
+    }
+});
 
 const formatDate = (value: string) =>
     new Intl.DateTimeFormat('de-DE', {
@@ -153,6 +213,7 @@ defineOptions({
                         :action="`/messages/${conversation.conversation_id}`"
                         method="post"
                         reset-on-success
+                        @success="handleMessageSent"
                         v-slot="{ errors, processing }"
                         class="space-y-4"
                     >
@@ -164,6 +225,7 @@ defineOptions({
                                 rows="5"
                                 maxlength="5000"
                                 required
+                                ref="messageInput"
                                 class="flex min-h-28 w-full resize-y rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-xs transition-[color,box-shadow] outline-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-input/20"
                                 placeholder="Schreibe eine Nachricht …"
                             />
@@ -201,5 +263,11 @@ defineOptions({
                 </CardContent>
             </Card>
         </PageSection>
+
+        <div
+            ref="conversationEnd"
+            aria-hidden="true"
+            data-test="conversation-end"
+        />
     </div>
 </template>

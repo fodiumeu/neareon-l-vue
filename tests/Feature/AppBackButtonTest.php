@@ -42,6 +42,17 @@ test('message conversations use the message list as fallback', function () {
         ->toContain('label="Zurück zu den Nachrichten"');
 });
 
+test('profile editing uses the own profile as fallback', function () {
+    $profileEditPage = file_get_contents(
+        resource_path('js/pages/Profile/Edit.vue'),
+    );
+
+    expect($profileEditPage)
+        ->toContain('<AppBackButton')
+        ->toContain('fallback="/profile"')
+        ->toContain('label="Zurück zum Profil"');
+});
+
 test('admin user details use the admin user overview as fallback', function () {
     $adminUserPage = file_get_contents(
         resource_path('js/pages/admin/Users/Show.vue'),
