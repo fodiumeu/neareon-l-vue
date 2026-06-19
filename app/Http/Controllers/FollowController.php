@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Profile;
 use App\Services\ContactRequestLifecycleService;
+use App\Services\InternalNotificationService;
 use App\Services\PrivacyService;
 use App\Support\NextUserRoute;
 use Illuminate\Http\RedirectResponse;
@@ -15,6 +16,7 @@ class FollowController extends Controller
     public function __construct(
         private readonly PrivacyService $privacy,
         private readonly ContactRequestLifecycleService $contactRequests,
+        private readonly InternalNotificationService $notifications,
     ) {}
 
     /**
@@ -40,9 +42,13 @@ class FollowController extends Controller
         abort_if($user->hasBlockWith($profile->user), 403);
         abort_unless($this->privacy->canFollow($user, $profile->user), 403);
 
-        $user->followingRelationships()->firstOrCreate([
+        $follow = $user->followingRelationships()->firstOrCreate([
             'followed_id' => $profile->user_id,
         ]);
+
+        if ($follow->wasRecentlyCreated) {
+            $this->notifications->newFollower($user, $profile->user);
+        }
 
         return to_route('public-profile.show', $profile->username);
     }

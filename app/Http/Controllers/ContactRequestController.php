@@ -7,6 +7,7 @@ use App\Http\Requests\StoreContactRequestRequest;
 use App\Models\ContactRequest;
 use App\Models\User;
 use App\Services\ConversationService;
+use App\Services\InternalNotificationService;
 use App\Services\PrivacyService;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\RedirectResponse;
@@ -21,6 +22,7 @@ class ContactRequestController extends Controller
     public function __construct(
         private readonly ConversationService $conversations,
         private readonly PrivacyService $privacy,
+        private readonly InternalNotificationService $notifications,
     ) {}
 
     /**
@@ -171,6 +173,8 @@ class ContactRequestController extends Controller
             return back()->with('error', 'Dieser Benutzer hat dir bereits eine Kontaktanfrage gesendet.');
         }
 
+        $this->notifications->contactRequestReceived($sender, $receiver);
+
         return back()->with('success', 'Kontaktanfrage gesendet.');
     }
 
@@ -226,23 +230,42 @@ class ContactRequestController extends Controller
             ]);
 
             if ($status === ContactRequestStatus::Accepted) {
-                $lockedContactRequest->sender
+                $senderFollow = $lockedContactRequest->sender
                     ->followingRelationships()
                     ->firstOrCreate([
                         'followed_id' => $lockedContactRequest->receiver_id,
                     ]);
 
-                $lockedContactRequest->receiver
+                $receiverFollow = $lockedContactRequest->receiver
                     ->followingRelationships()
                     ->firstOrCreate([
                         'followed_id' => $lockedContactRequest->sender_id,
                     ]);
+
+                if ($senderFollow->wasRecentlyCreated) {
+                    $this->notifications->newFollower(
+                        $lockedContactRequest->sender,
+                        $lockedContactRequest->receiver,
+                    );
+                }
+
+                if ($receiverFollow->wasRecentlyCreated) {
+                    $this->notifications->newFollower(
+                        $lockedContactRequest->receiver,
+                        $lockedContactRequest->sender,
+                    );
+                }
 
                 $this->conversations->getOrCreateDirectConversation(
                     $lockedContactRequest->sender,
                     $lockedContactRequest->receiver,
                 );
             }
+
+            $this->notifications->contactRequestResponded(
+                $lockedContactRequest,
+                $status,
+            );
         });
     }
 

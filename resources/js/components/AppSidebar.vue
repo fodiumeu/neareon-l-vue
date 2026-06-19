@@ -31,6 +31,9 @@ const page = usePage<{
     messages: {
         unreadCount: number;
     };
+    notifications: {
+        unreadCount: number;
+    };
     project: {
         adminLabel: string;
         showAdminArea: boolean;
@@ -55,6 +58,7 @@ const visibleMainNavItems = computed(() =>
             adminLabel: page.props.project.adminLabel,
             pendingContactRequestsCount:
                 page.props.contactRequests.pendingReceivedCount,
+            unreadNotificationsCount: page.props.notifications.unreadCount,
             unreadMessagesCount: page.props.messages.unreadCount,
             showAdminArea: page.props.project.showAdminArea,
         }),

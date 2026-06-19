@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { Head, Link } from '@inertiajs/vue3';
 import { computed } from 'vue';
+import AppBackButton from '@/components/AppBackButton.vue';
 import BlockActions from '@/components/BlockActions.vue';
 import ContactActions from '@/components/ContactActions.vue';
 import ContactStatusBadge from '@/components/ContactStatusBadge.vue';
@@ -63,6 +64,12 @@ defineOptions({
     <Head :title="profile.display_name ?? `@${profile.username}`" />
 
     <div class="flex h-full flex-1 flex-col gap-6 overflow-x-auto p-4">
+        <AppBackButton
+            v-if="!props.profile.isOwnProfile"
+            fallback="/discover"
+            label="Zurück zur Übersicht"
+        />
+
         <PageHeader
             :title="displayName"
             :description="`@${profile.username}`"

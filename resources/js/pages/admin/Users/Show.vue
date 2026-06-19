@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { Form, Head, usePage } from '@inertiajs/vue3';
 import AdminNavigation from '@/components/AdminNavigation.vue';
+import AppBackButton from '@/components/AppBackButton.vue';
 import InputError from '@/components/InputError.vue';
 import PageHeader from '@/components/PageHeader.vue';
 import PageSection from '@/components/PageSection.vue';
@@ -77,6 +78,11 @@ defineOptions({
     <Head :title="props.user.name" />
 
     <div class="flex h-full flex-1 flex-col gap-6 overflow-x-auto p-4">
+        <AppBackButton
+            fallback="/admin#benutzer"
+            label="Zurück zur Benutzerübersicht"
+        />
+
         <PageHeader
             :title="props.user.name"
             description="Kontodetails und Rollenverwaltung im Administrationsbereich"

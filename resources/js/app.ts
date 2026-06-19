@@ -3,6 +3,7 @@ import { initializeTheme } from '@/composables/useAppearance';
 import AppLayout from '@/layouts/AppLayout.vue';
 import AuthLayout from '@/layouts/AuthLayout.vue';
 import SettingsLayout from '@/layouts/settings/Layout.vue';
+import { initializeAppNavigationHistory } from '@/lib/appNavigationHistory';
 import { initializeFlashToast } from '@/lib/flashToast';
 
 const initialPage =
@@ -41,3 +42,6 @@ initializeTheme();
 
 // This will listen for flash toast data from the server...
 initializeFlashToast();
+
+// This keeps app-internal back navigation safe across Inertia visits...
+initializeAppNavigationHistory();

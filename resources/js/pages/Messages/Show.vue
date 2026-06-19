@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { Form, Head } from '@inertiajs/vue3';
+import AppBackButton from '@/components/AppBackButton.vue';
 import InputError from '@/components/InputError.vue';
 import PageHeader from '@/components/PageHeader.vue';
 import PageSection from '@/components/PageSection.vue';
@@ -71,6 +72,8 @@ defineOptions({
     <div
         class="mx-auto flex h-full w-full max-w-4xl flex-1 flex-col gap-6 overflow-x-auto p-4 sm:p-6"
     >
+        <AppBackButton fallback="/messages" label="Zurück zu den Nachrichten" />
+
         <PageHeader
             :title="participantLabel"
             :description="

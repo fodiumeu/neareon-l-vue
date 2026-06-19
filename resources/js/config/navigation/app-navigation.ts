@@ -1,4 +1,5 @@
 import {
+    Bell,
     ContactRound,
     CircleSlash2,
     Inbox,
@@ -17,6 +18,7 @@ import type { NavItem } from '@/types';
 type ProjectNavigationOptions = {
     adminLabel: string;
     pendingContactRequestsCount: number;
+    unreadNotificationsCount: number;
     unreadMessagesCount: number;
     showAdminArea: boolean;
 };
@@ -24,6 +26,7 @@ type ProjectNavigationOptions = {
 export const getMainNavItems = ({
     adminLabel,
     pendingContactRequestsCount,
+    unreadNotificationsCount,
     unreadMessagesCount,
     showAdminArea,
 }: ProjectNavigationOptions): NavItem[] => [
@@ -63,6 +66,13 @@ export const getMainNavItems = ({
         href: '/messages',
         icon: MessageCircle,
         badge: unreadMessagesCount >= 100 ? '99+' : unreadMessagesCount,
+    },
+    {
+        title: 'Benachrichtigungen',
+        href: '/notifications',
+        icon: Bell,
+        badge:
+            unreadNotificationsCount >= 100 ? '99+' : unreadNotificationsCount,
     },
     {
         title: 'Profil',

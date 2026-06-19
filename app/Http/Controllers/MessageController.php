@@ -6,6 +6,7 @@ use App\Http\Requests\StoreMessageRequest;
 use App\Models\Conversation;
 use App\Models\ConversationParticipant;
 use App\Services\ConversationReadService;
+use App\Services\InternalNotificationService;
 use App\Services\PrivacyService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -19,6 +20,7 @@ class MessageController extends Controller
     public function __construct(
         private readonly ConversationReadService $conversationReads,
         private readonly PrivacyService $privacy,
+        private readonly InternalNotificationService $notifications,
     ) {}
 
     /**
@@ -146,12 +148,25 @@ class MessageController extends Controller
         Conversation $conversation,
     ): RedirectResponse {
         DB::transaction(function () use ($request, $conversation): void {
+            $sender = $request->user();
             $conversation->messages()->create([
                 'sender_id' => $request->user()->id,
                 'body' => $request->validated('message'),
             ]);
 
             $conversation->touch();
+
+            $receiver = $conversation->participants()
+                ->where('user_id', '!=', $sender->id)
+                ->with('user')
+                ->firstOrFail()
+                ->user;
+
+            $this->notifications->newMessage(
+                $sender,
+                $receiver,
+                $conversation,
+            );
         });
 
         return to_route('messages.show', $conversation);
