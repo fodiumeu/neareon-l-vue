@@ -17,6 +17,8 @@ type InternalNotification = {
     read_at: string | null;
     notification_count: number;
     is_message_group: boolean;
+    is_activity_group: boolean;
+    actors: string[];
 };
 
 const props = defineProps<{
@@ -149,6 +151,22 @@ defineOptions({
                                 >
                                     {{ notification.message }}
                                 </p>
+                                <ul
+                                    v-if="
+                                        notification.is_activity_group &&
+                                        notification.actors.length > 0
+                                    "
+                                    class="flex flex-wrap gap-2 pt-2"
+                                    :aria-label="notification.title"
+                                >
+                                    <li
+                                        v-for="actor in notification.actors"
+                                        :key="actor"
+                                        class="rounded-full border border-border bg-background/70 px-3 py-1 text-xs font-medium text-foreground dark:bg-input/30"
+                                    >
+                                        {{ actor }}
+                                    </li>
+                                </ul>
                             </div>
 
                             <time

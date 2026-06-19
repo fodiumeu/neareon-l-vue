@@ -281,7 +281,96 @@ test('message notifications from different senders remain separate groups', func
         );
 });
 
-test('contact request notifications remain separate entries', function () {
+test('contact request notifications are presented as one group with actors', function () {
+    [$sender, $receiver] = notificationUsers();
+    $secondSender = User::factory()->create();
+    createOnboardedProfile($secondSender, [
+        'display_name' => 'Second Actor',
+        'username' => 'second_actor',
+    ]);
+
+    foreach ([$sender, $secondSender] as $actor) {
+        $receiver->notify(new InternalNotification(
+            InternalNotificationType::ContactRequestReceived,
+            'Neue Kontaktanfrage',
+            "{$actor->profile->display_name} hat dir eine Kontaktanfrage gesendet.",
+            '/contact-requests',
+        ));
+    }
+
+    $this->actingAs($receiver)
+        ->get(route('notifications.index'))
+        ->assertOk()
+        ->assertInertia(fn (Assert $page) => $page
+            ->has('notificationItems', 1)
+            ->where('notificationItems.0.title', '2 neue Kontaktanfragen')
+            ->where('notificationItems.0.message', 'Kontaktanfragen von:')
+            ->where('notificationItems.0.notification_count', 2)
+            ->where('notificationItems.0.is_activity_group', true)
+            ->where('notificationItems.0.actors', [
+                'Actor User',
+                'Second Actor',
+            ])
+            ->where('notificationItems.0.target_url', '/contact-requests'),
+        );
+});
+
+test('follower notifications are presented as one group with actors', function () {
+    [$follower, $followed] = notificationUsers();
+    $secondFollower = User::factory()->create();
+    createOnboardedProfile($secondFollower, [
+        'display_name' => 'Second Follower',
+        'username' => 'second_follower',
+    ]);
+
+    foreach ([$follower, $secondFollower] as $actor) {
+        $followed->notify(new InternalNotification(
+            InternalNotificationType::NewFollower,
+            'Neuer Follower',
+            "{$actor->profile->display_name} folgt dir jetzt.",
+            "/u/{$actor->profile->username}",
+        ));
+    }
+
+    $this->actingAs($followed)
+        ->get(route('notifications.index'))
+        ->assertOk()
+        ->assertInertia(fn (Assert $page) => $page
+            ->has('notificationItems', 1)
+            ->where('notificationItems.0.title', '2 neue Follower')
+            ->where('notificationItems.0.message', 'Diese Profile folgen dir jetzt:')
+            ->where('notificationItems.0.notification_count', 2)
+            ->where('notificationItems.0.is_activity_group', true)
+            ->where('notificationItems.0.actors', [
+                'Actor User',
+                'Second Follower',
+            ])
+            ->where('notificationItems.0.target_url', '/discover'),
+        );
+});
+
+test('activity group is unread when at least one notification is unread', function () {
+    [$follower, $followed] = notificationUsers();
+
+    foreach (range(1, 2) as $index) {
+        $followed->notify(new InternalNotification(
+            InternalNotificationType::NewFollower,
+            'Neuer Follower',
+            "{$follower->profile->display_name} folgt dir jetzt.",
+            '/u/actor_user',
+        ));
+    }
+
+    $followed->notifications()->latest()->firstOrFail()->markAsRead();
+
+    $this->actingAs($followed)
+        ->get(route('notifications.index'))
+        ->assertInertia(fn (Assert $page) => $page
+            ->where('notificationItems.0.read_at', null),
+        );
+});
+
+test('activity group is read when all notifications are read', function () {
     [$sender, $receiver] = notificationUsers();
 
     foreach (range(1, 2) as $index) {
@@ -293,15 +382,12 @@ test('contact request notifications remain separate entries', function () {
         ));
     }
 
+    $receiver->unreadNotifications()->update(['read_at' => now()]);
+
     $this->actingAs($receiver)
         ->get(route('notifications.index'))
-        ->assertOk()
         ->assertInertia(fn (Assert $page) => $page
-            ->has('notificationItems', 2)
-            ->where('notificationItems.0.is_message_group', false)
-            ->where('notificationItems.1.is_message_group', false)
-            ->where('notificationItems.0.notification_count', 1)
-            ->where('notificationItems.1.notification_count', 1),
+            ->whereNot('notificationItems.0.read_at', null),
         );
 });
 
