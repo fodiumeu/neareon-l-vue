@@ -18,6 +18,9 @@ import type { NavItem } from '@/types';
 type ProjectNavigationOptions = {
     adminLabel: string;
     pendingContactRequestsCount: number;
+    pulseContactRequests: boolean;
+    pulseMessages: boolean;
+    pulseNotifications: boolean;
     unreadNotificationsCount: number;
     unreadMessagesCount: number;
     showAdminArea: boolean;
@@ -26,6 +29,9 @@ type ProjectNavigationOptions = {
 export const getMainNavItems = ({
     adminLabel,
     pendingContactRequestsCount,
+    pulseContactRequests,
+    pulseMessages,
+    pulseNotifications,
     unreadNotificationsCount,
     unreadMessagesCount,
     showAdminArea,
@@ -50,6 +56,7 @@ export const getMainNavItems = ({
         href: '/contact-requests',
         icon: Inbox,
         badge: pendingContactRequestsCount,
+        pulseBadge: pulseContactRequests,
     },
     {
         title: 'Gesendete Anfragen',
@@ -66,6 +73,7 @@ export const getMainNavItems = ({
         href: '/messages',
         icon: MessageCircle,
         badge: unreadMessagesCount >= 100 ? '99+' : unreadMessagesCount,
+        pulseBadge: pulseMessages,
     },
     {
         title: 'Benachrichtigungen',
@@ -73,6 +81,7 @@ export const getMainNavItems = ({
         icon: Bell,
         badge:
             unreadNotificationsCount >= 100 ? '99+' : unreadNotificationsCount,
+        pulseBadge: pulseNotifications,
     },
     {
         title: 'Profil',

@@ -33,7 +33,14 @@ const { isCurrentUrl } = useCurrentUrl();
                         <span>{{ item.title }}</span>
                     </Link>
                 </SidebarMenuButton>
-                <SidebarMenuBadge v-if="item.badge">
+                <SidebarMenuBadge
+                    v-if="item.badge"
+                    :class="
+                        item.pulseBadge
+                            ? 'animate-pulse ring-2 ring-primary/40'
+                            : undefined
+                    "
+                >
                     {{ item.badge }}
                 </SidebarMenuBadge>
             </SidebarMenuItem>

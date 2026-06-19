@@ -2,15 +2,14 @@
 
 namespace App\Http\Middleware;
 
-use App\Enums\ContactRequestStatus;
-use App\Services\ConversationReadService;
+use App\Services\NavigationBadgeService;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
 
 class HandleInertiaRequests extends Middleware
 {
     public function __construct(
-        private readonly ConversationReadService $conversationReads,
+        private readonly NavigationBadgeService $badges,
     ) {}
 
     /**
@@ -41,6 +40,17 @@ class HandleInertiaRequests extends Middleware
      */
     public function share(Request $request): array
     {
+        $badgeCounts = function () use ($request): ?array {
+            static $counts;
+
+            if (! isset($counts)) {
+                $counts = $request->user() !== null
+                    ? $this->badges->countsFor($request->user())
+                    : null;
+            }
+
+            return $counts;
+        };
         $starterDefaults = [
             'app.name' => 'NEAREON',
             'app.project.tagline' => 'Regionale Social Web-App',
@@ -72,19 +82,13 @@ class HandleInertiaRequests extends Middleware
                 'user' => $request->user(),
             ],
             'contactRequests' => [
-                'pendingReceivedCount' => fn (): int => $request->user()?->receivedContactRequests()
-                    ->where('status', ContactRequestStatus::Pending->value)
-                    ->count() ?? 0,
+                'pendingReceivedCount' => fn (): int => $badgeCounts()['pendingContactRequests'] ?? 0,
             ],
             'messages' => [
-                'unreadCount' => fn (): int => $request->user() !== null
-                    ? $this->conversationReads
-                        ->countUnreadMessagesForUser($request->user())
-                    : 0,
+                'unreadCount' => fn (): int => $badgeCounts()['unreadMessages'] ?? 0,
             ],
             'notifications' => [
-                'unreadCount' => fn (): int => $request->user()?->unreadNotifications()
-                    ->count() ?? 0,
+                'unreadCount' => fn (): int => $badgeCounts()['unreadNotifications'] ?? 0,
             ],
             'flash' => [
                 'success' => $request->session()->get('success'),

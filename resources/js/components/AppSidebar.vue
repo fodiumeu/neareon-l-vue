@@ -14,6 +14,7 @@ import {
     SidebarMenuButton,
     SidebarMenuItem,
 } from '@/components/ui/sidebar';
+import { useLiveBadgePolling } from '@/composables/useLiveBadgePolling';
 import {
     footerNavItems,
     getMainNavItems,
@@ -52,14 +53,25 @@ const filterItemsByUserAccess = (items: NavItem[]): NavItem[] => {
     });
 };
 
+const { counts: liveBadgeCounts, pulsing: pulsingBadges } = useLiveBadgePolling(
+    () => ({
+        pendingContactRequests: page.props.contactRequests.pendingReceivedCount,
+        unreadMessages: page.props.messages.unreadCount,
+        unreadNotifications: page.props.notifications.unreadCount,
+    }),
+    () => page.props.auth.user !== null,
+);
+
 const visibleMainNavItems = computed(() =>
     filterItemsByUserAccess(
         getMainNavItems({
             adminLabel: page.props.project.adminLabel,
-            pendingContactRequestsCount:
-                page.props.contactRequests.pendingReceivedCount,
-            unreadNotificationsCount: page.props.notifications.unreadCount,
-            unreadMessagesCount: page.props.messages.unreadCount,
+            pendingContactRequestsCount: liveBadgeCounts.pendingContactRequests,
+            pulseContactRequests: pulsingBadges.pendingContactRequests,
+            pulseMessages: pulsingBadges.unreadMessages,
+            pulseNotifications: pulsingBadges.unreadNotifications,
+            unreadNotificationsCount: liveBadgeCounts.unreadNotifications,
+            unreadMessagesCount: liveBadgeCounts.unreadMessages,
             showAdminArea: page.props.project.showAdminArea,
         }),
     ),

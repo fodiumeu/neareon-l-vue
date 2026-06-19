@@ -11,6 +11,7 @@ use App\Http\Controllers\ContactRequestController;
 use App\Http\Controllers\DiscoverController;
 use App\Http\Controllers\FollowController;
 use App\Http\Controllers\MessageController;
+use App\Http\Controllers\NavigationBadgeController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\OnboardingController;
 use App\Http\Controllers\ProfileController;
@@ -67,6 +68,8 @@ Route::middleware(['auth', 'age.gate', 'verified', 'onboarding.complete'])->grou
         ->name('messages.store');
     Route::get('notifications', [NotificationController::class, 'index'])
         ->name('notifications.index');
+    Route::get('navigation/badges', NavigationBadgeController::class)
+        ->name('navigation.badges');
     Route::patch('notifications/read-all', [NotificationController::class, 'markAllAsRead'])
         ->name('notifications.read-all');
     Route::get('profile', [ProfileController::class, 'me'])->name('neareon-profile.show');
