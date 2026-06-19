@@ -1,5 +1,7 @@
 <script setup lang="ts">
 import { Form, Head } from '@inertiajs/vue3';
+import { onClickOutside } from '@vueuse/core';
+import { Smile } from 'lucide-vue-next';
 import {
     computed,
     nextTick,
@@ -45,7 +47,40 @@ const props = defineProps<{
 
 const conversationEnd = ref<HTMLElement | null>(null);
 const messageInput = ref<HTMLTextAreaElement | null>(null);
+const emojiPicker = ref<HTMLElement | null>(null);
+const isEmojiPickerOpen = ref(false);
+const messageContent = ref('');
 const previousScrollRestoration = window.history.scrollRestoration;
+const emojis = [
+    '😀',
+    '😃',
+    '😄',
+    '😁',
+    '😆',
+    '😅',
+    '😂',
+    '🤣',
+    '😊',
+    '😇',
+    '😍',
+    '🥰',
+    '😘',
+    '😍',
+    '😎',
+    '🤗',
+    '🤔',
+    '😴',
+    '😢',
+    '👍',
+    '👎',
+    '👏',
+    '🙌',
+    '❤️',
+    '💙',
+    '💚',
+    '🔥',
+    '🎉',
+];
 
 window.history.scrollRestoration = 'manual';
 
@@ -63,6 +98,7 @@ const latestMessageId = computed(
         props.conversation.messages[props.conversation.messages.length - 1]
             ?.id ?? null,
 );
+const canSendMessage = computed(() => messageContent.value.trim().length > 0);
 
 const scrollToConversationEnd = async (behavior: ScrollBehavior = 'smooth') => {
     await nextTick();
@@ -86,11 +122,121 @@ const scrollToInitialConversationEnd = async () => {
 };
 
 const handleMessageSent = async () => {
+    isEmojiPickerOpen.value = false;
+    messageContent.value = '';
+
+    if (messageInput.value !== null) {
+        messageInput.value.value = '';
+    }
+
+    resetMessageInputHeight();
     await scrollToConversationEnd();
     messageInput.value?.focus();
 };
 
+const resizeMessageInput = () => {
+    const input = messageInput.value;
+
+    if (input === null) {
+        return;
+    }
+
+    input.style.height = 'auto';
+
+    const styles = window.getComputedStyle(input);
+    const lineHeight = Number.parseFloat(styles.lineHeight) || 24;
+    const verticalPadding =
+        Number.parseFloat(styles.paddingTop) +
+        Number.parseFloat(styles.paddingBottom);
+    const verticalBorder =
+        Number.parseFloat(styles.borderTopWidth) +
+        Number.parseFloat(styles.borderBottomWidth);
+    const minimumHeight = Number.parseFloat(styles.minHeight) || 0;
+    const maximumHeight = Math.max(
+        minimumHeight,
+        lineHeight * 5 + verticalPadding + verticalBorder,
+    );
+    const nextHeight = Math.min(input.scrollHeight, maximumHeight);
+
+    input.style.height = `${Math.max(nextHeight, minimumHeight)}px`;
+    input.style.overflowY =
+        input.scrollHeight > maximumHeight ? 'auto' : 'hidden';
+};
+
+const resetMessageInputHeight = () => {
+    const input = messageInput.value;
+
+    if (input === null) {
+        return;
+    }
+
+    const minimumHeight =
+        Number.parseFloat(window.getComputedStyle(input).minHeight) || 0;
+
+    input.style.height = `${minimumHeight}px`;
+    input.style.overflowY = 'hidden';
+    input.scrollTop = 0;
+};
+
+const handleMessageInput = (event: Event) => {
+    messageContent.value = (event.currentTarget as HTMLTextAreaElement).value;
+    resizeMessageInput();
+};
+
+const handleMessageKeydown = (event: KeyboardEvent) => {
+    if (event.key !== 'Enter' || event.shiftKey || event.isComposing) {
+        return;
+    }
+
+    event.preventDefault();
+
+    if (!canSendMessage.value) {
+        return;
+    }
+
+    (event.currentTarget as HTMLTextAreaElement).form?.requestSubmit();
+};
+
+const toggleEmojiPicker = () => {
+    isEmojiPickerOpen.value = !isEmojiPickerOpen.value;
+};
+
+const insertEmoji = async (emoji: string) => {
+    const input = messageInput.value;
+
+    if (input === null) {
+        return;
+    }
+
+    const selectionStart = input.selectionStart ?? input.value.length;
+    const selectionEnd = input.selectionEnd ?? selectionStart;
+    const nextValue =
+        input.value.slice(0, selectionStart) +
+        emoji +
+        input.value.slice(selectionEnd);
+
+    if (input.maxLength >= 0 && nextValue.length > input.maxLength) {
+        input.focus();
+
+        return;
+    }
+
+    input.value = nextValue;
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+
+    const nextCursorPosition = selectionStart + emoji.length;
+
+    await nextTick();
+    input.focus();
+    input.setSelectionRange(nextCursorPosition, nextCursorPosition);
+};
+
+onClickOutside(emojiPicker, () => {
+    isEmojiPickerOpen.value = false;
+});
+
 onMounted(() => {
+    resizeMessageInput();
     void scrollToInitialConversationEnd();
 });
 
@@ -219,20 +365,65 @@ defineOptions({
                     >
                         <div class="grid gap-2">
                             <Label for="message">Nachricht</Label>
-                            <textarea
-                                id="message"
-                                name="message"
-                                rows="5"
-                                maxlength="5000"
-                                required
-                                ref="messageInput"
-                                class="flex min-h-28 w-full resize-y rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-xs transition-[color,box-shadow] outline-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-input/20"
-                                placeholder="Schreibe eine Nachricht …"
-                            />
+                            <div class="flex items-end gap-2">
+                                <textarea
+                                    id="message"
+                                    name="message"
+                                    rows="1"
+                                    maxlength="5000"
+                                    required
+                                    ref="messageInput"
+                                    class="flex min-h-28 min-w-0 flex-1 resize-none overflow-y-hidden rounded-md border border-input bg-transparent px-3 py-2 text-sm leading-6 shadow-xs transition-[color,box-shadow] outline-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-input/20"
+                                    placeholder="Schreibe eine Nachricht …"
+                                    @input="handleMessageInput"
+                                    @keydown="handleMessageKeydown"
+                                />
+
+                                <div
+                                    ref="emojiPicker"
+                                    class="relative shrink-0"
+                                >
+                                    <Button
+                                        type="button"
+                                        variant="secondary"
+                                        size="icon"
+                                        :aria-expanded="isEmojiPickerOpen"
+                                        aria-label="Emoji auswählen"
+                                        aria-controls="message-emoji-picker"
+                                        data-test="emoji-picker-toggle"
+                                        @click="toggleEmojiPicker"
+                                    >
+                                        <Smile aria-hidden="true" />
+                                    </Button>
+
+                                    <div
+                                        v-if="isEmojiPickerOpen"
+                                        id="message-emoji-picker"
+                                        class="absolute right-0 bottom-full z-20 mb-2 grid w-64 max-w-[calc(100vw-2rem)] grid-cols-6 gap-1 rounded-lg border border-border bg-popover p-2 text-popover-foreground shadow-xl sm:w-72 sm:grid-cols-7"
+                                        role="dialog"
+                                        aria-label="Emoji-Auswahl"
+                                        data-test="emoji-picker-panel"
+                                    >
+                                        <button
+                                            v-for="(emoji, index) in emojis"
+                                            :key="`${emoji}-${index}`"
+                                            type="button"
+                                            class="flex size-8 items-center justify-center rounded-md text-xl transition-colors hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none sm:size-9"
+                                            :aria-label="`Emoji ${emoji} einfügen`"
+                                            @click="insertEmoji(emoji)"
+                                        >
+                                            {{ emoji }}
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
                             <InputError :message="errors.message" />
                         </div>
 
-                        <Button type="submit" :disabled="processing">
+                        <Button
+                            type="submit"
+                            :disabled="processing || !canSendMessage"
+                        >
                             <Spinner v-if="processing" />
                             Nachricht senden
                         </Button>
