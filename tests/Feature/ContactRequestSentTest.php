@@ -64,10 +64,11 @@ test('pending accepted and declined sent requests are visible', function () {
         ->get(route('contact-requests.sent'))
         ->assertOk()
         ->assertInertia(fn (Assert $page) => $page
-            ->has('contactRequests', 3)
+            ->has('contactRequests', 4)
             ->where('contactRequests.0.status', 'pending')
             ->where('contactRequests.1.status', 'accepted')
-            ->where('contactRequests.2.status', 'declined'),
+            ->where('contactRequests.2.status', 'declined')
+            ->where('contactRequests.3.status', 'closed'),
         );
 });
 

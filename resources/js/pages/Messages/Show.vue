@@ -20,7 +20,9 @@ type ConversationMessage = {
 };
 
 type Conversation = {
+    can_send_messages: boolean;
     conversation_id: number;
+    is_blocked: boolean;
     other_participant: {
         display_name: string | null;
         username: string | null;
@@ -139,7 +141,7 @@ defineOptions({
             </div>
         </PageSection>
 
-        <PageSection>
+        <PageSection v-if="conversation.can_send_messages">
             <Card
                 class="bg-card/95 shadow-md shadow-black/5 dark:shadow-black/25"
             >
@@ -170,6 +172,29 @@ defineOptions({
                             Nachricht senden
                         </Button>
                     </Form>
+                </CardContent>
+            </Card>
+        </PageSection>
+
+        <PageSection v-else>
+            <Card
+                class="border-destructive/30 bg-destructive/5 shadow-md shadow-black/5 dark:bg-destructive/10 dark:shadow-black/25"
+            >
+                <CardContent>
+                    <p class="text-sm leading-6 text-muted-foreground">
+                        {{
+                            conversation.is_blocked
+                                ? 'Dieser Benutzer wurde blockiert. Neue Nachrichten sind nicht möglich.'
+                                : 'Diese Verbindung wurde beendet. Für neue Nachrichten ist eine neue Verbindung erforderlich.'
+                        }}
+                    </p>
+                    <textarea
+                        disabled
+                        rows="5"
+                        class="mt-4 flex min-h-28 w-full resize-none rounded-md border border-input bg-muted/40 px-3 py-2 text-sm opacity-60"
+                        aria-label="Nachricht"
+                    />
+                    <Button disabled class="mt-4"> Nachricht senden </Button>
                 </CardContent>
             </Card>
         </PageSection>

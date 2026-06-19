@@ -1,1 +1,5 @@
-export type ContactRequestStatus = 'pending' | 'accepted' | 'declined';
+export type ContactRequestStatus =
+    | 'pending'
+    | 'accepted'
+    | 'declined'
+    | 'closed';

@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { Head, Link } from '@inertiajs/vue3';
+import ContactActions from '@/components/ContactActions.vue';
 import ContactStatusBadge from '@/components/ContactStatusBadge.vue';
 import PageHeader from '@/components/PageHeader.vue';
 import PageSection from '@/components/PageSection.vue';
@@ -8,6 +9,13 @@ import { Card, CardContent } from '@/components/ui/card';
 import type { ContactStatus } from '@/types';
 
 type DiscoverProfile = {
+    can_follow: boolean;
+    can_send_contact_request: boolean;
+    contact_user_id: number;
+    contact_request_unavailable_reason?: 'disabled' | 'follow_required' | null;
+    incoming_contact_request_id?: number | null;
+    interaction_blocked: boolean;
+    is_blocked_by_viewer: boolean;
     username: string;
     isOwnProfile: boolean;
     is_following: boolean;
@@ -223,6 +231,23 @@ defineOptions({
                         </div>
 
                         <div class="mt-auto space-y-3">
+                            <ContactActions
+                                :can-follow="profile.can_follow"
+                                :can-send-contact-request="
+                                    profile.can_send_contact_request
+                                "
+                                :contact-request-id="
+                                    profile.incoming_contact_request_id
+                                "
+                                :contact-request-unavailable-reason="
+                                    profile.contact_request_unavailable_reason
+                                "
+                                :is-following="profile.is_following"
+                                :status="profile.contact_status"
+                                :user-id="profile.contact_user_id"
+                                :username="profile.username"
+                            />
+
                             <Button as-child variant="secondary" class="w-full">
                                 <Link :href="`/u/${profile.username}`">
                                     Profil ansehen

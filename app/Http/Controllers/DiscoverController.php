@@ -35,11 +35,21 @@ class DiscoverController extends Controller
             'receivedContactRequests' => fn ($query) => $query
                 ->where('status', ContactRequestStatus::Pending->value)
                 ->select(['id', 'sender_id', 'receiver_id', 'status']),
+            'blockingRelationships:id,blocker_id,blocked_id',
+            'blockedByRelationships:id,blocker_id,blocked_id',
         ]);
 
         $profiles = Profile::query()
             ->with(['user', 'languageOptions', 'interestOptions'])
             ->where('user_id', '!=', $viewer->id)
+            ->whereDoesntHave(
+                'user.blockingRelationships',
+                fn ($query) => $query->where('blocked_id', $viewer->id),
+            )
+            ->whereDoesntHave(
+                'user.blockedByRelationships',
+                fn ($query) => $query->where('blocker_id', $viewer->id),
+            )
             ->orderBy('display_name')
             ->get()
             ->filter(fn (Profile $profile): bool => $this->profileVisibility->isDiscoverVisible($profile, $viewer))

@@ -1,6 +1,8 @@
 <?php
 
+use App\Enums\ContactRequestStatus;
 use App\Enums\ProfileVisibility;
+use App\Models\ContactRequest;
 use App\Models\Follow;
 use App\Models\Profile;
 use App\Models\User;
@@ -65,6 +67,35 @@ test('users can unfollow another profile', function () {
 
     expect($viewer->isFollowing($target))->toBeFalse()
         ->and(Follow::query()->count())->toBe(0);
+});
+
+test('unfollowing closes an accepted contact request', function () {
+    $viewer = User::factory()->create();
+    createOnboardedProfile($viewer);
+    $target = User::factory()->create();
+    $targetProfile = Profile::factory()->for($target)->create();
+    Follow::query()->create([
+        'follower_id' => $viewer->id,
+        'followed_id' => $target->id,
+    ]);
+    Follow::query()->create([
+        'follower_id' => $target->id,
+        'followed_id' => $viewer->id,
+    ]);
+    $contactRequest = ContactRequest::factory()
+        ->for($viewer, 'sender')
+        ->for($target, 'receiver')
+        ->create([
+            'status' => ContactRequestStatus::Accepted,
+            'responded_at' => now()->subDay(),
+        ]);
+
+    $this->actingAs($viewer)
+        ->delete(route('public-profile.unfollow', $targetProfile->username))
+        ->assertRedirect(route('public-profile.show', $targetProfile->username));
+
+    expect($contactRequest->refresh()->status)
+        ->toBe(ContactRequestStatus::Closed);
 });
 
 test('self follow is prevented', function () {

@@ -10,7 +10,7 @@ export type NavItem = {
     title: string;
     href: NonNullable<InertiaLinkProps['href']>;
     icon?: LucideIcon;
-    badge?: number;
+    badge?: number | string;
     isActive?: boolean;
     requiresAdmin?: boolean;
 };

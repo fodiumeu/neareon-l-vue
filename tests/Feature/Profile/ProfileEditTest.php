@@ -141,9 +141,9 @@ test('profile editing exposes followers only for field visibility options', func
         ->assertOk()
         ->assertInertia(fn (Assert $page) => $page
             ->where('profileVisibilityOptions', [
-                ['value' => 'public', 'label' => 'Alle'],
-                ['value' => 'mutuals', 'label' => 'Gegenseitige Kontakte'],
-                ['value' => 'private', 'label' => 'Nur ich'],
+                ['value' => 'public', 'label' => 'Öffentlich'],
+                ['value' => 'members', 'label' => 'Mitglieder'],
+                ['value' => 'contacts', 'label' => 'Kontakte'],
             ])
             ->where('fieldVisibilityOptions', [
                 ['value' => 'public', 'label' => 'Alle'],
@@ -423,7 +423,7 @@ test('users can update visibility fields', function () {
 
     $this->actingAs($user)
         ->patch(route('neareon-profile.update'), validProfileUpdatePayload([
-            'profile_visibility' => ProfileVisibility::Private->value,
+            'profile_visibility' => ProfileVisibility::Contacts->value,
             'interests_visibility' => ProfileVisibility::Mutuals->value,
             'languages_visibility' => ProfileVisibility::Private->value,
             'region_visibility' => ProfileVisibility::Public->value,
@@ -433,7 +433,7 @@ test('users can update visibility fields', function () {
 
     $profile->refresh();
 
-    expect($profile->profile_visibility)->toBe(ProfileVisibility::Private)
+    expect($profile->profile_visibility)->toBe(ProfileVisibility::Contacts)
         ->and($profile->interests_visibility)->toBe(ProfileVisibility::Mutuals)
         ->and($profile->languages_visibility)->toBe(ProfileVisibility::Private)
         ->and($profile->region_visibility)->toBe(ProfileVisibility::Public)
@@ -485,7 +485,7 @@ test('saved visibility fields are returned after updating and reloading profile 
 
     $this->actingAs($user)
         ->patch(route('neareon-profile.update'), validProfileUpdatePayload([
-            'profile_visibility' => ProfileVisibility::Mutuals->value,
+            'profile_visibility' => ProfileVisibility::Members->value,
             'interests_visibility' => ProfileVisibility::Private->value,
             'languages_visibility' => ProfileVisibility::Mutuals->value,
             'region_visibility' => ProfileVisibility::Private->value,
@@ -498,7 +498,7 @@ test('saved visibility fields are returned after updating and reloading profile 
         ->assertOk()
         ->assertInertia(fn (Assert $page) => $page
             ->component('Profile/Edit')
-            ->where('profile.profile_visibility', 'mutuals')
+            ->where('profile.profile_visibility', 'members')
             ->where('profile.interests_visibility', 'private')
             ->where('profile.languages_visibility', 'mutuals')
             ->where('profile.region_visibility', 'private')

@@ -3,6 +3,7 @@ import { Link } from '@inertiajs/vue3';
 import {
     Database,
     FolderCog,
+    Flag,
     Languages,
     LayoutDashboard,
     ServerCog,
@@ -27,6 +28,12 @@ const items = [
         href: '/admin#benutzer',
         icon: Users,
         active: () => currentUrl.value.startsWith('/admin/users'),
+    },
+    {
+        title: 'Meldungen',
+        href: '/admin/reports',
+        icon: Flag,
+        active: () => currentUrl.value === '/admin/reports',
     },
     {
         title: 'Stammdaten',

@@ -16,6 +16,10 @@ type ProfileForm = {
     languages: string[];
     interests: string[];
     profile_visibility: string;
+    follow_permission: string;
+    contact_permission: string;
+    message_permission: string;
+    online_status_visibility: string;
     interests_visibility: string;
     languages_visibility: string;
     region_visibility: string;
@@ -39,6 +43,10 @@ defineProps<{
     interestOptions: ProfileOption[];
     fieldVisibilityOptions: VisibilityOption[];
     profileVisibilityOptions: VisibilityOption[];
+    followPermissionOptions: VisibilityOption[];
+    contactPermissionOptions: VisibilityOption[];
+    messagePermissionOptions: VisibilityOption[];
+    onlineStatusVisibilityOptions: VisibilityOption[];
 }>();
 
 defineOptions({
@@ -186,10 +194,18 @@ defineOptions({
                             <InputError :message="errors.interests" />
                         </div>
 
+                        <div class="space-y-2 border-t border-border pt-6">
+                            <h2 class="text-lg font-semibold">Privatsphäre</h2>
+                            <p class="text-sm text-muted-foreground">
+                                Lege fest, wer dein Profil sehen und mit dir
+                                interagieren darf.
+                            </p>
+                        </div>
+
                         <div class="grid gap-4 md:grid-cols-2">
                             <div class="grid gap-2">
                                 <Label for="profile_visibility">
-                                    Sichtbarkeit Profil
+                                    Wer darf dein Profil sehen?
                                 </Label>
                                 <select
                                     id="profile_visibility"
@@ -208,6 +224,103 @@ defineOptions({
                                 <InputError
                                     :message="errors.profile_visibility"
                                 />
+                            </div>
+
+                            <div class="grid gap-2">
+                                <Label for="follow_permission">
+                                    Wer darf dir folgen?
+                                </Label>
+                                <select
+                                    id="follow_permission"
+                                    name="follow_permission"
+                                    :value="profile.follow_permission"
+                                    class="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-base shadow-xs ring-offset-background transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50 md:text-sm"
+                                >
+                                    <option
+                                        v-for="option in followPermissionOptions"
+                                        :key="option.value"
+                                        :value="option.value"
+                                    >
+                                        {{ option.label }}
+                                    </option>
+                                </select>
+                                <InputError
+                                    :message="errors.follow_permission"
+                                />
+                            </div>
+
+                            <div class="grid gap-2">
+                                <Label for="contact_permission">
+                                    Wer darf Kontaktanfragen senden?
+                                </Label>
+                                <select
+                                    id="contact_permission"
+                                    name="contact_permission"
+                                    :value="profile.contact_permission"
+                                    class="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-base shadow-xs ring-offset-background transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50 md:text-sm"
+                                >
+                                    <option
+                                        v-for="option in contactPermissionOptions"
+                                        :key="option.value"
+                                        :value="option.value"
+                                    >
+                                        {{ option.label }}
+                                    </option>
+                                </select>
+                                <InputError
+                                    :message="errors.contact_permission"
+                                />
+                            </div>
+
+                            <div class="grid gap-2">
+                                <Label for="message_permission">
+                                    Wer darf Nachrichten senden?
+                                </Label>
+                                <select
+                                    id="message_permission"
+                                    name="message_permission"
+                                    :value="profile.message_permission"
+                                    class="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-base shadow-xs ring-offset-background transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50 md:text-sm"
+                                >
+                                    <option
+                                        v-for="option in messagePermissionOptions"
+                                        :key="option.value"
+                                        :value="option.value"
+                                    >
+                                        {{ option.label }}
+                                    </option>
+                                </select>
+                                <InputError
+                                    :message="errors.message_permission"
+                                />
+                            </div>
+
+                            <div class="grid gap-2">
+                                <Label for="online_status_visibility">
+                                    Wer darf später deinen Online-Status sehen?
+                                </Label>
+                                <select
+                                    id="online_status_visibility"
+                                    name="online_status_visibility"
+                                    :value="profile.online_status_visibility"
+                                    class="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-base shadow-xs ring-offset-background transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50 md:text-sm"
+                                >
+                                    <option
+                                        v-for="option in onlineStatusVisibilityOptions"
+                                        :key="option.value"
+                                        :value="option.value"
+                                    >
+                                        {{ option.label }}
+                                    </option>
+                                </select>
+                                <InputError
+                                    :message="errors.online_status_visibility"
+                                />
+                                <p class="text-xs text-muted-foreground">
+                                    Diese Einstellung bereitet die spätere
+                                    Funktion nur vor. Aktuell wird kein
+                                    Online-Status angezeigt.
+                                </p>
                             </div>
 
                             <div class="grid gap-2">

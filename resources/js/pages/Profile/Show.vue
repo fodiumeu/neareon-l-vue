@@ -1,15 +1,24 @@
 <script setup lang="ts">
-import { Form, Head, Link } from '@inertiajs/vue3';
+import { Head, Link } from '@inertiajs/vue3';
 import { computed } from 'vue';
+import BlockActions from '@/components/BlockActions.vue';
+import ContactActions from '@/components/ContactActions.vue';
 import ContactStatusBadge from '@/components/ContactStatusBadge.vue';
 import PageHeader from '@/components/PageHeader.vue';
 import PageSection from '@/components/PageSection.vue';
+import ReportDialog from '@/components/ReportDialog.vue';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { Spinner } from '@/components/ui/spinner';
 import type { ContactStatus } from '@/types';
 
 type PublicProfile = {
+    can_follow?: boolean;
+    can_send_contact_request?: boolean;
+    contact_user_id?: number;
+    contact_request_unavailable_reason?: 'disabled' | 'follow_required' | null;
+    incoming_contact_request_id?: number | null;
+    interaction_blocked: boolean;
+    is_blocked_by_viewer: boolean;
     username: string;
     isOwnProfile: boolean;
     is_following: boolean;
@@ -96,9 +105,20 @@ defineOptions({
                                         Eigenes Profil
                                     </span>
                                     <ContactStatusBadge
-                                        v-if="!props.profile.isOwnProfile"
+                                        v-if="
+                                            !props.profile.isOwnProfile &&
+                                            !props.profile.interaction_blocked
+                                        "
                                         :status="props.profile.contact_status"
                                     />
+                                    <span
+                                        v-if="
+                                            props.profile.is_blocked_by_viewer
+                                        "
+                                        class="rounded-full border border-destructive/30 bg-destructive/10 px-3 py-1 text-xs font-medium text-destructive"
+                                    >
+                                        Benutzer blockiert
+                                    </span>
                                     <span
                                         v-if="
                                             props.profile.is_following &&
@@ -131,34 +151,40 @@ defineOptions({
                                 </Link>
                             </Button>
 
-                            <Form
-                                v-else-if="!props.profile.isOwnProfile"
-                                :action="`/u/${props.profile.username}/follow`"
-                                :method="
-                                    props.profile.is_following
-                                        ? 'delete'
-                                        : 'post'
+                            <ContactActions
+                                v-else-if="
+                                    !props.profile.isOwnProfile &&
+                                    props.profile.contact_user_id &&
+                                    !props.profile.interaction_blocked
                                 "
-                                v-slot="{ processing }"
-                            >
-                                <Button
-                                    type="submit"
-                                    :variant="
-                                        props.profile.is_following
-                                            ? 'secondary'
-                                            : 'default'
-                                    "
-                                    :disabled="processing"
-                                    class="w-full"
-                                >
-                                    <Spinner v-if="processing" />
-                                    {{
-                                        props.profile.is_following
-                                            ? 'Entfolgen'
-                                            : 'Folgen'
-                                    }}
-                                </Button>
-                            </Form>
+                                :can-follow="props.profile.can_follow ?? false"
+                                :can-send-contact-request="
+                                    props.profile.can_send_contact_request ??
+                                    false
+                                "
+                                :contact-request-id="
+                                    props.profile.incoming_contact_request_id
+                                "
+                                :contact-request-unavailable-reason="
+                                    props.profile
+                                        .contact_request_unavailable_reason
+                                "
+                                :is-following="props.profile.is_following"
+                                :status="props.profile.contact_status"
+                                :user-id="props.profile.contact_user_id"
+                                :username="props.profile.username"
+                            />
+
+                            <BlockActions
+                                v-if="!props.profile.isOwnProfile"
+                                :is-blocked="props.profile.is_blocked_by_viewer"
+                                :username="props.profile.username"
+                            />
+
+                            <ReportDialog
+                                v-if="!props.profile.isOwnProfile"
+                                :username="props.profile.username"
+                            />
                         </div>
                     </div>
                 </CardContent>

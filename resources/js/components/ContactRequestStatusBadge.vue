@@ -13,6 +13,7 @@ const label = computed(
             pending: 'Ausstehend',
             accepted: 'Angenommen',
             declined: 'Abgelehnt',
+            closed: 'Geschlossen',
         })[props.status],
 );
 </script>

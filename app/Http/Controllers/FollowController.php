@@ -3,12 +3,20 @@
 namespace App\Http\Controllers;
 
 use App\Models\Profile;
+use App\Services\ContactRequestLifecycleService;
+use App\Services\PrivacyService;
 use App\Support\NextUserRoute;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class FollowController extends Controller
 {
+    public function __construct(
+        private readonly PrivacyService $privacy,
+        private readonly ContactRequestLifecycleService $contactRequests,
+    ) {}
+
     /**
      * Follow the profile owner identified by username.
      */
@@ -28,6 +36,9 @@ class FollowController extends Controller
             return to_route('public-profile.show', $profile->username)
                 ->with('error', 'Du kannst dir nicht selbst folgen.');
         }
+
+        abort_if($user->hasBlockWith($profile->user), 403);
+        abort_unless($this->privacy->canFollow($user, $profile->user), 403);
 
         $user->followingRelationships()->firstOrCreate([
             'followed_id' => $profile->user_id,
@@ -51,9 +62,16 @@ class FollowController extends Controller
             ->where('username', $username)
             ->firstOrFail();
 
-        $user->followingRelationships()
-            ->where('followed_id', $profile->user_id)
-            ->delete();
+        abort_if($user->hasBlockWith($profile->user), 403);
+
+        DB::transaction(function () use ($user, $profile): void {
+            $user->followingRelationships()
+                ->where('followed_id', $profile->user_id)
+                ->delete();
+
+            $this->contactRequests
+                ->closeAcceptedBetween($user, $profile->user);
+        });
 
         return to_route('public-profile.show', $profile->username);
     }

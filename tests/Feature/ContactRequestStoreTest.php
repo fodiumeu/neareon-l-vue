@@ -4,6 +4,7 @@ use App\Enums\ContactRequestStatus;
 use App\Models\ContactRequest;
 use App\Models\Follow;
 use App\Models\User;
+use Inertia\Testing\AssertableInertia as Assert;
 
 function sendContactRequest($test, User $sender, User $receiver, array $overrides = [])
 {
@@ -57,7 +58,7 @@ test('users cannot send contact requests to themselves', function () {
     expect(ContactRequest::query()->exists())->toBeFalse();
 });
 
-test('an existing follow prevents a contact request', function () {
+test('an existing one-way follow still allows a contact request', function () {
     $sender = User::factory()->create();
     createOnboardedProfile($sender);
     $receiver = User::factory()->create();
@@ -68,9 +69,11 @@ test('an existing follow prevents a contact request', function () {
 
     sendContactRequest($this, $sender, $receiver)
         ->assertRedirect(route('dashboard'))
-        ->assertSessionHas('error', 'Du folgst diesem Benutzer bereits.');
+        ->assertSessionHas('success', 'Kontaktanfrage gesendet.');
 
-    expect(ContactRequest::query()->exists())->toBeFalse();
+    expect(ContactRequest::query()->count())->toBe(1)
+        ->and($sender->isFollowing($receiver))->toBeTrue()
+        ->and($receiver->isFollowing($sender))->toBeFalse();
 });
 
 test('a mutual follow prevents a contact request', function () {
@@ -107,6 +110,117 @@ test('a duplicate pending contact request is prevented', function () {
         ->assertSessionHas('error', 'Du hast diesem Benutzer bereits eine Kontaktanfrage gesendet.');
 
     expect(ContactRequest::query()->count())->toBe(1);
+});
+
+test('an accepted contact request without a current connection is reactivated', function () {
+    $sender = User::factory()->create();
+    createOnboardedProfile($sender);
+    $receiver = User::factory()->create();
+    createOnboardedProfile($receiver);
+    $acceptedRequest = ContactRequest::factory()
+        ->for($sender, 'sender')
+        ->for($receiver, 'receiver')
+        ->create([
+            'status' => ContactRequestStatus::Accepted,
+            'responded_at' => now(),
+        ]);
+
+    sendContactRequest($this, $sender, $receiver)
+        ->assertRedirect(route('dashboard'))
+        ->assertSessionHas('success', 'Kontaktanfrage gesendet.');
+
+    expect(ContactRequest::query()->count())->toBe(1)
+        ->and($acceptedRequest->refresh()->status)
+        ->toBe(ContactRequestStatus::Pending)
+        ->and($acceptedRequest->responded_at)->toBeNull();
+});
+
+test('a declined contact request is reactivated instead of duplicated', function () {
+    $sender = User::factory()->create();
+    createOnboardedProfile($sender);
+    $receiver = User::factory()->create();
+    createOnboardedProfile($receiver);
+    $declinedRequest = ContactRequest::factory()
+        ->for($sender, 'sender')
+        ->for($receiver, 'receiver')
+        ->create([
+            'message' => 'Alte Nachricht',
+            'status' => ContactRequestStatus::Declined,
+            'responded_at' => now()->subDay(),
+        ]);
+
+    sendContactRequest($this, $sender, $receiver, [
+        'message' => 'Erneute Anfrage',
+    ])
+        ->assertRedirect(route('dashboard'))
+        ->assertSessionHas('success', 'Kontaktanfrage gesendet.');
+
+    $declinedRequest->refresh();
+
+    expect(ContactRequest::query()->count())->toBe(1)
+        ->and($declinedRequest->status)->toBe(ContactRequestStatus::Pending)
+        ->and($declinedRequest->message)->toBe('Erneute Anfrage')
+        ->and($declinedRequest->responded_at)->toBeNull();
+
+    $this->actingAs($sender)
+        ->get(route('public-profile.show', $receiver->profile->username))
+        ->assertOk()
+        ->assertInertia(fn (Assert $page) => $page
+            ->where('profile.contact_status', 'outgoing_request'),
+        );
+
+    $this->actingAs($sender)
+        ->get(route('discover'))
+        ->assertOk()
+        ->assertInertia(fn (Assert $page) => $page
+            ->where('profiles.0.contact_status', 'outgoing_request'),
+        );
+
+    $this->actingAs($receiver)
+        ->get(route('contact-requests.index'))
+        ->assertOk()
+        ->assertInertia(fn (Assert $page) => $page
+            ->has('contactRequests', 1)
+            ->where('contactRequests.0.id', $declinedRequest->id),
+        );
+
+    $this->actingAs($sender)
+        ->get(route('contact-requests.sent'))
+        ->assertOk()
+        ->assertInertia(fn (Assert $page) => $page
+            ->has('contactRequests', 1)
+            ->where('contactRequests.0.id', $declinedRequest->id)
+            ->where('contactRequests.0.status', 'pending'),
+        );
+});
+
+test('a closed contact request in the opposite direction is reused for a new request', function () {
+    $sender = User::factory()->create();
+    createOnboardedProfile($sender);
+    $receiver = User::factory()->create();
+    createOnboardedProfile($receiver);
+    $closedRequest = ContactRequest::factory()
+        ->for($receiver, 'sender')
+        ->for($sender, 'receiver')
+        ->create([
+            'status' => ContactRequestStatus::Closed,
+            'responded_at' => now()->subDay(),
+        ]);
+
+    sendContactRequest($this, $sender, $receiver, [
+        'message' => 'Neue Richtung',
+    ])
+        ->assertRedirect(route('dashboard'))
+        ->assertSessionHas('success', 'Kontaktanfrage gesendet.');
+
+    $closedRequest->refresh();
+
+    expect(ContactRequest::query()->count())->toBe(1)
+        ->and($closedRequest->sender_id)->toBe($sender->id)
+        ->and($closedRequest->receiver_id)->toBe($receiver->id)
+        ->and($closedRequest->status)->toBe(ContactRequestStatus::Pending)
+        ->and($closedRequest->message)->toBe('Neue Richtung')
+        ->and($closedRequest->responded_at)->toBeNull();
 });
 
 test('a pending contact request in the opposite direction is prevented', function () {

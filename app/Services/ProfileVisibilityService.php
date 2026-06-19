@@ -2,6 +2,8 @@
 
 namespace App\Services;
 
+use App\Enums\ContactPermission;
+use App\Enums\ContactStatus;
 use App\Enums\ProfileVisibility;
 use App\Models\Profile;
 use App\Models\User;
@@ -10,6 +12,7 @@ class ProfileVisibilityService
 {
     public function __construct(
         private readonly ContactStatusService $contactStatus,
+        private readonly PrivacyService $privacy,
     ) {}
 
     /**
@@ -23,6 +26,15 @@ class ProfileVisibilityService
         $isFollowing = ! $isOwnProfile && $viewer->isFollowing($profile->user);
         $isFollowedBy = ! $isOwnProfile && $profile->user->isFollowing($viewer);
         $isMutual = $isFollowing && $isFollowedBy;
+        $isBlockedByViewer = ! $isOwnProfile
+            && $viewer->hasBlocked($profile->user);
+        $interactionBlocked = ! $isOwnProfile
+            && ($isBlockedByViewer || $viewer->isBlockedBy($profile->user));
+
+        $contactStatus = $interactionBlocked
+            ? ContactStatus::None
+            : $this->contactStatus
+                ->between($viewer, $profile->user, $isFollowing, $isFollowedBy);
 
         $data = [
             'username' => $profile->username,
@@ -30,10 +42,33 @@ class ProfileVisibilityService
             'is_following' => $isFollowing,
             'is_followed_by' => $isFollowedBy,
             'is_mutual' => $isMutual,
-            'contact_status' => $this->contactStatus
-                ->between($viewer, $profile->user, $isFollowing, $isFollowedBy)
-                ->value,
+            'contact_status' => $contactStatus->value,
+            'interaction_blocked' => $interactionBlocked,
+            'is_blocked_by_viewer' => $isBlockedByViewer,
         ];
+
+        if (! $isOwnProfile) {
+            $data['contact_user_id'] = $profile->user_id;
+            $data['can_follow'] = $this->privacy
+                ->canFollow($viewer, $profile->user);
+            $data['can_send_contact_request'] = $this->privacy
+                ->canSendContactRequest($viewer, $profile->user);
+            $data['contact_request_unavailable_reason'] = match (true) {
+                $profile->contact_permission === ContactPermission::Nobody => 'disabled',
+                $profile->contact_permission === ContactPermission::Followers
+                    && ! $isFollowing => 'follow_required',
+                default => null,
+            };
+        }
+
+        if (! $interactionBlocked
+            && $contactStatus === ContactStatus::IncomingRequest) {
+            $data['incoming_contact_request_id'] = $viewer
+                ->receivedContactRequests
+                ->first(
+                    fn ($contactRequest): bool => $contactRequest->sender_id === $profile->user_id,
+                )?->id;
+        }
 
         if ($this->canView($profile->profile_visibility, $isOwnProfile, $isFollowing, $isMutual)) {
             $data['display_name'] = $profile->display_name;
@@ -71,12 +106,7 @@ class ProfileVisibilityService
             return false;
         }
 
-        return $this->canView(
-            $profile->profile_visibility,
-            isOwnProfile: false,
-            isFollowing: $viewer->isFollowing($profile->user),
-            isMutual: $viewer->isMutualWith($profile->user),
-        );
+        return $this->privacy->canViewProfile($profile, $viewer);
     }
 
     private function canView(
@@ -90,8 +120,10 @@ class ProfileVisibilityService
         }
 
         return match ($visibility) {
-            ProfileVisibility::Public => true,
+            ProfileVisibility::Public,
+            ProfileVisibility::Members => true,
             ProfileVisibility::Followers => $isFollowing,
+            ProfileVisibility::Contacts,
             ProfileVisibility::Mutuals => $isMutual,
             ProfileVisibility::Private => false,
         };

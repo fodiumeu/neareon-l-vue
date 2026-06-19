@@ -2,6 +2,10 @@
 
 namespace App\Http\Requests;
 
+use App\Enums\ContactPermission;
+use App\Enums\FollowPermission;
+use App\Enums\MessagePermission;
+use App\Enums\OnlineStatusVisibility;
 use App\Enums\ProfileVisibility;
 use App\Models\InterestOption;
 use App\Models\LanguageOption;
@@ -53,9 +57,13 @@ class UpdateProfileRequest extends FormRequest
             ->all() ?? [];
         $profileVisibility = [
             ProfileVisibility::Public->value,
-            ProfileVisibility::Mutuals->value,
-            ProfileVisibility::Private->value,
+            ProfileVisibility::Members->value,
+            ProfileVisibility::Contacts->value,
         ];
+
+        if ($profile?->profile_visibility === ProfileVisibility::Private) {
+            $profileVisibility[] = ProfileVisibility::Private->value;
+        }
         $fieldVisibility = [
             ProfileVisibility::Public->value,
             ProfileVisibility::Followers->value,
@@ -90,6 +98,10 @@ class UpdateProfileRequest extends FormRequest
                         )),
             ],
             'profile_visibility' => ['required', Rule::in($profileVisibility)],
+            'follow_permission' => ['sometimes', 'required', Rule::enum(FollowPermission::class)],
+            'contact_permission' => ['sometimes', 'required', Rule::enum(ContactPermission::class)],
+            'message_permission' => ['sometimes', 'required', Rule::enum(MessagePermission::class)],
+            'online_status_visibility' => ['sometimes', 'required', Rule::enum(OnlineStatusVisibility::class)],
             'interests_visibility' => ['required', Rule::in($fieldVisibility)],
             'languages_visibility' => ['required', Rule::in($fieldVisibility)],
             'region_visibility' => ['required', Rule::in($fieldVisibility)],

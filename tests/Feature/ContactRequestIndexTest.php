@@ -45,11 +45,15 @@ test('users only see their own received pending contact requests', function () {
         );
 });
 
-test('accepted and declined contact requests are not visible', function () {
+test('accepted declined and closed contact requests are not visible', function () {
     $receiver = User::factory()->create();
     createOnboardedProfile($receiver);
 
-    foreach ([ContactRequestStatus::Accepted, ContactRequestStatus::Declined] as $status) {
+    foreach ([
+        ContactRequestStatus::Accepted,
+        ContactRequestStatus::Declined,
+        ContactRequestStatus::Closed,
+    ] as $status) {
         ContactRequest::factory()
             ->for(User::factory(), 'sender')
             ->for($receiver, 'receiver')

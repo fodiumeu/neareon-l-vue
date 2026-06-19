@@ -52,7 +52,7 @@ test('discover lists public profiles', function () {
     $viewer = User::factory()->create();
     createOnboardedProfile($viewer);
 
-    Profile::factory()->create([
+    $profile = Profile::factory()->create([
         'username' => 'public_discover',
         'display_name' => 'Public Discover',
         'profile_visibility' => ProfileVisibility::Public,
@@ -65,6 +65,7 @@ test('discover lists public profiles', function () {
             ->has('profiles', 1)
             ->where('profiles.0.username', 'public_discover')
             ->where('profiles.0.display_name', 'Public Discover')
+            ->where('profiles.0.contact_user_id', $profile->user_id)
             ->where('profiles.0.contact_status', 'none'),
         );
 });

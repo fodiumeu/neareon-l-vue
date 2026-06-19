@@ -125,6 +125,29 @@ test('opening a conversation reduces its unread count to zero', function () {
         ->toBe(0);
 });
 
+test('former contacts can read history but cannot send new messages', function () {
+    $viewer = User::factory()->create();
+    createOnboardedProfile($viewer);
+    $otherUser = User::factory()->create();
+    $conversation = Conversation::factory()->create();
+    participateInConversation($conversation, $viewer);
+    participateInConversation($conversation, $otherUser);
+    Message::factory()
+        ->for($conversation)
+        ->for($otherUser, 'sender')
+        ->create([
+            'body' => 'Bestehende Historie',
+        ]);
+
+    $this->actingAs($viewer)
+        ->get(route('messages.show', $conversation))
+        ->assertOk()
+        ->assertInertia(fn (Assert $page) => $page
+            ->where('conversation.can_send_messages', false)
+            ->where('conversation.messages.0.body', 'Bestehende Historie'),
+        );
+});
+
 test('conversation messages are loaded oldest first with sender data', function () {
     $viewer = User::factory()->create();
     createOnboardedProfile($viewer, [

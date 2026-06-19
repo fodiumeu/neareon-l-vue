@@ -2,11 +2,13 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\ContactRequestStatus;
 use App\Enums\ProfileVisibility;
 use App\Http\Requests\UpdateProfileRequest;
 use App\Models\InterestOption;
 use App\Models\LanguageOption;
 use App\Models\Profile;
+use App\Services\PrivacyService;
 use App\Services\ProfileOptionSyncService;
 use App\Services\ProfileVisibilityService;
 use App\Support\NextUserRoute;
@@ -20,6 +22,7 @@ class ProfileController extends Controller
     public function __construct(
         private readonly ProfileVisibilityService $profileVisibility,
         private readonly ProfileOptionSyncService $profileOptions,
+        private readonly PrivacyService $privacy,
     ) {}
 
     /**
@@ -56,10 +59,17 @@ class ProfileController extends Controller
         $profile->load(['languageOptions', 'interestOptions']);
 
         $profileVisibilityOptions = [
-            ['value' => ProfileVisibility::Public->value, 'label' => 'Alle'],
-            ['value' => ProfileVisibility::Mutuals->value, 'label' => 'Gegenseitige Kontakte'],
-            ['value' => ProfileVisibility::Private->value, 'label' => 'Nur ich'],
+            ['value' => ProfileVisibility::Public->value, 'label' => 'Öffentlich'],
+            ['value' => ProfileVisibility::Members->value, 'label' => 'Mitglieder'],
+            ['value' => ProfileVisibility::Contacts->value, 'label' => 'Kontakte'],
         ];
+
+        if ($profile->profile_visibility === ProfileVisibility::Private) {
+            $profileVisibilityOptions[] = [
+                'value' => ProfileVisibility::Private->value,
+                'label' => 'Nur ich (bisherige Einstellung)',
+            ];
+        }
         $fieldVisibilityOptions = [
             ['value' => ProfileVisibility::Public->value, 'label' => 'Alle'],
             ['value' => ProfileVisibility::Followers->value, 'label' => 'Follower'],
@@ -99,6 +109,10 @@ class ProfileController extends Controller
                 'languages' => $profile->languageOptions->pluck('code')->values(),
                 'interests' => $profile->interestOptions->pluck('slug')->values(),
                 'profile_visibility' => $profile->profile_visibility->value,
+                'follow_permission' => $profile->follow_permission->value,
+                'contact_permission' => $profile->contact_permission->value,
+                'message_permission' => $profile->message_permission->value,
+                'online_status_visibility' => $profile->online_status_visibility->value,
                 'interests_visibility' => $profile->interests_visibility->value,
                 'languages_visibility' => $profile->languages_visibility->value,
                 'region_visibility' => $profile->region_visibility->value,
@@ -121,6 +135,25 @@ class ProfileController extends Controller
                 ]),
             'fieldVisibilityOptions' => $fieldVisibilityOptions,
             'profileVisibilityOptions' => $profileVisibilityOptions,
+            'followPermissionOptions' => [
+                ['value' => 'everyone', 'label' => 'Alle'],
+                ['value' => 'members', 'label' => 'Mitglieder'],
+                ['value' => 'nobody', 'label' => 'Niemand'],
+            ],
+            'contactPermissionOptions' => [
+                ['value' => 'everyone', 'label' => 'Alle'],
+                ['value' => 'followers', 'label' => 'Follower'],
+                ['value' => 'nobody', 'label' => 'Niemand'],
+            ],
+            'messagePermissionOptions' => [
+                ['value' => 'contacts_only', 'label' => 'Nur Kontakte'],
+                ['value' => 'existing_conversations', 'label' => 'Bestehende Unterhaltungen'],
+            ],
+            'onlineStatusVisibilityOptions' => [
+                ['value' => 'nobody', 'label' => 'Niemand'],
+                ['value' => 'contacts', 'label' => 'Kontakte'],
+                ['value' => 'mutual_contacts', 'label' => 'Gegenseitige Kontakte'],
+            ],
         ]);
     }
 
@@ -153,10 +186,28 @@ class ProfileController extends Controller
             return NextUserRoute::redirect($viewer);
         }
 
+        $viewer->loadMissing([
+            'sentContactRequests' => fn ($query) => $query
+                ->where('status', ContactRequestStatus::Pending->value)
+                ->select(['id', 'sender_id', 'receiver_id', 'status']),
+            'receivedContactRequests' => fn ($query) => $query
+                ->where('status', ContactRequestStatus::Pending->value)
+                ->select(['id', 'sender_id', 'receiver_id', 'status']),
+            'blockingRelationships:id,blocker_id,blocked_id',
+            'blockedByRelationships:id,blocker_id,blocked_id',
+        ]);
+
         $profile = Profile::query()
             ->with(['user', 'languageOptions', 'interestOptions'])
             ->where('username', $username)
             ->firstOrFail();
+
+        if (in_array($profile->profile_visibility, [
+            ProfileVisibility::Members,
+            ProfileVisibility::Contacts,
+        ], true)) {
+            abort_unless($this->privacy->canViewProfile($profile, $viewer), 403);
+        }
 
         return Inertia::render('Profile/Show', [
             'profile' => $this->profileVisibility->visibleProfileData($profile, $viewer),

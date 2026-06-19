@@ -2,6 +2,7 @@
 
 use App\Models\Conversation;
 use App\Models\ConversationParticipant;
+use App\Models\Follow;
 use App\Models\Message;
 use App\Models\User;
 use Illuminate\Support\Facades\Route;
@@ -17,12 +18,26 @@ function addMessageStoreParticipant(
         ->create();
 }
 
+function allowMessageExchange(User $userA, User $userB): void
+{
+    Follow::query()->create([
+        'follower_id' => $userA->id,
+        'followed_id' => $userB->id,
+    ]);
+    Follow::query()->create([
+        'follower_id' => $userB->id,
+        'followed_id' => $userA->id,
+    ]);
+}
+
 test('a participant can send a message', function () {
     $sender = User::factory()->create();
     createOnboardedProfile($sender);
+    $otherUser = User::factory()->create();
     $conversation = Conversation::factory()->create();
     addMessageStoreParticipant($conversation, $sender);
-    addMessageStoreParticipant($conversation, User::factory()->create());
+    addMessageStoreParticipant($conversation, $otherUser);
+    allowMessageExchange($sender, $otherUser);
 
     $this->actingAs($sender)
         ->post(route('messages.store', $conversation), [
@@ -56,8 +71,11 @@ test('a non-participant cannot send a message', function () {
 test('message input is trimmed before it is stored', function () {
     $sender = User::factory()->create();
     createOnboardedProfile($sender);
+    $otherUser = User::factory()->create();
     $conversation = Conversation::factory()->create();
     addMessageStoreParticipant($conversation, $sender);
+    addMessageStoreParticipant($conversation, $otherUser);
+    allowMessageExchange($sender, $otherUser);
 
     $this->actingAs($sender)
         ->post(route('messages.store', $conversation), [
@@ -71,8 +89,11 @@ test('message input is trimmed before it is stored', function () {
 test('an empty or whitespace-only message is invalid', function (string $message) {
     $sender = User::factory()->create();
     createOnboardedProfile($sender);
+    $otherUser = User::factory()->create();
     $conversation = Conversation::factory()->create();
     addMessageStoreParticipant($conversation, $sender);
+    addMessageStoreParticipant($conversation, $otherUser);
+    allowMessageExchange($sender, $otherUser);
 
     $this->actingAs($sender)
         ->from(route('messages.show', $conversation))
@@ -91,8 +112,11 @@ test('an empty or whitespace-only message is invalid', function (string $message
 test('a message may not exceed 5000 characters', function () {
     $sender = User::factory()->create();
     createOnboardedProfile($sender);
+    $otherUser = User::factory()->create();
     $conversation = Conversation::factory()->create();
     addMessageStoreParticipant($conversation, $sender);
+    addMessageStoreParticipant($conversation, $otherUser);
+    allowMessageExchange($sender, $otherUser);
 
     $this->actingAs($sender)
         ->from(route('messages.show', $conversation))
@@ -108,8 +132,11 @@ test('a message may not exceed 5000 characters', function () {
 test('sending a message updates the conversation timestamp', function () {
     $sender = User::factory()->create();
     createOnboardedProfile($sender);
+    $otherUser = User::factory()->create();
     $conversation = Conversation::factory()->create();
     addMessageStoreParticipant($conversation, $sender);
+    addMessageStoreParticipant($conversation, $otherUser);
+    allowMessageExchange($sender, $otherUser);
     $conversation->forceFill([
         'updated_at' => now()->subHour(),
     ])->saveQuietly();
@@ -132,6 +159,7 @@ test('new messages remain sorted oldest first in the detail view', function () {
     $conversation = Conversation::factory()->create();
     addMessageStoreParticipant($conversation, $sender);
     addMessageStoreParticipant($conversation, $otherUser);
+    allowMessageExchange($sender, $otherUser);
     $olderMessage = Message::factory()
         ->for($conversation)
         ->for($otherUser, 'sender')
@@ -156,6 +184,27 @@ test('new messages remain sorted oldest first in the detail view', function () {
             ->where('conversation.messages.0.id', $olderMessage->id)
             ->where('conversation.messages.1.id', $newerMessage->id),
         );
+});
+
+test('a former contact cannot send new messages', function () {
+    $sender = User::factory()->create();
+    createOnboardedProfile($sender);
+    $otherUser = User::factory()->create();
+    $conversation = Conversation::factory()->create();
+    addMessageStoreParticipant($conversation, $sender);
+    addMessageStoreParticipant($conversation, $otherUser);
+    Follow::query()->create([
+        'follower_id' => $otherUser->id,
+        'followed_id' => $sender->id,
+    ]);
+
+    $this->actingAs($sender)
+        ->post(route('messages.store', $conversation), [
+            'message' => 'Nicht mehr erlaubt',
+        ])
+        ->assertForbidden();
+
+    expect(Message::query()->count())->toBe(0);
 });
 
 test('the message store route uses the required middleware', function () {

@@ -3,6 +3,8 @@
 namespace App\Http\Requests;
 
 use App\Models\Conversation;
+use App\Models\User;
+use App\Services\PrivacyService;
 use Illuminate\Foundation\Http\FormRequest;
 
 class StoreMessageRequest extends FormRequest
@@ -13,12 +15,31 @@ class StoreMessageRequest extends FormRequest
     public function authorize(): bool
     {
         $conversation = $this->route('conversation');
+        $user = $this->user();
 
-        return $this->user() !== null
-            && $conversation instanceof Conversation
-            && $conversation->participants()
-                ->where('user_id', $this->user()->id)
-                ->exists();
+        if ($user === null || ! $conversation instanceof Conversation) {
+            return false;
+        }
+
+        $participantUserIds = $conversation->participants()
+            ->pluck('user_id');
+
+        if (! $participantUserIds->contains($user->id)) {
+            return false;
+        }
+
+        $otherUserId = $participantUserIds->first(
+            fn (int $userId): bool => $userId !== $user->id,
+        );
+
+        if ($otherUserId === null) {
+            return false;
+        }
+
+        $otherUser = User::query()->findOrFail($otherUserId);
+
+        return app(PrivacyService::class)
+            ->canSendMessage($user, $otherUser, $conversation);
     }
 
     /**

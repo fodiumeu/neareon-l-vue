@@ -2,6 +2,10 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\ContactPermission;
+use App\Enums\FollowPermission;
+use App\Enums\MessagePermission;
+use App\Enums\OnlineStatusVisibility;
 use App\Enums\ProfileVisibility;
 use App\Http\Requests\StoreOnboardingDetailsRequest;
 use App\Http\Requests\StoreOnboardingInterestsRequest;
@@ -57,6 +61,10 @@ class OnboardingController extends Controller
         $user->profile()->create([
             ...$request->validated(),
             'profile_visibility' => ProfileVisibility::Public,
+            'follow_permission' => FollowPermission::Everyone,
+            'contact_permission' => ContactPermission::Everyone,
+            'message_permission' => MessagePermission::ExistingConversations,
+            'online_status_visibility' => OnlineStatusVisibility::MutualContacts,
             'interests_visibility' => ProfileVisibility::Public,
             'languages_visibility' => ProfileVisibility::Public,
             'region_visibility' => ProfileVisibility::Public,

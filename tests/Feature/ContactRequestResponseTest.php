@@ -274,6 +274,8 @@ test('processed contact requests cannot be processed again', function (
     'accepted to declined' => [ContactRequestStatus::Accepted, 'decline'],
     'declined to accepted' => [ContactRequestStatus::Declined, 'accept'],
     'declined to declined' => [ContactRequestStatus::Declined, 'decline'],
+    'closed to accepted' => [ContactRequestStatus::Closed, 'accept'],
+    'closed to declined' => [ContactRequestStatus::Closed, 'decline'],
 ]);
 
 test('a processed contact request is no longer in the pending list', function () {

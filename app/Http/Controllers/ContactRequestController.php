@@ -7,6 +7,8 @@ use App\Http\Requests\StoreContactRequestRequest;
 use App\Models\ContactRequest;
 use App\Models\User;
 use App\Services\ConversationService;
+use App\Services\PrivacyService;
+use Illuminate\Database\QueryException;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -18,6 +20,7 @@ class ContactRequestController extends Controller
 {
     public function __construct(
         private readonly ConversationService $conversations,
+        private readonly PrivacyService $privacy,
     ) {}
 
     /**
@@ -97,29 +100,76 @@ class ContactRequestController extends Controller
             return back()->with('error', 'Du kannst dir nicht selbst eine Kontaktanfrage senden.');
         }
 
+        abort_if($sender->hasBlockWith($receiver), HttpResponse::HTTP_FORBIDDEN);
+        abort_unless(
+            $this->privacy->canSendContactRequest($sender, $receiver),
+            HttpResponse::HTTP_FORBIDDEN,
+        );
+
         if ($sender->isMutualWith($receiver)) {
             return back()->with('error', 'Ihr folgt euch bereits gegenseitig.');
         }
 
-        if ($sender->isFollowing($receiver)) {
-            return back()->with('error', 'Du folgst diesem Benutzer bereits.');
+        try {
+            $result = DB::transaction(function () use ($request, $sender, $receiver): string {
+                User::query()
+                    ->whereKey([$sender->id, $receiver->id])
+                    ->orderBy('id')
+                    ->lockForUpdate()
+                    ->get();
+
+                $existingRequest = ContactRequest::query()
+                    ->where(function ($query) use ($sender, $receiver): void {
+                        $query->where([
+                            'sender_id' => $sender->id,
+                            'receiver_id' => $receiver->id,
+                        ])->orWhere([
+                            'sender_id' => $receiver->id,
+                            'receiver_id' => $sender->id,
+                        ]);
+                    })
+                    ->lockForUpdate()
+                    ->first();
+
+                if ($existingRequest?->status === ContactRequestStatus::Pending) {
+                    return $existingRequest->sender_id === $sender->id
+                        ? 'already_sent'
+                        : 'already_received';
+                }
+
+                $attributes = [
+                    'sender_id' => $sender->id,
+                    'receiver_id' => $receiver->id,
+                    'message' => $request->validated('message'),
+                    'status' => ContactRequestStatus::Pending,
+                    'responded_at' => null,
+                ];
+
+                if ($existingRequest !== null) {
+                    $existingRequest->update($attributes);
+
+                    return 'reactivated';
+                }
+
+                ContactRequest::query()->create($attributes);
+
+                return 'created';
+            });
+        } catch (QueryException $exception) {
+            if (! $this->isContactRequestPairUniqueViolation($exception)) {
+                throw $exception;
+            }
+
+            $result = 'already_sent';
         }
 
-        if ($this->hasPendingRequest($sender, $receiver)) {
+        if ($result === 'already_sent') {
             return back()->with('error', 'Du hast diesem Benutzer bereits eine Kontaktanfrage gesendet.');
         }
 
-        if ($this->hasPendingRequest($receiver, $sender)) {
+        if ($result === 'already_received') {
             return back()->with('error', 'Dieser Benutzer hat dir bereits eine Kontaktanfrage gesendet.');
         }
-
-        ContactRequest::query()->create([
-            'sender_id' => $sender->id,
-            'receiver_id' => $receiver->id,
-            'message' => $request->validated('message'),
-            'status' => ContactRequestStatus::Pending,
-            'responded_at' => null,
-        ]);
 
         return back()->with('success', 'Kontaktanfrage gesendet.');
     }
@@ -159,6 +209,12 @@ class ContactRequestController extends Controller
                 HttpResponse::HTTP_FORBIDDEN,
             );
 
+            abort_if(
+                $lockedContactRequest->sender
+                    ->hasBlockWith($lockedContactRequest->receiver),
+                HttpResponse::HTTP_FORBIDDEN,
+            );
+
             abort_unless(
                 $lockedContactRequest->status === ContactRequestStatus::Pending,
                 HttpResponse::HTTP_CONFLICT,
@@ -190,11 +246,17 @@ class ContactRequestController extends Controller
         });
     }
 
-    private function hasPendingRequest(User $sender, User $receiver): bool
-    {
-        return $sender->sentContactRequests()
-            ->where('receiver_id', $receiver->id)
-            ->where('status', ContactRequestStatus::Pending->value)
-            ->exists();
+    private function isContactRequestPairUniqueViolation(
+        QueryException $exception,
+    ): bool {
+        $message = strtolower($exception->getMessage());
+
+        return str_contains(
+            $message,
+            'contact_requests.sender_id, contact_requests.receiver_id',
+        ) || str_contains(
+            $message,
+            'contact_requests_sender_id_receiver_id_unique',
+        );
     }
 }

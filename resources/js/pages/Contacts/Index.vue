@@ -1,13 +1,30 @@
 <script setup lang="ts">
-import { Head, Link } from '@inertiajs/vue3';
+import { Form, Head, Link } from '@inertiajs/vue3';
+import ContactStatusBadge from '@/components/ContactStatusBadge.vue';
 import PageHeader from '@/components/PageHeader.vue';
 import PageSection from '@/components/PageSection.vue';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+import {
+    Dialog,
+    DialogClose,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+    DialogTrigger,
+} from '@/components/ui/dialog';
+import { Spinner } from '@/components/ui/spinner';
 
 type Contact = {
+    connected_at: string | null;
+    conversation_id: number | null;
     display_name: string;
+    id: number;
+    last_activity_at: string | null;
+    status: 'connected';
     username: string;
 };
 
@@ -17,6 +34,12 @@ defineProps<{
 
 const avatarInitial = (contact: Contact) =>
     contact.display_name.charAt(0).toUpperCase();
+
+const formatDate = (value: string) =>
+    new Intl.DateTimeFormat('de-DE', {
+        dateStyle: 'medium',
+        timeStyle: 'short',
+    }).format(new Date(value));
 
 defineOptions({
     layout: {
@@ -83,18 +106,103 @@ defineOptions({
                                 >
                                     @{{ contact.username }}
                                 </p>
+                                <ContactStatusBadge
+                                    :status="contact.status"
+                                    class="mt-2"
+                                />
                             </div>
                         </div>
 
-                        <Button
-                            as-child
-                            variant="secondary"
-                            class="mt-auto w-full"
+                        <div
+                            v-if="
+                                contact.connected_at || contact.last_activity_at
+                            "
+                            class="space-y-1 text-xs text-muted-foreground"
                         >
-                            <Link :href="`/u/${contact.username}`">
-                                Profil ansehen
-                            </Link>
-                        </Button>
+                            <p v-if="contact.connected_at">
+                                Verbunden seit:
+                                {{ formatDate(contact.connected_at) }}
+                            </p>
+                            <p v-if="contact.last_activity_at">
+                                Letzte Aktivität:
+                                {{ formatDate(contact.last_activity_at) }}
+                            </p>
+                        </div>
+
+                        <div class="mt-auto grid gap-2">
+                            <Form
+                                :action="`/contacts/${contact.id}/messages`"
+                                method="post"
+                                v-slot="{ processing }"
+                            >
+                                <Button
+                                    type="submit"
+                                    :disabled="processing"
+                                    class="w-full"
+                                >
+                                    <Spinner v-if="processing" />
+                                    Nachricht senden
+                                </Button>
+                            </Form>
+
+                            <Button as-child variant="secondary" class="w-full">
+                                <Link :href="`/u/${contact.username}`">
+                                    Profil ansehen
+                                </Link>
+                            </Button>
+
+                            <Dialog>
+                                <DialogTrigger as-child>
+                                    <Button
+                                        variant="destructive"
+                                        class="w-full"
+                                    >
+                                        Verbindung entfernen
+                                    </Button>
+                                </DialogTrigger>
+                                <DialogContent>
+                                    <Form
+                                        :action="`/contacts/${contact.id}`"
+                                        method="delete"
+                                        :options="{ preserveScroll: true }"
+                                        v-slot="{ processing }"
+                                        class="space-y-6"
+                                    >
+                                        <DialogHeader class="space-y-3">
+                                            <DialogTitle>
+                                                Verbindung entfernen?
+                                            </DialogTitle>
+                                            <DialogDescription>
+                                                Die Verbindung zu diesem Kontakt
+                                                wird aufgehoben. Bereits
+                                                ausgetauschte Nachrichten
+                                                bleiben erhalten.
+                                            </DialogDescription>
+                                        </DialogHeader>
+
+                                        <DialogFooter class="gap-2">
+                                            <DialogClose as-child>
+                                                <Button
+                                                    type="button"
+                                                    variant="secondary"
+                                                    :disabled="processing"
+                                                >
+                                                    Abbrechen
+                                                </Button>
+                                            </DialogClose>
+                                            <Button
+                                                type="submit"
+                                                variant="destructive"
+                                                :disabled="processing"
+                                            >
+                                                <Spinner v-if="processing" />
+                                                Verbindung entfernen
+                                            </Button>
+                                        </DialogFooter>
+                                    </Form>
+                                </DialogContent>
+                            </Dialog>
+                        </div>
                     </CardContent>
                 </Card>
             </div>

@@ -3,11 +3,16 @@
 namespace App\Http\Middleware;
 
 use App\Enums\ContactRequestStatus;
+use App\Services\ConversationReadService;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
 
 class HandleInertiaRequests extends Middleware
 {
+    public function __construct(
+        private readonly ConversationReadService $conversationReads,
+    ) {}
+
     /**
      * The root template that's loaded on the first page visit.
      *
@@ -70,6 +75,12 @@ class HandleInertiaRequests extends Middleware
                 'pendingReceivedCount' => fn (): int => $request->user()?->receivedContactRequests()
                     ->where('status', ContactRequestStatus::Pending->value)
                     ->count() ?? 0,
+            ],
+            'messages' => [
+                'unreadCount' => fn (): int => $request->user() !== null
+                    ? $this->conversationReads
+                        ->countUnreadMessagesForUser($request->user())
+                    : 0,
             ],
             'flash' => [
                 'success' => $request->session()->get('success'),

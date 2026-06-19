@@ -6,6 +6,7 @@ use App\Http\Requests\StoreMessageRequest;
 use App\Models\Conversation;
 use App\Models\ConversationParticipant;
 use App\Services\ConversationReadService;
+use App\Services\PrivacyService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -17,6 +18,7 @@ class MessageController extends Controller
 {
     public function __construct(
         private readonly ConversationReadService $conversationReads,
+        private readonly PrivacyService $privacy,
     ) {}
 
     /**
@@ -84,7 +86,7 @@ class MessageController extends Controller
         $conversation->load([
             'participants:id,conversation_id,user_id',
             'participants.user:id,name',
-            'participants.user.profile:user_id,display_name,username',
+            'participants.user.profile:user_id,display_name,username,message_permission',
             'messages' => fn ($query) => $query
                 ->select([
                     'id',
@@ -102,10 +104,20 @@ class MessageController extends Controller
             fn (ConversationParticipant $participant): bool => $participant->user_id !== $viewer->id,
         );
         $otherUser = $otherParticipant?->user;
+        $isBlocked = $otherUser !== null
+            && $viewer->hasBlockWith($otherUser);
+        $canSendMessages = $otherUser !== null
+            && $this->privacy->canSendMessage(
+                $viewer,
+                $otherUser,
+                $conversation,
+            );
 
         return Inertia::render('Messages/Show', [
             'conversation' => [
                 'conversation_id' => $conversation->id,
+                'can_send_messages' => $canSendMessages,
+                'is_blocked' => $isBlocked,
                 'other_participant' => [
                     'display_name' => $otherUser?->profile?->display_name
                         ?? $otherUser?->name,

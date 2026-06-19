@@ -46,6 +46,7 @@ test('users with a profile can open another public profile', function () {
             ->where('profile.username', 'public_member')
             ->where('profile.display_name', 'Public Member')
             ->where('profile.bio', 'Oeffentliche Kurzinfo.')
+            ->where('profile.contact_user_id', $profile->user_id)
             ->where('profile.contact_status', 'none'),
         );
 });

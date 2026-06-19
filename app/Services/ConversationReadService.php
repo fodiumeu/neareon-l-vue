@@ -7,6 +7,7 @@ use App\Models\Conversation;
 use App\Models\ConversationParticipant;
 use App\Models\Message;
 use App\Models\User;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Query\JoinClause;
 
@@ -65,29 +66,9 @@ class ConversationReadService
             throw new ConversationParticipantAccessDenied;
         }
 
-        $unreadCounts = Message::query()
+        $unreadCounts = $this->unreadMessagesQuery($user)
             ->selectRaw('messages.conversation_id, COUNT(*) as unread_count')
-            ->join(
-                'conversation_participants as read_participant',
-                function (JoinClause $join) use ($user): void {
-                    $join->on(
-                        'read_participant.conversation_id',
-                        '=',
-                        'messages.conversation_id',
-                    )->where('read_participant.user_id', $user->id);
-                },
-            )
             ->whereIn('messages.conversation_id', $conversationIds)
-            ->where('sender_id', '!=', $user->id)
-            ->where(
-                fn ($query) => $query
-                    ->whereNull('read_participant.last_read_at')
-                    ->orWhereColumn(
-                        'messages.created_at',
-                        '>',
-                        'read_participant.last_read_at',
-                    ),
-            )
             ->groupBy('messages.conversation_id')
             ->pluck('unread_count', 'messages.conversation_id');
 
@@ -99,5 +80,43 @@ class ConversationReadService
                 ),
             ])
             ->all();
+    }
+
+    /**
+     * Count all unread messages for the given user.
+     */
+    public function countUnreadMessagesForUser(User $user): int
+    {
+        return $this->unreadMessagesQuery($user)->count();
+    }
+
+    /**
+     * Build the central unread-message query for a user.
+     *
+     * @return Builder<Message>
+     */
+    private function unreadMessagesQuery(User $user): Builder
+    {
+        return Message::query()
+            ->join(
+                'conversation_participants as read_participant',
+                function (JoinClause $join) use ($user): void {
+                    $join->on(
+                        'read_participant.conversation_id',
+                        '=',
+                        'messages.conversation_id',
+                    )->where('read_participant.user_id', $user->id);
+                },
+            )
+            ->where('messages.sender_id', '!=', $user->id)
+            ->where(
+                fn ($query) => $query
+                    ->whereNull('read_participant.last_read_at')
+                    ->orWhereColumn(
+                        'messages.created_at',
+                        '>',
+                        'read_participant.last_read_at',
+                    ),
+            );
     }
 }

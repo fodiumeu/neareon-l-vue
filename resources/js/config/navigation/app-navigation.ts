@@ -1,7 +1,9 @@
 import {
     ContactRound,
+    CircleSlash2,
     Inbox,
     LayoutGrid,
+    MessageCircle,
     Search,
     Send,
     Settings,
@@ -15,12 +17,14 @@ import type { NavItem } from '@/types';
 type ProjectNavigationOptions = {
     adminLabel: string;
     pendingContactRequestsCount: number;
+    unreadMessagesCount: number;
     showAdminArea: boolean;
 };
 
 export const getMainNavItems = ({
     adminLabel,
     pendingContactRequestsCount,
+    unreadMessagesCount,
     showAdminArea,
 }: ProjectNavigationOptions): NavItem[] => [
     {
@@ -48,6 +52,17 @@ export const getMainNavItems = ({
         title: 'Gesendete Anfragen',
         href: '/contact-requests/sent',
         icon: Send,
+    },
+    {
+        title: 'Blockierte Profile',
+        href: '/blocked-profiles',
+        icon: CircleSlash2,
+    },
+    {
+        title: 'Nachrichten',
+        href: '/messages',
+        icon: MessageCircle,
+        badge: unreadMessagesCount >= 100 ? '99+' : unreadMessagesCount,
     },
     {
         title: 'Profil',

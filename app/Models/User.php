@@ -127,6 +127,26 @@ class User extends Authenticatable
         return $this->hasMany(ContactRequest::class, 'receiver_id');
     }
 
+    public function blockingRelationships(): HasMany
+    {
+        return $this->hasMany(Block::class, 'blocker_id');
+    }
+
+    public function blockedByRelationships(): HasMany
+    {
+        return $this->hasMany(Block::class, 'blocked_id');
+    }
+
+    public function submittedReports(): HasMany
+    {
+        return $this->hasMany(Report::class, 'reporter_user_id');
+    }
+
+    public function receivedReports(): HasMany
+    {
+        return $this->hasMany(Report::class, 'reported_user_id');
+    }
+
     /**
      * Get the user's conversation participant records.
      */
@@ -187,5 +207,36 @@ class User extends Authenticatable
     public function isMutualWith(User $user): bool
     {
         return $this->isFollowing($user) && $user->isFollowing($this);
+    }
+
+    public function hasBlocked(User $user): bool
+    {
+        if ($this->relationLoaded('blockingRelationships')) {
+            return $this->blockingRelationships->contains(
+                fn (Block $block): bool => $block->blocked_id === $user->id,
+            );
+        }
+
+        return $this->blockingRelationships()
+            ->where('blocked_id', $user->id)
+            ->exists();
+    }
+
+    public function isBlockedBy(User $user): bool
+    {
+        if ($this->relationLoaded('blockedByRelationships')) {
+            return $this->blockedByRelationships->contains(
+                fn (Block $block): bool => $block->blocker_id === $user->id,
+            );
+        }
+
+        return $this->blockedByRelationships()
+            ->where('blocker_id', $user->id)
+            ->exists();
+    }
+
+    public function hasBlockWith(User $user): bool
+    {
+        return $this->hasBlocked($user) || $this->isBlockedBy($user);
     }
 }

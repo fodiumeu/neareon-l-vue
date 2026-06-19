@@ -206,6 +206,59 @@ test('unread messages are counted for multiple conversations at once', function 
     ]);
 });
 
+test('all unread messages for a user are counted across conversations', function () {
+    $viewer = User::factory()->create();
+    $sender = User::factory()->create();
+    $firstConversation = Conversation::factory()->create();
+    $secondConversation = Conversation::factory()->create();
+    createReadStateParticipant($firstConversation, $viewer);
+    createReadStateParticipant(
+        $secondConversation,
+        $viewer,
+        Carbon::parse('2026-06-18 11:00:00'),
+    );
+    createReadStateMessage(
+        $firstConversation,
+        $sender,
+        '2026-06-18 10:00:00',
+    );
+    createReadStateMessage(
+        $firstConversation,
+        $viewer,
+        '2026-06-18 11:00:00',
+    );
+    createReadStateMessage(
+        $secondConversation,
+        $sender,
+        '2026-06-18 10:00:00',
+    );
+    createReadStateMessage(
+        $secondConversation,
+        $sender,
+        '2026-06-18 12:00:00',
+    );
+    $unrelatedConversation = Conversation::factory()->create();
+    createReadStateMessage(
+        $unrelatedConversation,
+        $sender,
+        '2026-06-18 13:00:00',
+    );
+
+    $count = app(ConversationReadService::class)
+        ->countUnreadMessagesForUser($viewer);
+
+    expect($count)->toBe(2);
+});
+
+test('the global unread count is zero without unread messages', function () {
+    $viewer = User::factory()->create();
+
+    expect(
+        app(ConversationReadService::class)
+            ->countUnreadMessagesForUser($viewer),
+    )->toBe(0);
+});
+
 test('the read state migration can be rolled back and applied again', function () {
     $migration = require database_path(
         'migrations/2026_06_18_000010_add_last_read_at_to_conversation_participants_table.php',
