@@ -115,7 +115,7 @@ defineOptions({
 
                         <p
                             v-if="contactRequest.message"
-                            class="rounded-md border border-border bg-background/60 px-4 py-3 text-sm leading-6 text-foreground dark:bg-input/20"
+                            class="rounded-md border border-border bg-background/60 px-4 py-3 text-sm leading-6 whitespace-pre-wrap text-foreground dark:bg-input/20"
                         >
                             {{ contactRequest.message }}
                         </p>

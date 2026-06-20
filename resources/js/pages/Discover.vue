@@ -169,7 +169,9 @@ defineOptions({
                             >
                                 Bio
                             </p>
-                            <p class="text-sm leading-6 text-muted-foreground">
+                            <p
+                                class="text-sm leading-6 whitespace-pre-wrap text-muted-foreground"
+                            >
                                 {{ profile.bio }}
                             </p>
                         </div>

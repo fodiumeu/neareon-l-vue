@@ -278,7 +278,11 @@ defineOptions({
     <div
         class="mx-auto flex h-full w-full max-w-4xl flex-1 flex-col gap-6 overflow-x-auto p-4 sm:p-6"
     >
-        <AppBackButton fallback="/messages" label="Zurück zu den Nachrichten" />
+        <AppBackButton
+            fallback="/messages"
+            label="Zurück zu den Nachrichten"
+            class="hidden md:inline-flex"
+        />
 
         <PageHeader
             :title="participantLabel"

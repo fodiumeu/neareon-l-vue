@@ -59,9 +59,14 @@ test('a report requires a valid reason and limits the description', function () 
 
 test('the own profile page does not render the report action', function () {
     $profilePage = file_get_contents(resource_path('js/pages/Profile/Show.vue'));
+    $moreActions = file_get_contents(
+        resource_path('js/components/ProfileMoreActions.vue'),
+    );
 
     expect($profilePage)
         ->toContain('v-if="!props.profile.isOwnProfile"')
+        ->toContain('<ProfileMoreActions')
+        ->and($moreActions)
         ->toContain('<ReportDialog');
 });
 

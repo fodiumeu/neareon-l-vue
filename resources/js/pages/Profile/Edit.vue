@@ -66,7 +66,11 @@ defineOptions({
     <Head title="Profil bearbeiten" />
 
     <div class="flex h-full flex-1 flex-col gap-6 overflow-x-auto p-4">
-        <AppBackButton fallback="/profile" label="Zurück zum Profil" />
+        <AppBackButton
+            fallback="/profile"
+            label="Zurück zum Profil"
+            class="hidden md:inline-flex"
+        />
 
         <PageHeader
             title="Profil bearbeiten"
