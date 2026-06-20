@@ -13,8 +13,12 @@ use App\Models\User;
 
 class PrivacyService
 {
-    public function canViewProfile(Profile $profile, User $viewer): bool
-    {
+    public function canViewProfile(
+        Profile $profile,
+        User $viewer,
+        ?bool $isFollowing = null,
+        ?bool $isFollowedBy = null,
+    ): bool {
         $owner = $profile->user;
 
         if ($owner->is($viewer)) {
@@ -25,12 +29,15 @@ class PrivacyService
             return false;
         }
 
+        $isFollowing ??= $viewer->isFollowing($owner);
+        $isFollowedBy ??= $owner->isFollowing($viewer);
+
         return match ($profile->profile_visibility) {
             ProfileVisibility::Public,
             ProfileVisibility::Members => true,
             ProfileVisibility::Contacts,
-            ProfileVisibility::Mutuals => $viewer->isMutualWith($owner),
-            ProfileVisibility::Followers => $viewer->isFollowing($owner),
+            ProfileVisibility::Mutuals => $isFollowing && $isFollowedBy,
+            ProfileVisibility::Followers => $isFollowing,
             ProfileVisibility::Private => false,
         };
     }
@@ -49,16 +56,21 @@ class PrivacyService
         };
     }
 
-    public function canSendContactRequest(User $sender, User $receiver): bool
-    {
+    public function canSendContactRequest(
+        User $sender,
+        User $receiver,
+        ?bool $isFollowing = null,
+    ): bool {
         if ($sender->is($receiver) || $sender->hasBlockWith($receiver)) {
             return false;
         }
 
+        $isFollowing ??= $sender->isFollowing($receiver);
+
         return match ($receiver->profile?->contact_permission) {
             ContactPermission::Everyone,
             null => true,
-            ContactPermission::Followers => $sender->isFollowing($receiver),
+            ContactPermission::Followers => $isFollowing,
             ContactPermission::Nobody => false,
         };
     }

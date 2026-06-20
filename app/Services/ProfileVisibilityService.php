@@ -25,10 +25,14 @@ class ProfileVisibilityService
         User $viewer,
         bool $includeSocialCounts = false,
         bool $includeProfileMetadata = false,
+        ?bool $isFollowing = null,
+        ?bool $isFollowedBy = null,
     ): array {
         $isOwnProfile = $profile->user->is($viewer);
-        $isFollowing = ! $isOwnProfile && $viewer->isFollowing($profile->user);
-        $isFollowedBy = ! $isOwnProfile && $profile->user->isFollowing($viewer);
+        $isFollowing = ! $isOwnProfile
+            && ($isFollowing ?? $viewer->isFollowing($profile->user));
+        $isFollowedBy = ! $isOwnProfile
+            && ($isFollowedBy ?? $profile->user->isFollowing($viewer));
         $isMutual = $isFollowing && $isFollowedBy;
         $isBlockedByViewer = ! $isOwnProfile
             && $viewer->hasBlocked($profile->user);
@@ -57,7 +61,11 @@ class ProfileVisibilityService
             $data['can_follow'] = $this->privacy
                 ->canFollow($viewer, $profile->user);
             $data['can_send_contact_request'] = $this->privacy
-                ->canSendContactRequest($viewer, $profile->user);
+                ->canSendContactRequest(
+                    $viewer,
+                    $profile->user,
+                    $isFollowing,
+                );
             $data['contact_request_unavailable_reason'] = match (true) {
                 $profile->contact_permission === ContactPermission::Nobody => 'disabled',
                 $profile->contact_permission === ContactPermission::Followers
@@ -179,13 +187,22 @@ class ProfileVisibilityService
     /**
      * Determine whether a profile should appear in discover for the viewer.
      */
-    public function isDiscoverVisible(Profile $profile, User $viewer): bool
-    {
+    public function isDiscoverVisible(
+        Profile $profile,
+        User $viewer,
+        ?bool $isFollowing = null,
+        ?bool $isFollowedBy = null,
+    ): bool {
         if ($profile->user->is($viewer)) {
             return false;
         }
 
-        return $this->privacy->canViewProfile($profile, $viewer);
+        return $this->privacy->canViewProfile(
+            $profile,
+            $viewer,
+            $isFollowing,
+            $isFollowedBy,
+        );
     }
 
     private function canView(
