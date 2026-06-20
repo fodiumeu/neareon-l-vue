@@ -3,7 +3,7 @@ import { Head } from '@inertiajs/vue3';
 import ContactRequestStatusBadge from '@/components/ContactRequestStatusBadge.vue';
 import PageHeader from '@/components/PageHeader.vue';
 import PageSection from '@/components/PageSection.vue';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import ProfileAvatar from '@/components/ProfileAvatar.vue';
 import { Card, CardContent } from '@/components/ui/card';
 import type { ContactRequestStatus } from '@/types';
 
@@ -14,6 +14,7 @@ type SentContactRequest = {
     created_at: string;
     receiver: {
         display_name: string;
+        profile_photo_url: string | null;
         username: string | null;
     };
 };
@@ -75,15 +76,15 @@ defineOptions({
                 >
                     <CardContent class="space-y-4">
                         <div class="flex items-start gap-3">
-                            <Avatar
-                                class="size-12 shrink-0 border border-primary/25"
-                            >
-                                <AvatarFallback
-                                    class="bg-primary/15 text-base font-semibold text-primary"
-                                >
-                                    {{ avatarInitial(contactRequest) }}
-                                </AvatarFallback>
-                            </Avatar>
+                            <ProfileAvatar
+                                :photo-url="
+                                    contactRequest.receiver.profile_photo_url
+                                "
+                                :alt="contactRequest.receiver.display_name"
+                                :fallback="avatarInitial(contactRequest)"
+                                class="size-12"
+                                fallback-class="text-base"
+                            />
 
                             <div class="min-w-0 flex-1 space-y-1">
                                 <h2

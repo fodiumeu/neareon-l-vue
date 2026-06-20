@@ -20,8 +20,12 @@ class ProfileVisibilityService
      *
      * @return array<string, mixed>
      */
-    public function visibleProfileData(Profile $profile, User $viewer): array
-    {
+    public function visibleProfileData(
+        Profile $profile,
+        User $viewer,
+        bool $includeSocialCounts = false,
+        bool $includeProfileMetadata = false,
+    ): array {
         $isOwnProfile = $profile->user->is($viewer);
         $isFollowing = ! $isOwnProfile && $viewer->isFollowing($profile->user);
         $isFollowedBy = ! $isOwnProfile && $profile->user->isFollowing($viewer);
@@ -45,6 +49,7 @@ class ProfileVisibilityService
             'contact_status' => $contactStatus->value,
             'interaction_blocked' => $interactionBlocked,
             'is_blocked_by_viewer' => $isBlockedByViewer,
+            'profile_photo_url' => $profile->profilePhotoUrl(),
         ];
 
         if (! $isOwnProfile) {
@@ -92,6 +97,80 @@ class ProfileVisibilityService
                 ->pluck('label')
                 ->values()
                 ->all();
+        }
+
+        if ($includeSocialCounts
+            && $this->canView(
+                $profile->social_counts_visibility,
+                $isOwnProfile,
+                $isFollowing,
+                $isMutual,
+            )) {
+            $data['followers_count'] = (int) $profile->user->followers_count;
+            $data['contacts_count'] = (int) $profile->user->contacts_count;
+        }
+
+        if ($includeProfileMetadata) {
+            $data['member_since'] = $profile->user->created_at
+                ->locale('de')
+                ->translatedFormat('F Y');
+        }
+
+        if ($includeProfileMetadata && ! $isOwnProfile) {
+            $viewerProfile = $viewer->profile;
+
+            if ($viewerProfile !== null
+                && $this->canView(
+                    $profile->languages_visibility,
+                    false,
+                    $isFollowing,
+                    $isMutual,
+                )) {
+                $viewerLanguageIds = $viewerProfile->languageOptions->modelKeys();
+                $commonLanguages = $profile->languageOptions
+                    ->filter(
+                        fn ($language): bool => in_array(
+                            $language->id,
+                            $viewerLanguageIds,
+                            true,
+                        ),
+                    )
+                    ->take(3)
+                    ->pluck('label')
+                    ->values()
+                    ->all();
+
+                if ($commonLanguages !== []) {
+                    $data['common_languages'] = $commonLanguages;
+                }
+            }
+
+            if ($viewerProfile !== null
+                && $this->canView(
+                    $profile->interests_visibility,
+                    false,
+                    $isFollowing,
+                    $isMutual,
+                )) {
+                $viewerInterestIds = $viewerProfile->interestOptions->modelKeys();
+                $commonInterests = $profile->interestOptions
+                    ->sortBy('sort_order')
+                    ->filter(
+                        fn ($interest): bool => in_array(
+                            $interest->id,
+                            $viewerInterestIds,
+                            true,
+                        ),
+                    )
+                    ->take(4)
+                    ->pluck('label')
+                    ->values()
+                    ->all();
+
+                if ($commonInterests !== []) {
+                    $data['common_interests'] = $commonInterests;
+                }
+            }
         }
 
         return $data;

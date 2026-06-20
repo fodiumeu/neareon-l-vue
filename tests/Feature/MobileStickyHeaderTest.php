@@ -4,6 +4,9 @@ test('app layout provides a sticky blurred mobile header and unchanged desktop h
     $header = file_get_contents(
         resource_path('js/components/AppSidebarHeader.vue'),
     );
+    $layout = file_get_contents(
+        resource_path('js/layouts/app/AppSidebarLayout.vue'),
+    );
 
     expect($header)
         ->toContain('data-test="mobile-sticky-header"')
@@ -13,7 +16,10 @@ test('app layout provides a sticky blurred mobile header and unchanged desktop h
         ->toContain('md:hidden')
         ->toContain('data-test="desktop-app-header"')
         ->toContain('hidden')
-        ->toContain('md:flex');
+        ->toContain('md:flex')
+        ->and($layout)
+        ->toContain('overflow-x-clip pb-24 md:pb-0')
+        ->not->toContain('overflow-x-hidden pb-24 md:pb-0');
 });
 
 test('mobile header always shows the current page name', function () {

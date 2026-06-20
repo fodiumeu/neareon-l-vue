@@ -5,6 +5,7 @@ import AppBackButton from '@/components/AppBackButton.vue';
 import ContactActions from '@/components/ContactActions.vue';
 import ContactStatusBadge from '@/components/ContactStatusBadge.vue';
 import PageSection from '@/components/PageSection.vue';
+import ProfileAvatar from '@/components/ProfileAvatar.vue';
 import ProfileMoreActions from '@/components/ProfileMoreActions.vue';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -24,6 +25,12 @@ type PublicProfile = {
     is_followed_by: boolean;
     is_mutual: boolean;
     contact_status: ContactStatus;
+    followers_count?: number;
+    contacts_count?: number;
+    member_since?: string;
+    common_languages?: string[];
+    common_interests?: string[];
+    profile_photo_url?: string | null;
     display_name?: string;
     bio?: string | null;
     region?: string | null;
@@ -40,6 +47,11 @@ const displayName = computed(
     () => props.profile.display_name ?? `@${props.profile.username}`,
 );
 const avatarInitial = computed(() => displayName.value.charAt(0).toUpperCase());
+const hasVisibleSocialCounts = computed(
+    () =>
+        typeof props.profile.followers_count === 'number' &&
+        typeof props.profile.contacts_count === 'number',
+);
 const hasVisibleDetails = computed(
     () =>
         Boolean(props.profile.languages?.length) ||
@@ -81,11 +93,13 @@ defineOptions({
                         <div
                             class="flex min-w-0 flex-1 flex-col gap-4 sm:flex-row sm:items-start"
                         >
-                            <div
-                                class="flex size-20 shrink-0 items-center justify-center rounded-full border border-primary/25 bg-primary/15 text-3xl font-semibold text-primary shadow-inner"
-                            >
-                                {{ avatarInitial }}
-                            </div>
+                            <ProfileAvatar
+                                :photo-url="props.profile.profile_photo_url"
+                                :alt="displayName"
+                                :fallback="avatarInitial"
+                                class="size-20 shadow-inner lg:size-24"
+                                fallback-class="text-3xl"
+                            />
 
                             <div class="min-w-0 flex-1 space-y-3">
                                 <div class="min-w-0">
@@ -98,6 +112,65 @@ defineOptions({
                                         class="truncate text-sm text-muted-foreground"
                                     >
                                         @{{ props.profile.username }}
+                                    </p>
+                                    <p
+                                        v-if="hasVisibleSocialCounts"
+                                        class="mt-1 text-base font-medium whitespace-nowrap text-foreground/90"
+                                    >
+                                        {{ props.profile.followers_count }}
+                                        Follower
+                                        <span
+                                            class="px-1 text-muted-foreground"
+                                            aria-hidden="true"
+                                        >
+                                            •
+                                        </span>
+                                        {{ props.profile.contacts_count }}
+                                        {{
+                                            props.profile.contacts_count === 1
+                                                ? 'Kontakt'
+                                                : 'Kontakte'
+                                        }}
+                                    </p>
+                                    <p
+                                        v-if="props.profile.member_since"
+                                        class="mt-1 text-sm text-muted-foreground"
+                                    >
+                                        Mitglied seit
+                                        {{ props.profile.member_since }}
+                                    </p>
+                                    <p
+                                        v-if="
+                                            props.profile.common_languages
+                                                ?.length
+                                        "
+                                        class="mt-1 text-sm text-muted-foreground"
+                                    >
+                                        {{
+                                            props.profile.common_languages
+                                                .length === 1
+                                                ? 'Gemeinsame Sprache:'
+                                                : 'Gemeinsame Sprachen:'
+                                        }}
+                                        {{
+                                            props.profile.common_languages.join(
+                                                ' • ',
+                                            )
+                                        }}
+                                    </p>
+                                    <p
+                                        v-if="
+                                            props.profile.common_interests
+                                                ?.length
+                                        "
+                                        class="mt-1 text-sm text-muted-foreground"
+                                    >
+                                        Gemeinsame Interessen:
+                                        {{
+                                            props.profile.common_interests.join(
+                                                ' • ',
+                                            )
+                                        }}
                                     </p>
                                 </div>
 
@@ -157,8 +230,7 @@ defineOptions({
                                     {{ props.profile.bio }}
                                 </p>
                                 <p v-else class="text-sm text-muted-foreground">
-                                    Dieses Profil hat noch keine Bio sichtbar
-                                    gemacht.
+                                    Dieses Profil hat noch keine Bio hinterlegt.
                                 </p>
                             </div>
                         </div>
@@ -208,11 +280,20 @@ defineOptions({
         </PageSection>
 
         <PageSection v-if="hasVisibleDetails">
-            <div class="grid gap-4 md:grid-cols-2">
-                <Card v-if="props.profile.languages?.length">
-                    <CardContent class="space-y-3 p-4 sm:p-5">
-                        <h2 class="text-base font-semibold">Sprachen</h2>
-                        <div class="flex flex-wrap gap-2.5">
+            <Card>
+                <CardContent class="space-y-4 p-4 sm:p-5">
+                    <h2 class="text-base font-semibold">
+                        Interessen &amp; Sprachen
+                    </h2>
+
+                    <div
+                        v-if="props.profile.languages?.length"
+                        class="space-y-2"
+                    >
+                        <h3 class="text-sm font-medium text-muted-foreground">
+                            Sprachen
+                        </h3>
+                        <div class="flex min-w-0 flex-wrap gap-2">
                             <span
                                 v-for="language in props.profile.languages"
                                 :key="language"
@@ -221,13 +302,21 @@ defineOptions({
                                 {{ language }}
                             </span>
                         </div>
-                    </CardContent>
-                </Card>
+                    </div>
 
-                <Card v-if="props.profile.interests?.length">
-                    <CardContent class="space-y-3 p-4 sm:p-5">
-                        <h2 class="text-base font-semibold">Interessen</h2>
-                        <div class="flex flex-wrap gap-2.5">
+                    <div
+                        v-if="props.profile.interests?.length"
+                        class="space-y-2"
+                        :class="
+                            props.profile.languages?.length
+                                ? 'border-t border-border/70 pt-4'
+                                : null
+                        "
+                    >
+                        <h3 class="text-sm font-medium text-muted-foreground">
+                            Interessen
+                        </h3>
+                        <div class="flex min-w-0 flex-wrap gap-2">
                             <span
                                 v-for="interest in props.profile.interests"
                                 :key="interest"
@@ -236,9 +325,9 @@ defineOptions({
                                 {{ interest }}
                             </span>
                         </div>
-                    </CardContent>
-                </Card>
-            </div>
+                    </div>
+                </CardContent>
+            </Card>
         </PageSection>
 
         <PageSection v-else>

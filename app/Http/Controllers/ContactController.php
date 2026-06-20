@@ -77,6 +77,7 @@ class ContactController extends Controller
                     'id' => $contact->id,
                     'display_name' => $contact->profile?->display_name ?? $contact->name,
                     'username' => $contact->profile?->username,
+                    'profile_photo_url' => $contact->profile?->profilePhotoUrl(),
                     'status' => 'connected',
                     'connected_at' => $connectedAt?->toIso8601String(),
                     'conversation_id' => $conversation?->id,

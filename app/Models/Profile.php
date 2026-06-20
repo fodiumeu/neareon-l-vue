@@ -13,12 +13,14 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Support\Facades\Storage;
 
 #[Fillable([
     'user_id',
     'username',
     'display_name',
     'bio',
+    'profile_photo_path',
     'region',
     'profile_visibility',
     'follow_permission',
@@ -61,6 +63,13 @@ class Profile extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function profilePhotoUrl(): ?string
+    {
+        return $this->profile_photo_path === null
+            ? null
+            : Storage::disk('public')->url($this->profile_photo_path);
     }
 
     /**

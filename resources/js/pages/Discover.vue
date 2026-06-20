@@ -4,6 +4,7 @@ import ContactActions from '@/components/ContactActions.vue';
 import ContactStatusBadge from '@/components/ContactStatusBadge.vue';
 import PageHeader from '@/components/PageHeader.vue';
 import PageSection from '@/components/PageSection.vue';
+import ProfileAvatar from '@/components/ProfileAvatar.vue';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import type { ContactStatus } from '@/types';
@@ -22,6 +23,7 @@ type DiscoverProfile = {
     is_followed_by: boolean;
     is_mutual: boolean;
     contact_status: ContactStatus;
+    profile_photo_url?: string | null;
     display_name?: string;
     bio?: string | null;
     region?: string | null;
@@ -114,11 +116,13 @@ defineOptions({
                 >
                     <CardContent class="flex h-full flex-col gap-5">
                         <div class="flex items-start gap-3">
-                            <div
-                                class="flex size-12 shrink-0 items-center justify-center rounded-full border border-primary/25 bg-primary/15 text-base font-semibold text-primary"
-                            >
-                                {{ avatarInitial(profile) }}
-                            </div>
+                            <ProfileAvatar
+                                :photo-url="profile.profile_photo_url"
+                                :alt="profileLabel(profile)"
+                                :fallback="avatarInitial(profile)"
+                                class="size-12"
+                                fallback-class="text-base"
+                            />
 
                             <div class="min-w-0 flex-1 space-y-1">
                                 <h2
@@ -179,7 +183,7 @@ defineOptions({
                             v-else
                             class="text-sm leading-6 text-muted-foreground"
                         >
-                            Dieses Profil hat noch keine Bio sichtbar gemacht.
+                            Dieses Profil hat noch keine Bio hinterlegt.
                         </p>
 
                         <div class="space-y-3">

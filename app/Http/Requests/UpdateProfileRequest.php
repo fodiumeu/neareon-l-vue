@@ -74,6 +74,13 @@ class UpdateProfileRequest extends FormRequest
         return [
             'display_name' => ['required', 'string', 'max:80'],
             'bio' => ['nullable', 'string', 'max:280'],
+            'profile_photo' => [
+                'nullable',
+                'image',
+                'mimes:jpg,jpeg,png,webp',
+                'max:5120',
+            ],
+            'remove_profile_photo' => ['sometimes', 'boolean'],
             'region' => ['nullable', 'string', 'max:120'],
             'languages' => ['nullable', 'array', 'max:20'],
             'languages.*' => [
@@ -120,6 +127,10 @@ class UpdateProfileRequest extends FormRequest
             'display_name.required' => 'Bitte gib einen Anzeigenamen ein.',
             'display_name.max' => 'Der Anzeigename darf maximal 80 Zeichen lang sein.',
             'bio.max' => 'Die Bio darf maximal 280 Zeichen lang sein.',
+            'profile_photo.image' => 'Bitte wähle eine gültige Bilddatei aus.',
+            'profile_photo.mimes' => 'Das Profilbild muss eine JPG-, JPEG-, PNG- oder WEBP-Datei sein.',
+            'profile_photo.max' => 'Das Profilbild darf maximal 5 MB groß sein.',
+            'remove_profile_photo.boolean' => 'Die Auswahl zum Entfernen des Profilbilds ist ungültig.',
             'region.max' => 'Die Region darf maximal 120 Zeichen lang sein.',
             'languages.max' => 'Bitte gib maximal 20 Sprachen an.',
             'languages.*.max' => 'Ein Spracheintrag darf maximal 40 Zeichen lang sein.',

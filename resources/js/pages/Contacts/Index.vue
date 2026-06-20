@@ -3,7 +3,7 @@ import { Form, Head, Link } from '@inertiajs/vue3';
 import ContactStatusBadge from '@/components/ContactStatusBadge.vue';
 import PageHeader from '@/components/PageHeader.vue';
 import PageSection from '@/components/PageSection.vue';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import ProfileAvatar from '@/components/ProfileAvatar.vue';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import {
@@ -24,6 +24,7 @@ type Contact = {
     display_name: string;
     id: number;
     last_activity_at: string | null;
+    profile_photo_url: string | null;
     status: 'connected';
     username: string;
 };
@@ -85,15 +86,13 @@ defineOptions({
                 >
                     <CardContent class="flex h-full flex-col gap-4">
                         <div class="flex min-w-0 items-center gap-3">
-                            <Avatar
-                                class="size-12 shrink-0 border border-primary/25"
-                            >
-                                <AvatarFallback
-                                    class="bg-primary/15 text-base font-semibold text-primary"
-                                >
-                                    {{ avatarInitial(contact) }}
-                                </AvatarFallback>
-                            </Avatar>
+                            <ProfileAvatar
+                                :photo-url="contact.profile_photo_url"
+                                :alt="contact.display_name"
+                                :fallback="avatarInitial(contact)"
+                                class="size-12"
+                                fallback-class="text-base"
+                            />
 
                             <div class="min-w-0 flex-1 space-y-1">
                                 <h2

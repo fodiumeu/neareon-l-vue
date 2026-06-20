@@ -14,8 +14,12 @@ use App\Services\ProfileVisibilityService;
 use App\Support\NextUserRoute;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 use Inertia\Response;
+use RuntimeException;
+use Throwable;
 
 class ProfileController extends Controller
 {
@@ -38,9 +42,15 @@ class ProfileController extends Controller
         }
 
         $profile->loadMissing(['user', 'languageOptions', 'interestOptions']);
+        $this->loadSocialCounts($profile);
 
         return Inertia::render('Profile/Show', [
-            'profile' => $this->profileVisibility->visibleProfileData($profile, $user),
+            'profile' => $this->profileVisibility->visibleProfileData(
+                $profile,
+                $user,
+                includeSocialCounts: true,
+                includeProfileMetadata: true,
+            ),
             'editProfileHref' => '/profile/edit',
         ]);
     }
@@ -105,6 +115,7 @@ class ProfileController extends Controller
             'profile' => [
                 'display_name' => $profile->display_name,
                 'bio' => $profile->bio,
+                'profile_photo_url' => $profile->profilePhotoUrl(),
                 'region' => $profile->region,
                 'languages' => $profile->languageOptions->pluck('code')->values(),
                 'interests' => $profile->interestOptions->pluck('slug')->values(),
@@ -168,7 +179,49 @@ class ProfileController extends Controller
             return NextUserRoute::redirect($request->user());
         }
 
-        $this->profileOptions->update($profile, $request->validated());
+        $attributes = $request->validated();
+        $removeProfilePhoto = (bool) ($attributes['remove_profile_photo'] ?? false);
+        unset($attributes['profile_photo'], $attributes['remove_profile_photo']);
+
+        $newPhotoPath = null;
+        $oldPhotoPath = $profile->profile_photo_path;
+
+        if ($request->hasFile('profile_photo')) {
+            $newPhotoPath = $request->file('profile_photo')
+                ->store('profile-photos', 'public');
+
+            if ($newPhotoPath === false) {
+                throw new RuntimeException('Das Profilbild konnte nicht gespeichert werden.');
+            }
+        }
+
+        try {
+            DB::transaction(function () use (
+                $attributes,
+                $newPhotoPath,
+                $profile,
+                $removeProfilePhoto,
+            ): void {
+                $this->profileOptions->update($profile, $attributes);
+
+                if ($newPhotoPath !== null) {
+                    $profile->update(['profile_photo_path' => $newPhotoPath]);
+                } elseif ($removeProfilePhoto) {
+                    $profile->update(['profile_photo_path' => null]);
+                }
+            });
+        } catch (Throwable $exception) {
+            if ($newPhotoPath !== null) {
+                Storage::disk('public')->delete($newPhotoPath);
+            }
+
+            throw $exception;
+        }
+
+        if (($newPhotoPath !== null || $removeProfilePhoto)
+            && $oldPhotoPath !== null) {
+            Storage::disk('public')->delete($oldPhotoPath);
+        }
 
         return to_route('neareon-profile.edit')
             ->with('success', 'Profil wurde gespeichert.');
@@ -185,6 +238,8 @@ class ProfileController extends Controller
         if ($viewerProfile === null) {
             return NextUserRoute::redirect($viewer);
         }
+
+        $viewerProfile->loadMissing(['languageOptions', 'interestOptions']);
 
         $viewer->loadMissing([
             'sentContactRequests' => fn ($query) => $query
@@ -209,8 +264,40 @@ class ProfileController extends Controller
             abort_unless($this->privacy->canViewProfile($profile, $viewer), 403);
         }
 
+        $this->loadSocialCounts($profile);
+
         return Inertia::render('Profile/Show', [
-            'profile' => $this->profileVisibility->visibleProfileData($profile, $viewer),
+            'profile' => $this->profileVisibility->visibleProfileData(
+                $profile,
+                $viewer,
+                includeSocialCounts: true,
+                includeProfileMetadata: true,
+            ),
+        ]);
+    }
+
+    /**
+     * Load profile statistics from the existing follow relationships.
+     */
+    private function loadSocialCounts(Profile $profile): void
+    {
+        $owner = $profile->user;
+
+        $owner->loadCount([
+            'followers',
+            'following as contacts_count' => fn ($query) => $query
+                ->whereHas(
+                    'followingRelationships',
+                    fn ($query) => $query->where('followed_id', $owner->id),
+                )
+                ->whereDoesntHave(
+                    'blockingRelationships',
+                    fn ($query) => $query->where('blocked_id', $owner->id),
+                )
+                ->whereDoesntHave(
+                    'blockedByRelationships',
+                    fn ($query) => $query->where('blocker_id', $owner->id),
+                ),
         ]);
     }
 }

@@ -1,9 +1,11 @@
 <script setup lang="ts">
 import { Form, Head } from '@inertiajs/vue3';
+import { computed, onBeforeUnmount, ref } from 'vue';
 import AppBackButton from '@/components/AppBackButton.vue';
 import InputError from '@/components/InputError.vue';
 import PageHeader from '@/components/PageHeader.vue';
 import PageSection from '@/components/PageSection.vue';
+import ProfileAvatar from '@/components/ProfileAvatar.vue';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -13,6 +15,7 @@ import { Spinner } from '@/components/ui/spinner';
 type ProfileForm = {
     display_name: string;
     bio: string | null;
+    profile_photo_url: string | null;
     region: string | null;
     languages: string[];
     interests: string[];
@@ -38,7 +41,7 @@ type ProfileOption = {
     is_active: boolean;
 };
 
-defineProps<{
+const props = defineProps<{
     profile: ProfileForm;
     languageOptions: ProfileOption[];
     interestOptions: ProfileOption[];
@@ -49,6 +52,48 @@ defineProps<{
     messagePermissionOptions: VisibilityOption[];
     onlineStatusVisibilityOptions: VisibilityOption[];
 }>();
+
+const photoInput = ref<HTMLInputElement | null>(null);
+const localPhotoPreview = ref<string | null>(null);
+const removeProfilePhoto = ref(false);
+const photoPreview = computed(() =>
+    removeProfilePhoto.value
+        ? null
+        : (localPhotoPreview.value ?? props.profile.profile_photo_url),
+);
+const avatarInitial = computed(() =>
+    props.profile.display_name.charAt(0).toUpperCase(),
+);
+
+const clearLocalPhotoPreview = () => {
+    if (localPhotoPreview.value) {
+        URL.revokeObjectURL(localPhotoPreview.value);
+        localPhotoPreview.value = null;
+    }
+};
+
+const selectPhoto = (event: Event) => {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+
+    clearLocalPhotoPreview();
+    removeProfilePhoto.value = false;
+
+    if (file) {
+        localPhotoPreview.value = URL.createObjectURL(file);
+    }
+};
+
+const removePhoto = () => {
+    clearLocalPhotoPreview();
+    removeProfilePhoto.value = true;
+
+    if (photoInput.value) {
+        photoInput.value.value = '';
+    }
+};
+
+onBeforeUnmount(clearLocalPhotoPreview);
 
 defineOptions({
     layout: {
@@ -82,10 +127,70 @@ defineOptions({
                 <CardContent>
                     <Form
                         action="/profile"
-                        method="patch"
+                        method="post"
+                        enctype="multipart/form-data"
                         class="space-y-6"
                         v-slot="{ errors, processing }"
                     >
+                        <input type="hidden" name="_method" value="patch" />
+
+                        <div class="grid gap-3">
+                            <div>
+                                <h2 class="text-lg font-semibold">
+                                    Profilbild
+                                </h2>
+                                <p class="text-sm text-muted-foreground">
+                                    JPG, JPEG, PNG oder WEBP bis maximal 5 MB.
+                                </p>
+                            </div>
+
+                            <div
+                                class="flex flex-col gap-4 sm:flex-row sm:items-center"
+                            >
+                                <ProfileAvatar
+                                    :photo-url="photoPreview"
+                                    :alt="profile.display_name"
+                                    :fallback="avatarInitial"
+                                    class="size-20 shrink-0"
+                                    fallback-class="text-2xl"
+                                />
+
+                                <div class="flex flex-col gap-2">
+                                    <Label
+                                        for="profile_photo"
+                                        class="cursor-pointer"
+                                    >
+                                        Bild auswählen
+                                    </Label>
+                                    <Input
+                                        id="profile_photo"
+                                        ref="photoInput"
+                                        name="profile_photo"
+                                        type="file"
+                                        accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp"
+                                        class="max-w-md"
+                                        @change="selectPhoto"
+                                    />
+                                    <input
+                                        type="hidden"
+                                        name="remove_profile_photo"
+                                        :value="removeProfilePhoto ? '1' : '0'"
+                                    />
+                                    <Button
+                                        v-if="photoPreview"
+                                        type="button"
+                                        variant="secondary"
+                                        class="w-fit"
+                                        @click="removePhoto"
+                                    >
+                                        Bild entfernen
+                                    </Button>
+                                </div>
+                            </div>
+
+                            <InputError :message="errors.profile_photo" />
+                        </div>
+
                         <div class="grid gap-2">
                             <Label for="display_name">Anzeigename</Label>
                             <Input

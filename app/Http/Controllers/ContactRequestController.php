@@ -44,6 +44,7 @@ class ContactRequestController extends Controller
                     'display_name' => $contactRequest->sender->profile?->display_name
                         ?? $contactRequest->sender->name,
                     'username' => $contactRequest->sender->profile?->username,
+                    'profile_photo_url' => $contactRequest->sender->profile?->profilePhotoUrl(),
                 ],
             ]);
 
@@ -69,7 +70,7 @@ class ContactRequestController extends Controller
             ])
             ->with([
                 'receiver:id,name',
-                'receiver.profile:user_id,display_name,username',
+                'receiver.profile:user_id,display_name,username,profile_photo_path',
             ])
             ->latest()
             ->get()
@@ -82,6 +83,7 @@ class ContactRequestController extends Controller
                     'display_name' => $contactRequest->receiver->profile?->display_name
                         ?? $contactRequest->receiver->name,
                     'username' => $contactRequest->receiver->profile?->username,
+                    'profile_photo_url' => $contactRequest->receiver->profile?->profilePhotoUrl(),
                 ],
             ]);
 
