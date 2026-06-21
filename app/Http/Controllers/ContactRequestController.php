@@ -122,24 +122,25 @@ class ContactRequestController extends Controller
                     ->lockForUpdate()
                     ->get();
 
-                $existingRequest = ContactRequest::query()
-                    ->where(function ($query) use ($sender, $receiver): void {
-                        $query->where([
-                            'sender_id' => $sender->id,
-                            'receiver_id' => $receiver->id,
-                        ])->orWhere([
-                            'sender_id' => $receiver->id,
-                            'receiver_id' => $sender->id,
-                        ]);
-                    })
+                $requestsBetweenUsers = ContactRequest::query()
+                    ->betweenUsers($sender, $receiver)
                     ->lockForUpdate()
-                    ->first();
+                    ->get();
 
-                if ($existingRequest?->status === ContactRequestStatus::Pending) {
-                    return $existingRequest->sender_id === $sender->id
+                $pendingRequest = $requestsBetweenUsers->first(
+                    fn (ContactRequest $contactRequest): bool => $contactRequest->status === ContactRequestStatus::Pending,
+                );
+
+                if ($pendingRequest !== null) {
+                    return $pendingRequest->sender_id === $sender->id
                         ? 'already_sent'
                         : 'already_received';
                 }
+
+                $existingRequest = $requestsBetweenUsers->first(
+                    fn (ContactRequest $contactRequest): bool => $contactRequest->sender_id === $sender->id
+                        && $contactRequest->receiver_id === $receiver->id,
+                ) ?? $requestsBetweenUsers->first();
 
                 $attributes = [
                     'sender_id' => $sender->id,
@@ -164,7 +165,18 @@ class ContactRequestController extends Controller
                 throw $exception;
             }
 
-            $result = 'already_sent';
+            $pendingRequest = ContactRequest::query()
+                ->betweenUsers($sender, $receiver)
+                ->where('status', ContactRequestStatus::Pending->value)
+                ->first();
+
+            if ($pendingRequest === null) {
+                throw $exception;
+            }
+
+            $result = $pendingRequest->sender_id === $sender->id
+                ? 'already_sent'
+                : 'already_received';
         }
 
         if ($result === 'already_sent') {

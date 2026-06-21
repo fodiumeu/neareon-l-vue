@@ -33,7 +33,7 @@ test('follow disabled state is provided to profile and discover views', function
         );
 })->with([
     'profile' => ['public-profile.show', 'profile'],
-    'discover' => ['discover', 'profiles.0'],
+    'discover' => ['discover', 'profiles.data.0'],
 ]);
 
 test('disabled contact requests are provided to profile and discover views', function (
@@ -65,7 +65,7 @@ test('disabled contact requests are provided to profile and discover views', fun
         );
 })->with([
     'profile' => ['public-profile.show', 'profile'],
-    'discover' => ['discover', 'profiles.0'],
+    'discover' => ['discover', 'profiles.data.0'],
 ]);
 
 test('followers-only contact requests provide a follow-required hint', function () {

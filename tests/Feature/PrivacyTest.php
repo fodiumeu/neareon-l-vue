@@ -99,7 +99,7 @@ test('contact-only profiles are hidden from discover and direct urls for non-con
     $this->actingAs($viewer)
         ->get(route('discover'))
         ->assertOk()
-        ->assertInertia(fn (Assert $page) => $page->has('profiles', 0));
+        ->assertInertia(fn (Assert $page) => $page->has('profiles.data', 0));
 
     $this->actingAs($viewer)
         ->get(route('public-profile.show', $profile->username))

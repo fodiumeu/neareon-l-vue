@@ -10,6 +10,7 @@ use App\Support\NextUserRoute;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Inertia\Inertia;
 
 class FollowController extends Controller
 {
@@ -50,6 +51,15 @@ class FollowController extends Controller
             $this->notifications->newFollower($user, $profile->user);
         }
 
+        Inertia::flash('toast', [
+            'type' => 'success',
+            'message' => 'Du folgst diesem Profil jetzt.',
+        ]);
+
+        if ($request->string('context')->toString() === 'discover') {
+            return back();
+        }
+
         return to_route('public-profile.show', $profile->username);
     }
 
@@ -78,6 +88,15 @@ class FollowController extends Controller
             $this->contactRequests
                 ->closeAcceptedBetween($user, $profile->user);
         });
+
+        Inertia::flash('toast', [
+            'type' => 'success',
+            'message' => 'Du folgst diesem Profil nicht mehr.',
+        ]);
+
+        if ($request->string('context')->toString() === 'discover') {
+            return back();
+        }
 
         return to_route('public-profile.show', $profile->username);
     }

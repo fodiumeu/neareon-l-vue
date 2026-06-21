@@ -173,7 +173,7 @@ test('a declined contact request is reactivated instead of duplicated', function
         ->get(route('discover'))
         ->assertOk()
         ->assertInertia(fn (Assert $page) => $page
-            ->where('profiles.0.contact_status', 'outgoing_request'),
+            ->where('profiles.data.0.contact_status', 'outgoing_request'),
         );
 
     $this->actingAs($receiver)

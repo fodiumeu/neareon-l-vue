@@ -236,7 +236,7 @@ test('discover hides blocked users in both directions', function (
         ->get(route('discover'))
         ->assertOk()
         ->assertInertia(fn (Assert $page) => $page
-            ->has('profiles', 0),
+            ->has('profiles.data', 0),
         );
 })->with(['viewer-blocks', 'viewer-is-blocked']);
 

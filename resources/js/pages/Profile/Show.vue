@@ -5,8 +5,8 @@ import AppBackButton from '@/components/AppBackButton.vue';
 import ContactActions from '@/components/ContactActions.vue';
 import ContactStatusBadge from '@/components/ContactStatusBadge.vue';
 import PageSection from '@/components/PageSection.vue';
-import ProfileAvatar from '@/components/ProfileAvatar.vue';
 import ProfileMoreActions from '@/components/ProfileMoreActions.vue';
+import ProfilePhotoLightbox from '@/components/ProfilePhotoLightbox.vue';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import type { ContactStatus } from '@/types';
@@ -93,7 +93,7 @@ defineOptions({
                         <div
                             class="flex min-w-0 flex-1 flex-col gap-4 sm:flex-row sm:items-start"
                         >
-                            <ProfileAvatar
+                            <ProfilePhotoLightbox
                                 :photo-url="props.profile.profile_photo_url"
                                 :alt="displayName"
                                 :fallback="avatarInitial"

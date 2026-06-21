@@ -1,5 +1,7 @@
 <script setup lang="ts">
 import { Form, Head, Link } from '@inertiajs/vue3';
+import { MoreHorizontal } from 'lucide-vue-next';
+import { ref } from 'vue';
 import ContactStatusBadge from '@/components/ContactStatusBadge.vue';
 import PageHeader from '@/components/PageHeader.vue';
 import PageSection from '@/components/PageSection.vue';
@@ -14,8 +16,13 @@ import {
     DialogFooter,
     DialogHeader,
     DialogTitle,
-    DialogTrigger,
 } from '@/components/ui/dialog';
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { Spinner } from '@/components/ui/spinner';
 
 type Contact = {
@@ -32,6 +39,12 @@ type Contact = {
 defineProps<{
     contacts: Contact[];
 }>();
+
+const disconnectingContactId = ref<number | null>(null);
+
+const setDisconnectDialogOpen = (contactId: number, open: boolean) => {
+    disconnectingContactId.value = open ? contactId : null;
+};
 
 const avatarInitial = (contact: Contact) =>
     contact.display_name.charAt(0).toUpperCase();
@@ -150,15 +163,31 @@ defineOptions({
                                 </Link>
                             </Button>
 
-                            <Dialog>
-                                <DialogTrigger as-child>
-                                    <Button
+                            <DropdownMenu>
+                                <DropdownMenuTrigger as-child>
+                                    <Button variant="secondary" class="w-full">
+                                        <MoreHorizontal aria-hidden="true" />
+                                        Weitere Aktionen
+                                    </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end" class="w-56">
+                                    <DropdownMenuItem
                                         variant="destructive"
-                                        class="w-full"
+                                        @select="
+                                            disconnectingContactId = contact.id
+                                        "
                                     >
                                         Verbindung entfernen
-                                    </Button>
-                                </DialogTrigger>
+                                    </DropdownMenuItem>
+                                </DropdownMenuContent>
+                            </DropdownMenu>
+
+                            <Dialog
+                                :open="disconnectingContactId === contact.id"
+                                @update:open="
+                                    setDisconnectDialogOpen(contact.id, $event)
+                                "
+                            >
                                 <DialogContent>
                                     <Form
                                         :action="`/contacts/${contact.id}`"

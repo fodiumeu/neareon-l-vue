@@ -155,10 +155,10 @@ test('discover remains free of profile-only metadata', function () {
         ->get(route('discover'))
         ->assertOk()
         ->assertInertia(fn (Assert $page) => $page
-            ->where('profiles.0.username', 'discover_without_metadata')
-            ->missing('profiles.0.member_since')
-            ->missing('profiles.0.common_languages')
-            ->missing('profiles.0.common_interests'),
+            ->where('profiles.data.0.username', 'discover_without_metadata')
+            ->missing('profiles.data.0.member_since')
+            ->missing('profiles.data.0.common_languages')
+            ->missing('profiles.data.0.common_interests'),
         );
 });
 

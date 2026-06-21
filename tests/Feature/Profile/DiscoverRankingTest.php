@@ -128,10 +128,10 @@ test('discover ranking excludes blocked and own profiles', function () {
         ->get(route('discover'))
         ->assertOk()
         ->assertInertia(fn (Assert $page) => $page
-            ->has('profiles', 1)
-            ->where('profiles.0.username', 'visible_profile')
-            ->where('profiles.0.display_name', 'Visible Profile')
-            ->missing('profiles.0.score'),
+            ->has('profiles.data', 1)
+            ->where('profiles.data.0.username', 'visible_profile')
+            ->where('profiles.data.0.display_name', 'Visible Profile')
+            ->missing('profiles.data.0.score'),
         );
 });
 
@@ -210,11 +210,11 @@ function assertDiscoverOrder(User $viewer, array $usernames): void
         ->get(route('discover'))
         ->assertOk()
         ->assertInertia(function (Assert $page) use ($usernames): Assert {
-            $page->has('profiles', count($usernames));
+            $page->has('profiles.data', count($usernames));
 
             foreach ($usernames as $index => $username) {
-                $page->where("profiles.{$index}.username", $username)
-                    ->missing("profiles.{$index}.score");
+                $page->where("profiles.data.{$index}.username", $username)
+                    ->missing("profiles.data.{$index}.score");
             }
 
             return $page;

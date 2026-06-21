@@ -12,15 +12,7 @@ class ContactRequestLifecycleService
     {
         ContactRequest::query()
             ->where('status', ContactRequestStatus::Accepted->value)
-            ->where(function ($query) use ($userA, $userB): void {
-                $query->where([
-                    'sender_id' => $userA->id,
-                    'receiver_id' => $userB->id,
-                ])->orWhere([
-                    'sender_id' => $userB->id,
-                    'receiver_id' => $userA->id,
-                ]);
-            })
+            ->betweenUsers($userA, $userB)
             ->update([
                 'status' => ContactRequestStatus::Closed->value,
                 'responded_at' => now(),

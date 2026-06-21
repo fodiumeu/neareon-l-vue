@@ -158,7 +158,6 @@ test('profile photo UI provides upload preview removal and shared fallbacks', fu
         ->toContain('<AvatarFallback');
 
     foreach ([
-        'Profile/Show.vue',
         'Discover.vue',
         'Contacts/Index.vue',
         'ContactRequests/Index.vue',
@@ -167,6 +166,9 @@ test('profile photo UI provides upload preview removal and shared fallbacks', fu
         expect(file_get_contents(resource_path("js/pages/{$page}")))
             ->toContain('<ProfileAvatar');
     }
+
+    expect(file_get_contents(resource_path('js/pages/Profile/Show.vue')))
+        ->toContain('<ProfilePhotoLightbox');
 });
 
 /**

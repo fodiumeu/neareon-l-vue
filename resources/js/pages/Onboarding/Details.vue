@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { Form, Head } from '@inertiajs/vue3';
+import BioEmojiField from '@/components/BioEmojiField.vue';
 import InputError from '@/components/InputError.vue';
 import PageHeader from '@/components/PageHeader.vue';
 import PageSection from '@/components/PageSection.vue';
@@ -96,14 +97,8 @@ defineOptions({
                             <InputError :message="errors.region" />
                         </div>
 
-                        <div class="grid gap-2">
-                            <Label for="bio">Bio</Label>
-                            <textarea
-                                id="bio"
-                                name="bio"
-                                maxlength="280"
-                                rows="4"
-                                class="flex min-h-24 w-full rounded-md border border-input bg-background/80 px-3 py-2 text-base shadow-xs transition-[color,box-shadow] outline-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/45 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm dark:border-border/90 dark:bg-input/60"
+                        <div>
+                            <BioEmojiField
                                 placeholder="Ein kurzer Satz über dich"
                             />
                             <InputError :message="errors.bio" />

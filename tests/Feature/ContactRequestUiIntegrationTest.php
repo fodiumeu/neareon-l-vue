@@ -156,8 +156,8 @@ test('discover provides incoming request action metadata', function () {
         ->get(route('discover'))
         ->assertOk()
         ->assertInertia(fn (Assert $page) => $page
-            ->where('profiles.0.contact_user_id', $owner->id)
-            ->where('profiles.0.incoming_contact_request_id', $contactRequest->id),
+            ->where('profiles.data.0.contact_user_id', $owner->id)
+            ->where('profiles.data.0.incoming_contact_request_id', $contactRequest->id),
         );
 });
 

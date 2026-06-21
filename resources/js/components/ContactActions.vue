@@ -11,6 +11,7 @@ defineProps<{
     contactRequestUnavailableReason?: 'disabled' | 'follow_required' | null;
     isFollowing: boolean;
     status: ContactStatus;
+    stayOnPage?: boolean;
     userId: number;
     username: string;
 }>();
@@ -65,6 +66,12 @@ defineProps<{
             :options="{ preserveScroll: true }"
             v-slot="{ processing }"
         >
+            <input
+                v-if="stayOnPage"
+                type="hidden"
+                name="context"
+                value="discover"
+            />
             <Button
                 type="submit"
                 :variant="isFollowing ? 'secondary' : 'default'"

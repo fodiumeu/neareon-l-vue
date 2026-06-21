@@ -178,3 +178,25 @@
         @apply bg-background text-foreground;
     }
 }
+
+@layer components {
+    .discover-filter-controls select,
+    .profile-edit-form select {
+        color-scheme: light dark;
+        @apply bg-background text-foreground transition-colors hover:border-ring/70 hover:bg-accent/40 focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50;
+    }
+
+    .discover-filter-controls select option,
+    .profile-edit-form select option {
+        background-color: var(--popover);
+        color: var(--popover-foreground);
+    }
+
+    .discover-filter-controls select option:hover,
+    .discover-filter-controls select option:checked,
+    .profile-edit-form select option:hover,
+    .profile-edit-form select option:checked {
+        background-color: var(--accent);
+        color: var(--accent-foreground);
+    }
+}

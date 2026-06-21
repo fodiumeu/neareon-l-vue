@@ -1,5 +1,8 @@
 <script setup lang="ts">
-import { Head, Link } from '@inertiajs/vue3';
+import { Head, InfiniteScroll, Link, router } from '@inertiajs/vue3';
+import { useMediaQuery } from '@vueuse/core';
+import { Search } from 'lucide-vue-next';
+import { computed, onBeforeUnmount, ref, watch } from 'vue';
 import ContactActions from '@/components/ContactActions.vue';
 import ContactStatusBadge from '@/components/ContactStatusBadge.vue';
 import PageHeader from '@/components/PageHeader.vue';
@@ -7,6 +10,9 @@ import PageSection from '@/components/PageSection.vue';
 import ProfileAvatar from '@/components/ProfileAvatar.vue';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Spinner } from '@/components/ui/spinner';
 import type { ContactStatus } from '@/types';
 
 type DiscoverProfile = {
@@ -31,9 +37,155 @@ type DiscoverProfile = {
     interests?: string[] | null;
 };
 
-defineProps<{
-    profiles: DiscoverProfile[];
+type DiscoverFilters = {
+    region: string;
+    language: string;
+    interest: string;
+};
+
+type DiscoverFilterOptions = {
+    regions: string[];
+    languages: string[];
+    interests: string[];
+};
+
+type PaginationLink = {
+    url: string | null;
+    label: string;
+    active: boolean;
+};
+
+type PaginatedProfiles = {
+    data: DiscoverProfile[];
+    current_page: number;
+    last_page: number;
+    per_page: number;
+    total: number;
+    prev_page_url: string | null;
+    next_page_url: string | null;
+    links: PaginationLink[];
+};
+
+const props = defineProps<{
+    profiles: PaginatedProfiles;
+    search: string;
+    filters: DiscoverFilters;
+    filterOptions: DiscoverFilterOptions;
 }>();
+
+const searchQuery = ref(props.search);
+const selectedRegion = ref(props.filters.region);
+const selectedLanguage = ref(props.filters.language);
+const selectedInterest = ref(props.filters.interest);
+const filtersOpen = ref(false);
+const isMobile = useMediaQuery('(max-width: 767px)');
+let searchTimer: ReturnType<typeof setTimeout> | null = null;
+
+const pageNumbers = computed(() => {
+    const start = Math.max(
+        1,
+        Math.min(props.profiles.current_page - 2, props.profiles.last_page - 4),
+    );
+    const end = Math.min(props.profiles.last_page, start + 4);
+
+    return Array.from(
+        { length: Math.max(0, end - start + 1) },
+        (_, index) => start + index,
+    );
+});
+
+const pageUrl = (page: number) => {
+    const url = new URL(window.location.href);
+    url.searchParams.set('page', String(page));
+
+    return `${url.pathname}${url.search}`;
+};
+
+const clearSearchTimer = () => {
+    if (searchTimer !== null) {
+        clearTimeout(searchTimer);
+        searchTimer = null;
+    }
+};
+
+const runSearch = () => {
+    clearSearchTimer();
+
+    const query = searchQuery.value.trim();
+    const params: Record<string, string> = {};
+
+    if (query) {
+        params.q = query;
+    }
+
+    if (selectedRegion.value) {
+        params.region = selectedRegion.value;
+    }
+
+    if (selectedLanguage.value) {
+        params.language = selectedLanguage.value;
+    }
+
+    if (selectedInterest.value) {
+        params.interest = selectedInterest.value;
+    }
+
+    if (
+        query === props.search &&
+        selectedRegion.value === props.filters.region &&
+        selectedLanguage.value === props.filters.language &&
+        selectedInterest.value === props.filters.interest
+    ) {
+        return;
+    }
+
+    router.get('/discover', params, {
+        only: ['profiles', 'search', 'filters', 'filterOptions'],
+        preserveScroll: true,
+        preserveState: true,
+        replace: true,
+        reset: ['profiles'],
+    });
+};
+
+const handleSearchInput = () => {
+    clearSearchTimer();
+
+    if (searchQuery.value.trim() === '') {
+        runSearch();
+
+        return;
+    }
+
+    searchTimer = setTimeout(runSearch, 350);
+};
+
+const applyFilters = () => {
+    clearSearchTimer();
+    runSearch();
+};
+
+const resetFilters = () => {
+    selectedRegion.value = '';
+    selectedLanguage.value = '';
+    selectedInterest.value = '';
+    applyFilters();
+};
+
+watch(
+    () => [props.search, props.filters] as const,
+    ([search, filters]) => {
+        if (searchQuery.value.trim() !== search) {
+            searchQuery.value = search;
+        }
+
+        selectedRegion.value = filters.region;
+        selectedLanguage.value = filters.language;
+        selectedInterest.value = filters.interest;
+    },
+);
+
+onBeforeUnmount(clearSearchTimer);
 
 const profileLabel = (profile: DiscoverProfile) =>
     profile.display_name ?? `@${profile.username}`;
@@ -93,24 +245,175 @@ defineOptions({
             </Card>
         </PageSection>
 
-        <PageSection v-if="profiles.length === 0">
+        <PageSection>
+            <form
+                action="/discover"
+                method="get"
+                class="discover-filter-controls"
+                @submit.prevent="runSearch"
+            >
+                <div class="grid gap-4">
+                    <div class="grid max-w-xl gap-2">
+                        <Label for="discover-search">
+                            Profile durchsuchen
+                        </Label>
+                        <div class="relative">
+                            <Input
+                                id="discover-search"
+                                v-model="searchQuery"
+                                name="q"
+                                type="search"
+                                placeholder="Name, Benutzername oder Region"
+                                autocomplete="off"
+                                class="pr-11"
+                                @input="handleSearchInput"
+                            />
+                            <Button
+                                type="submit"
+                                variant="ghost"
+                                size="icon"
+                                class="absolute top-1/2 right-1 size-8 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                                aria-label="Profile suchen"
+                            >
+                                <Search class="size-4" aria-hidden="true" />
+                            </Button>
+                        </div>
+                    </div>
+
+                    <Button
+                        type="button"
+                        variant="secondary"
+                        class="w-full justify-between md:hidden"
+                        :aria-expanded="filtersOpen"
+                        aria-controls="discover-filters"
+                        @click="filtersOpen = !filtersOpen"
+                    >
+                        {{
+                            filtersOpen
+                                ? 'Filter ausblenden'
+                                : 'Filter anzeigen'
+                        }}
+                        <span aria-hidden="true">
+                            {{ filtersOpen ? '▲' : '▼' }}
+                        </span>
+                    </Button>
+
+                    <div
+                        id="discover-filters"
+                        class="gap-3 md:grid-cols-4 md:items-end"
+                        :class="filtersOpen ? 'grid md:grid' : 'hidden md:grid'"
+                    >
+                        <div class="grid gap-2">
+                            <Label for="discover-region">Region</Label>
+                            <select
+                                id="discover-region"
+                                v-model="selectedRegion"
+                                name="region"
+                                class="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-xs focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+                                @change="applyFilters"
+                            >
+                                <option value="">Alle Regionen</option>
+                                <option
+                                    v-for="region in filterOptions.regions"
+                                    :key="region"
+                                    :value="region"
+                                >
+                                    {{ region }}
+                                </option>
+                            </select>
+                        </div>
+
+                        <div class="grid gap-2">
+                            <Label for="discover-language">Sprache</Label>
+                            <select
+                                id="discover-language"
+                                v-model="selectedLanguage"
+                                name="language"
+                                class="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-xs focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+                                @change="applyFilters"
+                            >
+                                <option value="">Alle Sprachen</option>
+                                <option
+                                    v-for="language in filterOptions.languages"
+                                    :key="language"
+                                    :value="language"
+                                >
+                                    {{ language }}
+                                </option>
+                            </select>
+                        </div>
+
+                        <div class="grid gap-2">
+                            <Label for="discover-interest">Interesse</Label>
+                            <select
+                                id="discover-interest"
+                                v-model="selectedInterest"
+                                name="interest"
+                                class="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-xs focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+                                @change="applyFilters"
+                            >
+                                <option value="">Alle Interessen</option>
+                                <option
+                                    v-for="interest in filterOptions.interests"
+                                    :key="interest"
+                                    :value="interest"
+                                >
+                                    {{ interest }}
+                                </option>
+                            </select>
+                        </div>
+
+                        <Button
+                            type="button"
+                            variant="secondary"
+                            class="w-full"
+                            @click="resetFilters"
+                        >
+                            Filter zurücksetzen
+                        </Button>
+                    </div>
+                </div>
+            </form>
+        </PageSection>
+
+        <PageSection v-if="profiles.data.length === 0">
             <Card>
                 <CardContent class="space-y-2 text-center sm:text-left">
                     <h2 class="text-base font-medium">
-                        Keine Profile sichtbar
+                        {{
+                            search ||
+                            filters.region ||
+                            filters.language ||
+                            filters.interest
+                                ? 'Keine passenden Profile gefunden'
+                                : 'Keine Profile sichtbar'
+                        }}
                     </h2>
                     <p class="text-sm leading-6 text-muted-foreground">
-                        Aktuell sind keine weiteren Profile für Discover
-                        freigegeben.
+                        {{
+                            search ||
+                            filters.region ||
+                            filters.language ||
+                            filters.interest
+                                ? 'Versuche einen anderen Suchbegriff.'
+                                : 'Aktuell sind keine weiteren Profile für Discover freigegeben.'
+                        }}
                     </p>
                 </CardContent>
             </Card>
         </PageSection>
 
         <PageSection v-else>
-            <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+            <InfiniteScroll
+                data="profiles"
+                only-next
+                :manual="!isMobile"
+                :preserve-url="false"
+                :params="{ only: ['profiles'] }"
+                class="grid gap-4 md:grid-cols-2 xl:grid-cols-3"
+            >
                 <Card
-                    v-for="profile in profiles"
+                    v-for="profile in profiles.data"
                     :key="profile.username"
                     class="bg-card/95 shadow-md shadow-black/5 dark:shadow-black/25"
                 >
@@ -231,7 +534,7 @@ defineOptions({
                                 v-if="visibleDetailCount(profile) === 0"
                                 class="rounded-md border border-border bg-background/60 px-3 py-2 text-sm leading-6 text-muted-foreground dark:bg-input/20"
                             >
-                                Weitere Angaben sind für Discover aktuell nicht
+                                Einige Profilinformationen sind nur für Kontakte
                                 sichtbar.
                             </p>
                         </div>
@@ -249,6 +552,7 @@ defineOptions({
                                     profile.contact_request_unavailable_reason
                                 "
                                 :is-following="profile.is_following"
+                                stay-on-page
                                 :status="profile.contact_status"
                                 :user-id="profile.contact_user_id"
                                 :username="profile.username"
@@ -262,7 +566,64 @@ defineOptions({
                         </div>
                     </CardContent>
                 </Card>
-            </div>
+
+                <template #loading>
+                    <div
+                        class="flex items-center justify-center gap-2 py-5 text-sm text-muted-foreground md:hidden"
+                    >
+                        <Spinner />
+                        Lade weitere Profile...
+                    </div>
+                </template>
+            </InfiniteScroll>
+
+            <nav
+                v-if="profiles.last_page > 1"
+                class="mt-6 hidden items-center justify-center gap-2 md:flex"
+                aria-label="Discover Seiten"
+            >
+                <Button
+                    as-child
+                    variant="secondary"
+                    :disabled="!profiles.prev_page_url"
+                >
+                    <Link
+                        v-if="profiles.prev_page_url"
+                        :href="profiles.prev_page_url"
+                    >
+                        ← Vorherige
+                    </Link>
+                    <span v-else>← Vorherige</span>
+                </Button>
+
+                <Button
+                    v-for="page in pageNumbers"
+                    :key="page"
+                    as-child
+                    :variant="
+                        page === profiles.current_page ? 'default' : 'secondary'
+                    "
+                    size="icon"
+                >
+                    <Link :href="pageUrl(page)">
+                        {{ page }}
+                    </Link>
+                </Button>
+
+                <Button
+                    as-child
+                    variant="secondary"
+                    :disabled="!profiles.next_page_url"
+                >
+                    <Link
+                        v-if="profiles.next_page_url"
+                        :href="profiles.next_page_url"
+                    >
+                        Nächste →
+                    </Link>
+                    <span v-else>Nächste →</span>
+                </Button>
+            </nav>
         </PageSection>
     </div>
 </template>

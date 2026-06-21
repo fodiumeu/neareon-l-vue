@@ -44,7 +44,7 @@ test('discover does not list the current users own profile', function () {
         ->get(route('discover'))
         ->assertOk()
         ->assertInertia(fn (Assert $page) => $page
-            ->has('profiles', 0),
+            ->has('profiles.data', 0),
         );
 });
 
@@ -62,11 +62,11 @@ test('discover lists public profiles', function () {
         ->get(route('discover'))
         ->assertOk()
         ->assertInertia(fn (Assert $page) => $page
-            ->has('profiles', 1)
-            ->where('profiles.0.username', 'public_discover')
-            ->where('profiles.0.display_name', 'Public Discover')
-            ->where('profiles.0.contact_user_id', $profile->user_id)
-            ->where('profiles.0.contact_status', 'none'),
+            ->has('profiles.data', 1)
+            ->where('profiles.data.0.username', 'public_discover')
+            ->where('profiles.data.0.display_name', 'Public Discover')
+            ->where('profiles.data.0.contact_user_id', $profile->user_id)
+            ->where('profiles.data.0.contact_status', 'none'),
         );
 });
 
@@ -98,10 +98,10 @@ test('discover includes outgoing and incoming contact request statuses', functio
         ->get(route('discover'))
         ->assertOk()
         ->assertInertia(fn (Assert $page) => $page
-            ->where('profiles.0.username', 'incoming_status')
-            ->where('profiles.0.contact_status', 'incoming_request')
-            ->where('profiles.1.username', 'outgoing_status')
-            ->where('profiles.1.contact_status', 'outgoing_request'),
+            ->where('profiles.data.0.username', 'incoming_status')
+            ->where('profiles.data.0.contact_status', 'incoming_request')
+            ->where('profiles.data.1.username', 'outgoing_status')
+            ->where('profiles.data.1.contact_status', 'outgoing_request'),
         );
 });
 
@@ -119,7 +119,7 @@ test('discover does not list private profiles', function () {
         ->get(route('discover'))
         ->assertOk()
         ->assertInertia(fn (Assert $page) => $page
-            ->has('profiles', 0),
+            ->has('profiles.data', 0),
         );
 });
 
@@ -143,7 +143,7 @@ test('discover does not list mutual profiles without mutual follow', function ()
         ->get(route('discover'))
         ->assertOk()
         ->assertInertia(fn (Assert $page) => $page
-            ->has('profiles', 0),
+            ->has('profiles.data', 0),
         );
 });
 
@@ -171,10 +171,10 @@ test('discover lists mutual profiles with mutual follow', function () {
         ->get(route('discover'))
         ->assertOk()
         ->assertInertia(fn (Assert $page) => $page
-            ->has('profiles', 1)
-            ->where('profiles.0.username', 'mutual_visible_discover')
-            ->where('profiles.0.display_name', 'Mutual Visible Discover')
-            ->where('profiles.0.is_mutual', true),
+            ->has('profiles.data', 1)
+            ->where('profiles.data.0.username', 'mutual_visible_discover')
+            ->where('profiles.data.0.display_name', 'Mutual Visible Discover')
+            ->where('profiles.data.0.is_mutual', true),
         );
 });
 
@@ -197,13 +197,13 @@ test('discover does not deliver private profile fields', function () {
         ->get(route('discover'))
         ->assertOk()
         ->assertInertia(fn (Assert $page) => $page
-            ->has('profiles', 1)
-            ->where('profiles.0.username', 'public_private_fields')
-            ->where('profiles.0.display_name', 'Public Private Fields')
-            ->where('profiles.0.bio', 'Nicht ausliefern.')
-            ->missing('profiles.0.region')
-            ->missing('profiles.0.languages')
-            ->missing('profiles.0.interests'),
+            ->has('profiles.data', 1)
+            ->where('profiles.data.0.username', 'public_private_fields')
+            ->where('profiles.data.0.display_name', 'Public Private Fields')
+            ->where('profiles.data.0.bio', 'Nicht ausliefern.')
+            ->missing('profiles.data.0.region')
+            ->missing('profiles.data.0.languages')
+            ->missing('profiles.data.0.interests'),
         );
 });
 
@@ -226,13 +226,13 @@ test('discover does not deliver followers fields before follow exists', function
         ->get(route('discover'))
         ->assertOk()
         ->assertInertia(fn (Assert $page) => $page
-            ->has('profiles', 1)
-            ->where('profiles.0.username', 'followers_hidden_discover')
-            ->where('profiles.0.display_name', 'Followers Hidden Discover')
-            ->where('profiles.0.bio', 'Basis sichtbar.')
-            ->missing('profiles.0.region')
-            ->missing('profiles.0.languages')
-            ->missing('profiles.0.interests'),
+            ->has('profiles.data', 1)
+            ->where('profiles.data.0.username', 'followers_hidden_discover')
+            ->where('profiles.data.0.display_name', 'Followers Hidden Discover')
+            ->where('profiles.data.0.bio', 'Basis sichtbar.')
+            ->missing('profiles.data.0.region')
+            ->missing('profiles.data.0.languages')
+            ->missing('profiles.data.0.interests'),
         );
 });
 
@@ -266,13 +266,13 @@ test('discover delivers followers fields after follow exists', function () {
         ->get(route('discover'))
         ->assertOk()
         ->assertInertia(fn (Assert $page) => $page
-            ->has('profiles', 1)
-            ->where('profiles.0.username', 'followers_visible_discover')
-            ->where('profiles.0.display_name', 'Followers Visible Discover')
-            ->where('profiles.0.bio', 'Basis sichtbar.')
-            ->where('profiles.0.region', 'Bremen')
-            ->where('profiles.0.languages', ['Deutsch'])
-            ->where('profiles.0.interests', ['Community']),
+            ->has('profiles.data', 1)
+            ->where('profiles.data.0.username', 'followers_visible_discover')
+            ->where('profiles.data.0.display_name', 'Followers Visible Discover')
+            ->where('profiles.data.0.bio', 'Basis sichtbar.')
+            ->where('profiles.data.0.region', 'Bremen')
+            ->where('profiles.data.0.languages', ['Deutsch'])
+            ->where('profiles.data.0.interests', ['Community']),
         );
 });
 
@@ -303,12 +303,12 @@ test('discover delivers managed option labels in language position order', funct
         ->get(route('discover'))
         ->assertOk()
         ->assertInertia(fn (Assert $page) => $page
-            ->where('profiles.0.username', 'visible_fields')
-            ->where('profiles.0.display_name', 'Visible Fields')
-            ->where('profiles.0.bio', 'Sichtbare Kurzinfo.')
-            ->where('profiles.0.region', 'Berlin')
-            ->where('profiles.0.languages', ['Deutsch', 'Englisch'])
-            ->where('profiles.0.interests', ['Technologie']),
+            ->where('profiles.data.0.username', 'visible_fields')
+            ->where('profiles.data.0.display_name', 'Visible Fields')
+            ->where('profiles.data.0.bio', 'Sichtbare Kurzinfo.')
+            ->where('profiles.data.0.region', 'Berlin')
+            ->where('profiles.data.0.languages', ['Deutsch', 'Englisch'])
+            ->where('profiles.data.0.interests', ['Technologie']),
         );
 });
 
@@ -336,11 +336,11 @@ test('discover includes follow status for each visible profile', function () {
         ->get(route('discover'))
         ->assertOk()
         ->assertInertia(fn (Assert $page) => $page
-            ->where('profiles.0.username', 'status_discover')
-            ->where('profiles.0.is_following', true)
-            ->where('profiles.0.is_followed_by', true)
-            ->where('profiles.0.is_mutual', true)
-            ->where('profiles.0.contact_status', 'connected'),
+            ->where('profiles.data.0.username', 'status_discover')
+            ->where('profiles.data.0.is_following', true)
+            ->where('profiles.data.0.is_followed_by', true)
+            ->where('profiles.data.0.is_mutual', true)
+            ->where('profiles.data.0.contact_status', 'connected'),
         );
 });
 
@@ -363,12 +363,12 @@ test('discover does not deliver sensitive or technical data', function () {
         ->get(route('discover'))
         ->assertOk()
         ->assertInertia(fn (Assert $page) => $page
-            ->missing('profiles.0.id')
-            ->missing('profiles.0.user_id')
-            ->missing('profiles.0.user')
-            ->missing('profiles.0.email')
-            ->missing('profiles.0.birthdate')
-            ->missing('profiles.0.age_gate_passed_at')
-            ->missing('profiles.0.role'),
+            ->missing('profiles.data.0.id')
+            ->missing('profiles.data.0.user_id')
+            ->missing('profiles.data.0.user')
+            ->missing('profiles.data.0.email')
+            ->missing('profiles.data.0.birthdate')
+            ->missing('profiles.data.0.age_gate_passed_at')
+            ->missing('profiles.data.0.role'),
         );
 });

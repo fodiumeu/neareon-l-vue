@@ -270,7 +270,7 @@ test('block overrides relationship and privacy presentation', function () {
     $this->actingAs($viewer)
         ->get(route('discover'))
         ->assertOk()
-        ->assertInertia(fn (Assert $page) => $page->has('profiles', 0));
+        ->assertInertia(fn (Assert $page) => $page->has('profiles.data', 0));
 });
 
 test('profile and discover use identical field visibility decisions', function () {
@@ -293,9 +293,9 @@ test('profile and discover use identical field visibility decisions', function (
         ->get(route('discover'))
         ->assertOk()
         ->assertInertia(fn (Assert $page) => $page
-            ->missing('profiles.0.region')
-            ->missing('profiles.0.languages')
-            ->missing('profiles.0.interests'),
+            ->missing('profiles.data.0.region')
+            ->missing('profiles.data.0.languages')
+            ->missing('profiles.data.0.interests'),
         );
 
     Follow::query()->create([
@@ -315,8 +315,8 @@ test('profile and discover use identical field visibility decisions', function (
         ->get(route('discover'))
         ->assertOk()
         ->assertInertia(fn (Assert $page) => $page
-            ->where('profiles.0.region', 'Berlin')
-            ->has('profiles.0.languages')
-            ->has('profiles.0.interests'),
+            ->where('profiles.data.0.region', 'Berlin')
+            ->has('profiles.data.0.languages')
+            ->has('profiles.data.0.interests'),
         );
 });
