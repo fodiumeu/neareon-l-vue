@@ -15,6 +15,8 @@ class InternalNotification extends Notification
         public readonly string $title,
         public readonly string $message,
         public readonly string $targetUrl,
+        public readonly ?int $actorId = null,
+        public readonly ?int $conversationId = null,
     ) {}
 
     /**
@@ -26,7 +28,7 @@ class InternalNotification extends Notification
     }
 
     /**
-     * @return array<string, string>
+     * @return array<string, int|string|null>
      */
     public function toDatabase(object $notifiable): array
     {
@@ -35,6 +37,8 @@ class InternalNotification extends Notification
             'title' => $this->title,
             'message' => $this->message,
             'target_url' => $this->targetUrl,
+            'actor_id' => $this->actorId,
+            'conversation_id' => $this->conversationId,
         ];
     }
 }

@@ -68,6 +68,8 @@ Route::middleware(['auth', 'age.gate', 'verified', 'onboarding.complete'])->grou
         ->name('messages.store');
     Route::get('notifications', [NotificationController::class, 'index'])
         ->name('notifications.index');
+    Route::get('notifications/{notification}/open', [NotificationController::class, 'open'])
+        ->name('notifications.open');
     Route::get('navigation/badges', NavigationBadgeController::class)
         ->name('navigation.badges');
     Route::patch('notifications/read-all', [NotificationController::class, 'markAllAsRead'])

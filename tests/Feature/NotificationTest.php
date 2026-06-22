@@ -172,8 +172,49 @@ test('a new message notifies the other participant', function () {
 
     expect($notification->data['type'])
         ->toBe(InternalNotificationType::NewMessage->value)
+        ->and($notification->data['actor_id'])->toBe($sender->id)
+        ->and($notification->data['conversation_id'])->toBe($conversation->id)
+        ->and($notification->data['message'])
+        ->toBe('Neue Nachricht von Actor User.')
         ->and($notification->data['target_url'])
         ->toBe(route('messages.show', $conversation, absolute: false));
+});
+
+test('an unread message notification is reused per conversation', function () {
+    [$sender, $receiver] = notificationUsers();
+    $conversation = allowNotificationMessageExchange($sender, $receiver);
+
+    foreach (['Erste Nachricht', 'Zweite Nachricht'] as $message) {
+        $this->actingAs($sender)
+            ->post(route('messages.store', $conversation), [
+                'message' => $message,
+            ])
+            ->assertRedirect(route('messages.show', $conversation));
+    }
+
+    expect($receiver->unreadNotifications()->count())->toBe(1)
+        ->and($receiver->notifications()->sole()->data['message'])
+        ->toBe('Neue Nachricht von Actor User.');
+});
+
+test('a read message notification permits one new unread notification', function () {
+    [$sender, $receiver] = notificationUsers();
+    $conversation = allowNotificationMessageExchange($sender, $receiver);
+
+    $this->actingAs($sender)
+        ->post(route('messages.store', $conversation), [
+            'message' => 'Erste Nachricht',
+        ]);
+
+    $receiver->notifications()->sole()->markAsRead();
+
+    $this->actingAs($sender)
+        ->post(route('messages.store', $conversation), [
+            'message' => 'Zweite Nachricht',
+        ]);
+
+    expect($receiver->notifications()->count())->toBe(2)
+        ->and($receiver->unreadNotifications()->count())->toBe(1);
 });
 
 test('notification page lists only the authenticated users notifications', function () {
@@ -197,7 +238,10 @@ test('notification page lists only the authenticated users notifications', funct
         ->assertInertia(fn (Assert $page) => $page
             ->component('Notifications/Index')
             ->has('notificationItems', 1)
-            ->where('notificationItems.0.title', 'Eigene Benachrichtigung')
+            ->where(
+                'notificationItems.0.title',
+                'Diese Mitglieder folgen dir jetzt',
+            )
             ->where('notificationItems.0.read_at', null)
             ->where('notificationItems.0.target_url', '/u/actor_user'),
         );
@@ -221,7 +265,76 @@ test('one message notification is presented as one message group', function () {
             ->where('notificationItems.0.message', '1 neue Nachricht')
             ->where('notificationItems.0.notification_count', 1)
             ->where('notificationItems.0.is_message_group', true)
+            ->where('notificationItems.0.cta_label', 'Unterhaltung öffnen')
+            ->where('notificationItems.0.visual_kind', 'message')
             ->where('notificationItems.0.target_url', '/messages/10'),
+        );
+});
+
+test('message notification presents the sender profile photo', function () {
+    [$sender, $receiver] = notificationUsers();
+    $sender->profile->update([
+        'profile_photo_path' => 'profile-photos/message-sender.webp',
+    ]);
+    $conversation = allowNotificationMessageExchange($sender, $receiver);
+
+    $this->actingAs($sender)
+        ->post(route('messages.store', $conversation), [
+            'message' => 'Nachricht mit Profilbild',
+        ]);
+
+    $this->actingAs($receiver)
+        ->get(route('notifications.index'))
+        ->assertInertia(fn (Assert $page) => $page
+            ->where('notificationItems.0.visual_kind', 'message')
+            ->where('notificationItems.0.actor.display_name', 'Actor User')
+            ->where(
+                'notificationItems.0.actor.profile_photo_url',
+                '/storage/profile-photos/message-sender.webp',
+            )
+            ->where('notificationItems.0.actor.initials', 'A'),
+        );
+});
+
+test('message notification keeps initials fallback without a profile photo', function () {
+    [$sender, $receiver] = notificationUsers();
+    $conversation = allowNotificationMessageExchange($sender, $receiver);
+
+    $this->actingAs($sender)
+        ->post(route('messages.store', $conversation), [
+            'message' => 'Nachricht ohne Profilbild',
+        ]);
+
+    $this->actingAs($receiver)
+        ->get(route('notifications.index'))
+        ->assertInertia(fn (Assert $page) => $page
+            ->where('notificationItems.0.visual_kind', 'message')
+            ->where('notificationItems.0.actor.profile_photo_url', null)
+            ->where('notificationItems.0.actor.initials', 'A'),
+        );
+});
+
+test('legacy message notification resolves the sender photo from its conversation', function () {
+    [$sender, $receiver] = notificationUsers();
+    $sender->profile->update([
+        'profile_photo_path' => 'profile-photos/legacy-sender.webp',
+    ]);
+    $conversation = allowNotificationMessageExchange($sender, $receiver);
+    $receiver->notify(new InternalNotification(
+        InternalNotificationType::NewMessage,
+        'Neue Nachricht',
+        'Actor User hat dir eine Nachricht gesendet.',
+        route('messages.show', $conversation, absolute: false),
+    ));
+
+    $this->actingAs($receiver)
+        ->get(route('notifications.index'))
+        ->assertInertia(fn (Assert $page) => $page
+            ->where('notificationItems.0.actor.display_name', 'Actor User')
+            ->where(
+                'notificationItems.0.actor.profile_photo_url',
+                '/storage/profile-photos/legacy-sender.webp',
+            ),
         );
 });
 
@@ -303,10 +416,21 @@ test('contact request notifications are presented as one group with actors', fun
         ->assertOk()
         ->assertInertia(fn (Assert $page) => $page
             ->has('notificationItems', 1)
-            ->where('notificationItems.0.title', '2 neue Kontaktanfragen')
-            ->where('notificationItems.0.message', 'Kontaktanfragen von:')
+            ->where(
+                'notificationItems.0.title',
+                'Du hast neue Kontaktanfragen erhalten',
+            )
+            ->where('notificationItems.0.message', '2 offene Anfragen')
             ->where('notificationItems.0.notification_count', 2)
             ->where('notificationItems.0.is_activity_group', true)
+            ->where(
+                'notificationItems.0.cta_label',
+                'Kontaktanfragen ansehen',
+            )
+            ->where(
+                'notificationItems.0.visual_kind',
+                'contact-requests',
+            )
             ->where('notificationItems.0.actors', [
                 'Actor User',
                 'Second Actor',
@@ -337,10 +461,15 @@ test('follower notifications are presented as one group with actors', function (
         ->assertOk()
         ->assertInertia(fn (Assert $page) => $page
             ->has('notificationItems', 1)
-            ->where('notificationItems.0.title', '2 neue Follower')
-            ->where('notificationItems.0.message', 'Diese Profile folgen dir jetzt:')
+            ->where(
+                'notificationItems.0.title',
+                'Diese Mitglieder folgen dir jetzt',
+            )
+            ->where('notificationItems.0.message', '2 neue Follower')
             ->where('notificationItems.0.notification_count', 2)
             ->where('notificationItems.0.is_activity_group', true)
+            ->where('notificationItems.0.cta_label', 'Profile ansehen')
+            ->where('notificationItems.0.visual_kind', 'followers')
             ->where('notificationItems.0.actors', [
                 'Actor User',
                 'Second Follower',
@@ -423,6 +552,189 @@ test('all notifications can be marked as read', function () {
         );
 });
 
+test('opening a notification marks it as read and redirects to its target', function () {
+    [$user, $actor] = notificationUsers();
+    $user->notify(new InternalNotification(
+        InternalNotificationType::ContactRequestAccepted,
+        'Kontaktanfrage angenommen',
+        'Actor User hat deine Kontaktanfrage angenommen.',
+        '/contact-requests/sent',
+        $actor->id,
+    ));
+    $notification = $user->notifications()->sole();
+
+    $this->actingAs($user)
+        ->get(route('notifications.open', $notification))
+        ->assertRedirect('/contact-requests/sent');
+
+    expect($notification->fresh()->read_at)->not->toBeNull()
+        ->and($user->unreadNotifications()->count())->toBe(0);
+});
+
+test('users cannot open another users notification', function () {
+    [$owner, $otherUser] = notificationUsers();
+    $owner->notify(new InternalNotification(
+        InternalNotificationType::NewFollower,
+        'Neuer Follower',
+        'Actor User folgt dir jetzt.',
+        '/discover',
+    ));
+    $notification = $owner->notifications()->sole();
+
+    $this->actingAs($otherUser)
+        ->get(route('notifications.open', $notification))
+        ->assertNotFound();
+
+    expect($notification->fresh()->read_at)->toBeNull();
+});
+
+test('notification items are sorted newest first and contain actor presentation data', function () {
+    [$actor, $recipient] = notificationUsers();
+    $actor->profile->update([
+        'profile_photo_path' => 'profile-photos/actor.webp',
+    ]);
+    $recipient->notify(new InternalNotification(
+        InternalNotificationType::ContactRequestAccepted,
+        'Ältere Benachrichtigung',
+        'Actor User hat deine Kontaktanfrage angenommen.',
+        '/contact-requests/sent',
+        $actor->id,
+    ));
+    $older = $recipient->notifications()->sole();
+    $older->forceFill(['created_at' => now()->subDay()])->save();
+
+    $recipient->notify(new InternalNotification(
+        InternalNotificationType::ContactRequestDeclined,
+        'Neuere Benachrichtigung',
+        'Actor User hat deine Kontaktanfrage abgelehnt.',
+        '/contact-requests/sent',
+        $actor->id,
+    ));
+
+    $this->actingAs($recipient)
+        ->get(route('notifications.index'))
+        ->assertInertia(fn (Assert $page) => $page
+            ->has('notificationItems', 2)
+            ->where('notificationItems.0.title', 'Actor User')
+            ->where(
+                'notificationItems.0.message',
+                'hat deine Kontaktanfrage abgelehnt',
+            )
+            ->where('notificationItems.0.cta_label', 'Details ansehen')
+            ->where('notificationItems.0.actor.display_name', 'Actor User')
+            ->where('notificationItems.0.actor.initials', 'A')
+            ->where(
+                'notificationItems.0.actor.profile_photo_url',
+                '/storage/profile-photos/actor.webp',
+            )
+            ->where('notificationItems.1.title', 'Actor User')
+            ->where(
+                'notificationItems.1.message',
+                'hat deine Kontaktanfrage angenommen',
+            )
+            ->where('notificationItems.1.cta_label', 'Kontakt ansehen'),
+        );
+});
+
+test('notification center provides clickable accessible cards and polished ux', function () {
+    $page = file_get_contents(
+        resource_path('js/pages/Notifications/Index.vue'),
+    );
+
+    expect($page)
+        ->toContain('Noch keine Benachrichtigungen')
+        ->toContain('Hier erscheinen neue Aktivitäten aus deiner Community.')
+        ->toContain("return 'Gestern'")
+        ->toContain("weekday: 'long'")
+        ->toContain("day: '2-digit'")
+        ->toContain('border-primary/60')
+        ->toContain('<ProfileAvatar')
+        ->toContain('<Users')
+        ->toContain('<Handshake')
+        ->toContain('class="group block rounded-xl')
+        ->toContain(':href="notification.open_url"')
+        ->toContain('@keydown.space.prevent="openNotification(notification)"')
+        ->toContain('focus-visible:ring-[3px]')
+        ->toContain('motion-reduce:transition-none')
+        ->toContain('notification.cta_label')
+        ->toContain('overflow-x-hidden')
+        ->toContain('Alle als gelesen markieren');
+});
+
+test('follower and contact request groups keep their dedicated icons', function () {
+    $page = file_get_contents(
+        resource_path('js/pages/Notifications/Index.vue'),
+    );
+
+    expect($page)
+        ->toContain("notification.visual_kind === 'followers'")
+        ->toContain('<Users class="size-6 sm:size-7"')
+        ->toContain("'contact-requests'")
+        ->toContain('<Handshake class="size-6 sm:size-7"')
+        ->toContain('v-else-if="notification.actor"')
+        ->toContain(':photo-url="')
+        ->toContain('notification.actor.profile_photo_url');
+});
+
+test('single notification types use personal texts and contextual ctas', function (
+    InternalNotificationType $type,
+    string $storedTitle,
+    string $storedMessage,
+    string $expectedTitle,
+    string $expectedMessage,
+    string $expectedCta,
+) {
+    [$actor, $recipient] = notificationUsers();
+    $recipient->notify(new InternalNotification(
+        $type,
+        $storedTitle,
+        $storedMessage,
+        '/notifications',
+        $actor->id,
+    ));
+
+    $this->actingAs($recipient)
+        ->get(route('notifications.index'))
+        ->assertInertia(fn (Assert $page) => $page
+            ->where('notificationItems.0.title', $expectedTitle)
+            ->where('notificationItems.0.message', $expectedMessage)
+            ->where('notificationItems.0.cta_label', $expectedCta),
+        );
+})->with([
+    'follower' => [
+        InternalNotificationType::NewFollower,
+        'Neuer Follower',
+        'Actor User folgt dir jetzt.',
+        'Diese Mitglieder folgen dir jetzt',
+        '1 neuer Follower',
+        'Profile ansehen',
+    ],
+    'contact request' => [
+        InternalNotificationType::ContactRequestReceived,
+        'Neue Kontaktanfrage',
+        'Actor User hat dir eine Kontaktanfrage gesendet.',
+        'Du hast neue Kontaktanfragen erhalten',
+        '1 offene Anfrage',
+        'Kontaktanfragen ansehen',
+    ],
+    'accepted request' => [
+        InternalNotificationType::ContactRequestAccepted,
+        'Kontaktanfrage angenommen',
+        'Actor User hat deine Kontaktanfrage angenommen.',
+        'Actor User',
+        'hat deine Kontaktanfrage angenommen',
+        'Kontakt ansehen',
+    ],
+    'declined request' => [
+        InternalNotificationType::ContactRequestDeclined,
+        'Kontaktanfrage abgelehnt',
+        'Actor User hat deine Kontaktanfrage abgelehnt.',
+        'Actor User',
+        'hat deine Kontaktanfrage abgelehnt',
+        'Details ansehen',
+    ],
+]);
+
 test('the shared unread notification count and navigation entry are available', function () {
     [$user] = notificationUsers();
     $user->notify(new InternalNotification(
@@ -458,12 +770,15 @@ test('the shared unread notification count and navigation entry are available', 
 });
 
 test('guests cannot access notification routes', function (string $routeName) {
-    $response = $routeName === 'notifications.read-all'
-        ? $this->patch(route($routeName))
-        : $this->get(route($routeName));
+    $response = match ($routeName) {
+        'notifications.read-all' => $this->patch(route($routeName)),
+        'notifications.open' => $this->get(route($routeName, 'notification-id')),
+        default => $this->get(route($routeName)),
+    };
 
     $response->assertRedirect(route('login'));
 })->with([
     'notifications.index',
+    'notifications.open',
     'notifications.read-all',
 ]);

@@ -18,6 +18,7 @@ class InternalNotificationService
             'Neue Kontaktanfrage',
             "{$this->displayName($sender)} hat dir eine Kontaktanfrage gesendet.",
             route('contact-requests.index', absolute: false),
+            $sender->id,
         ));
     }
 
@@ -41,6 +42,7 @@ class InternalNotificationService
                 $accepted ? 'angenommen' : 'abgelehnt',
             ),
             route('contact-requests.sent', absolute: false),
+            $receiver->id,
         ));
     }
 
@@ -61,6 +63,7 @@ class InternalNotificationService
                 $followerProfile->username,
                 absolute: false,
             ),
+            $follower->id,
         ));
     }
 
@@ -69,12 +72,45 @@ class InternalNotificationService
         User $receiver,
         Conversation $conversation,
     ): void {
-        $receiver->notify(new InternalNotification(
+        $notification = new InternalNotification(
             InternalNotificationType::NewMessage,
             'Neue Nachricht',
-            "{$this->displayName($sender)} hat dir eine Nachricht gesendet.",
+            "Neue Nachricht von {$this->displayName($sender)}.",
             route('messages.show', $conversation, absolute: false),
-        ));
+            $sender->id,
+            $conversation->id,
+        );
+
+        $existingNotification = $receiver->unreadNotifications()
+            ->where('type', InternalNotification::class)
+            ->get()
+            ->first(function ($storedNotification) use ($conversation): bool {
+                $conversationId = $storedNotification->data['conversation_id'] ?? null;
+                $targetUrl = $storedNotification->data['target_url'] ?? null;
+
+                return ($storedNotification->data['type'] ?? null)
+                    === InternalNotificationType::NewMessage->value
+                    && (
+                        (int) $conversationId === $conversation->id
+                        || $targetUrl === route(
+                            'messages.show',
+                            $conversation,
+                            absolute: false,
+                        )
+                    );
+            });
+
+        if ($existingNotification === null) {
+            $receiver->notify($notification);
+
+            return;
+        }
+
+        $existingNotification->forceFill([
+            'data' => $notification->toDatabase($receiver),
+            'created_at' => now(),
+            'updated_at' => now(),
+        ])->save();
     }
 
     private function displayName(User $user): string
