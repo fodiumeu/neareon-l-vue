@@ -12,18 +12,22 @@ import {
 } from 'vue';
 import AppBackButton from '@/components/AppBackButton.vue';
 import InputError from '@/components/InputError.vue';
-import PageHeader from '@/components/PageHeader.vue';
 import PageSection from '@/components/PageSection.vue';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import ProfileAvatar from '@/components/ProfileAvatar.vue';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Spinner } from '@/components/ui/spinner';
+import {
+    formatMessageTimestamp,
+    formatMessageTimestampTitle,
+} from '@/lib/messageTimestamp';
 
 type ConversationMessage = {
     id: number;
     body: string;
     created_at: string;
+    is_own: boolean;
     sender: {
         display_name: string;
         username: string | null;
@@ -36,6 +40,7 @@ type Conversation = {
     is_blocked: boolean;
     other_participant: {
         display_name: string | null;
+        profile_photo_url: string | null;
         username: string | null;
     };
     messages: ConversationMessage[];
@@ -90,8 +95,36 @@ const participantLabel =
         ? `@${props.conversation.other_participant.username}`
         : 'Unbekannter Teilnehmer');
 
-const avatarInitial = (message: ConversationMessage) =>
-    message.sender.display_name.charAt(0).toUpperCase();
+const participantInitial = participantLabel.charAt(0).toUpperCase();
+const emojiTokenPattern =
+    /(?:\p{Extended_Pictographic}(?:\uFE0E|\uFE0F)?(?:\p{Emoji_Modifier})?(?:\u200D\p{Extended_Pictographic}(?:\uFE0E|\uFE0F)?(?:\p{Emoji_Modifier})?)*|\p{Regional_Indicator}{2}|[#*0-9]\uFE0F?\u20E3)/gu;
+
+const emojiOnlyCount = (body: string): number | null => {
+    const matches = Array.from(body.matchAll(emojiTokenPattern));
+
+    if (
+        matches.length === 0 ||
+        matches.length > 3 ||
+        matches.map((match) => match[0]).join('') !== body
+    ) {
+        return null;
+    }
+
+    return matches.length;
+};
+
+const emojiOnlySizeClass = (body: string) => {
+    switch (emojiOnlyCount(body)) {
+        case 1:
+            return 'text-[2.75rem] sm:text-5xl';
+        case 2:
+            return 'text-4xl sm:text-[2.5rem]';
+        case 3:
+            return 'text-[2rem] sm:text-[2.2rem]';
+        default:
+            return null;
+    }
+};
 
 const latestMessageId = computed(
     () =>
@@ -250,12 +283,6 @@ watch(latestMessageId, (current, previous) => {
     }
 });
 
-const formatDate = (value: string) =>
-    new Intl.DateTimeFormat('de-DE', {
-        dateStyle: 'medium',
-        timeStyle: 'short',
-    }).format(new Date(value));
-
 defineOptions({
     layout: {
         breadcrumbs: [
@@ -276,7 +303,7 @@ defineOptions({
     <Head :title="`Unterhaltung mit ${participantLabel}`" />
 
     <div
-        class="mx-auto flex h-full w-full max-w-4xl flex-1 flex-col gap-6 overflow-x-auto p-4 sm:p-6"
+        class="mx-auto flex h-full w-full max-w-4xl flex-1 flex-col gap-4 overflow-x-hidden p-4 pb-[calc(1rem+env(safe-area-inset-bottom))] sm:gap-6 sm:p-6"
     >
         <AppBackButton
             fallback="/messages"
@@ -284,77 +311,106 @@ defineOptions({
             class="hidden md:inline-flex"
         />
 
-        <PageHeader
-            :title="participantLabel"
-            :description="
-                conversation.other_participant.username
-                    ? `@${conversation.other_participant.username}`
-                    : 'Unterhaltung'
-            "
-        />
+        <header
+            class="flex items-center gap-3 rounded-xl border border-border bg-card/95 p-3 shadow-sm sm:p-4"
+        >
+            <ProfileAvatar
+                :photo-url="conversation.other_participant.profile_photo_url"
+                :alt="participantLabel"
+                :fallback="participantInitial"
+                class="size-12 shrink-0"
+                fallback-class="text-base"
+            />
+            <div class="min-w-0">
+                <h1 class="truncate text-lg font-semibold tracking-tight">
+                    {{ participantLabel }}
+                </h1>
+                <p
+                    v-if="conversation.other_participant.username"
+                    class="truncate text-sm text-muted-foreground"
+                >
+                    @{{ conversation.other_participant.username }}
+                </p>
+            </div>
+        </header>
 
         <PageSection v-if="conversation.messages.length === 0">
             <Card
                 class="bg-card/95 shadow-md shadow-black/5 dark:shadow-black/25"
             >
-                <CardContent class="text-center sm:text-left">
+                <CardContent class="space-y-2 text-center sm:text-left">
+                    <h2 class="font-medium">
+                        Hier erscheinen eure Nachrichten.
+                    </h2>
                     <p class="text-sm leading-6 text-muted-foreground">
-                        Es wurden noch keine Nachrichten ausgetauscht.
+                        Schreibe eine Nachricht, um die Unterhaltung zu
+                        beginnen.
                     </p>
                 </CardContent>
             </Card>
         </PageSection>
 
         <PageSection v-else>
-            <div class="space-y-4">
-                <Card
+            <div class="flex flex-col gap-3" aria-label="Nachrichtenverlauf">
+                <article
                     v-for="message in conversation.messages"
                     :key="message.id"
-                    class="bg-card/95 shadow-md shadow-black/5 dark:shadow-black/25"
+                    :class="[
+                        'flex max-w-[88%] flex-col gap-1 sm:max-w-[75%]',
+                        message.is_own ? 'self-end' : 'self-start',
+                    ]"
                 >
-                    <CardContent class="space-y-3">
-                        <div class="flex items-start gap-3">
-                            <Avatar
-                                class="size-10 shrink-0 border border-primary/25"
-                            >
-                                <AvatarFallback
-                                    class="bg-primary/15 text-sm font-semibold text-primary"
-                                >
-                                    {{ avatarInitial(message) }}
-                                </AvatarFallback>
-                            </Avatar>
-
-                            <div class="min-w-0 flex-1">
-                                <p class="truncate text-sm font-semibold">
-                                    {{ message.sender.display_name }}
-                                </p>
-                                <p
-                                    v-if="message.sender.username"
-                                    class="truncate text-xs text-muted-foreground"
-                                >
-                                    @{{ message.sender.username }}
-                                </p>
-                            </div>
-
-                            <time
-                                :datetime="message.created_at"
-                                class="shrink-0 text-xs text-muted-foreground"
-                            >
-                                {{ formatDate(message.created_at) }}
-                            </time>
-                        </div>
-
-                        <p
-                            class="rounded-md border border-border bg-background/60 px-4 py-3 text-sm leading-6 whitespace-pre-wrap text-foreground dark:bg-input/20"
-                        >
-                            {{ message.body }}
-                        </p>
-                    </CardContent>
-                </Card>
+                    <p
+                        v-if="!message.is_own"
+                        class="px-1 text-xs font-medium text-muted-foreground"
+                    >
+                        {{ message.sender.display_name }}
+                    </p>
+                    <p
+                        :class="[
+                            emojiOnlyCount(message.body)
+                                ? [
+                                      'border-0 bg-transparent p-0 leading-none shadow-none',
+                                      emojiOnlySizeClass(message.body),
+                                  ]
+                                : [
+                                      'rounded-2xl border px-4 py-2.5 text-sm leading-6 [overflow-wrap:anywhere] whitespace-pre-wrap shadow-sm',
+                                      message.is_own
+                                          ? 'rounded-br-md border-primary/30 bg-[color-mix(in_oklab,var(--primary),black_12%)] px-5 py-3 text-base leading-7 text-white'
+                                          : 'rounded-bl-md border-border bg-card text-card-foreground',
+                                  ],
+                        ]"
+                    >
+                        {{ message.body }}
+                    </p>
+                    <time
+                        :datetime="message.created_at"
+                        :title="formatMessageTimestampTitle(message.created_at)"
+                        :class="[
+                            'px-1 text-[0.8125rem]',
+                            emojiOnlyCount(message.body) ? 'opacity-60' : null,
+                            message.is_own
+                                ? 'text-right text-foreground/70 dark:text-white/70'
+                                : 'text-left text-muted-foreground',
+                        ]"
+                    >
+                        {{ formatMessageTimestamp(message.created_at) }}
+                    </time>
+                </article>
             </div>
         </PageSection>
 
-        <PageSection v-if="conversation.can_send_messages">
+        <div
+            ref="conversationEnd"
+            aria-hidden="true"
+            data-test="conversation-end"
+        />
+
+        <PageSection
+            v-if="conversation.can_send_messages"
+            class="sticky bottom-0 z-20 -mx-4 mt-auto border-t border-border/70 bg-background/90 px-4 pt-3 pb-[calc(0.25rem+env(safe-area-inset-bottom))] backdrop-blur sm:mx-0 sm:rounded-xl sm:border"
+            data-test="message-composer"
+        >
             <Card
                 class="bg-card/95 shadow-md shadow-black/5 dark:shadow-black/25"
             >
@@ -377,7 +433,7 @@ defineOptions({
                                     maxlength="5000"
                                     required
                                     ref="messageInput"
-                                    class="flex min-h-28 min-w-0 flex-1 resize-none overflow-y-hidden rounded-md border border-input bg-transparent px-3 py-2 text-sm leading-6 shadow-xs transition-[color,box-shadow] outline-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-input/20"
+                                    class="flex min-h-12 min-w-0 flex-1 resize-none overflow-y-hidden rounded-md border border-input bg-transparent px-3 py-2 text-sm leading-6 shadow-xs transition-[color,box-shadow] outline-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-input/20"
                                     placeholder="Schreibe eine Nachricht …"
                                     @input="handleMessageInput"
                                     @keydown="handleMessageKeydown"
@@ -458,11 +514,5 @@ defineOptions({
                 </CardContent>
             </Card>
         </PageSection>
-
-        <div
-            ref="conversationEnd"
-            aria-hidden="true"
-            data-test="conversation-end"
-        />
     </div>
 </template>

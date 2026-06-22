@@ -2,10 +2,13 @@
 import { Head, Link } from '@inertiajs/vue3';
 import PageHeader from '@/components/PageHeader.vue';
 import PageSection from '@/components/PageSection.vue';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import ProfileAvatar from '@/components/ProfileAvatar.vue';
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+import {
+    formatMessageTimestamp,
+    formatMessageTimestampTitle,
+} from '@/lib/messageTimestamp';
 
 type Conversation = {
     conversation_id: number;
@@ -13,8 +16,14 @@ type Conversation = {
     created_at: string;
     updated_at: string;
     unread_count: number;
+    last_message: {
+        body: string;
+        created_at: string;
+        is_own: boolean;
+    } | null;
     other_participant: {
         display_name: string | null;
+        profile_photo_url: string | null;
         username: string | null;
     };
 };
@@ -33,12 +42,6 @@ const avatarInitial = (conversation: Conversation) =>
     participantLabel(conversation).charAt(0).toUpperCase();
 
 const unreadLabel = (count: number) => (count >= 100 ? '99+' : count);
-
-const formatDate = (value: string) =>
-    new Intl.DateTimeFormat('de-DE', {
-        dateStyle: 'medium',
-        timeStyle: 'short',
-    }).format(new Date(value));
 
 defineOptions({
     layout: {
@@ -67,9 +70,13 @@ defineOptions({
             <Card
                 class="bg-card/95 shadow-md shadow-black/5 dark:shadow-black/25"
             >
-                <CardContent class="text-center sm:text-left">
+                <CardContent class="space-y-2 text-center sm:text-left">
+                    <h2 class="font-medium">
+                        Du hast aktuell noch keine Nachrichten.
+                    </h2>
                     <p class="text-sm leading-6 text-muted-foreground">
-                        Du hast derzeit noch keine Unterhaltungen.
+                        Kontaktiere Mitglieder aus der Community, um
+                        Unterhaltungen zu starten.
                     </p>
                 </CardContent>
             </Card>
@@ -80,23 +87,37 @@ defineOptions({
                 <Card
                     v-for="conversation in conversations"
                     :key="conversation.conversation_id"
-                    class="bg-card/95 shadow-md shadow-black/5 dark:shadow-black/25"
+                    :class="[
+                        'overflow-hidden bg-card/95 shadow-md shadow-black/5 transition-colors hover:border-primary/35 dark:shadow-black/25',
+                        conversation.unread_count > 0
+                            ? 'border-primary/40 bg-primary/[0.04]'
+                            : null,
+                    ]"
                 >
-                    <CardContent class="space-y-4">
-                        <div class="flex items-start gap-3">
-                            <Avatar
-                                class="size-12 shrink-0 border border-primary/25"
-                            >
-                                <AvatarFallback
-                                    class="bg-primary/15 text-base font-semibold text-primary"
-                                >
-                                    {{ avatarInitial(conversation) }}
-                                </AvatarFallback>
-                            </Avatar>
+                    <Link
+                        :href="`/messages/${conversation.conversation_id}`"
+                        class="block rounded-lg outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
+                    >
+                        <CardContent class="flex items-center gap-4 p-4 sm:p-5">
+                            <ProfileAvatar
+                                :photo-url="
+                                    conversation.other_participant
+                                        .profile_photo_url
+                                "
+                                :alt="participantLabel(conversation)"
+                                :fallback="avatarInitial(conversation)"
+                                class="size-14 shrink-0"
+                                fallback-class="text-lg"
+                            />
 
-                            <div class="min-w-0 flex-1 space-y-1">
+                            <div class="min-w-0 flex-1 space-y-1.5">
                                 <h2
-                                    class="truncate text-base font-semibold tracking-tight"
+                                    :class="[
+                                        'truncate text-base tracking-tight',
+                                        conversation.unread_count > 0
+                                            ? 'font-bold text-foreground'
+                                            : 'font-semibold',
+                                    ]"
                                 >
                                     {{ participantLabel(conversation) }}
                                 </h2>
@@ -110,9 +131,54 @@ defineOptions({
                                         conversation.other_participant.username
                                     }}
                                 </p>
+                                <p
+                                    v-if="conversation.last_message"
+                                    :class="[
+                                        'truncate text-sm',
+                                        conversation.unread_count > 0
+                                            ? 'font-medium text-foreground'
+                                            : 'text-muted-foreground',
+                                    ]"
+                                >
+                                    <span
+                                        v-if="conversation.last_message.is_own"
+                                        >Du:
+                                    </span>
+                                    {{ conversation.last_message.body }}
+                                </p>
+                                <p
+                                    v-else
+                                    class="text-sm text-muted-foreground italic"
+                                >
+                                    Noch keine Nachrichten
+                                </p>
                             </div>
 
-                            <div class="flex shrink-0 items-center gap-2">
+                            <div
+                                class="flex shrink-0 flex-col items-end gap-2 self-start"
+                            >
+                                <time
+                                    :datetime="
+                                        conversation.last_message?.created_at ??
+                                        conversation.updated_at
+                                    "
+                                    :title="
+                                        formatMessageTimestampTitle(
+                                            conversation.last_message
+                                                ?.created_at ??
+                                                conversation.updated_at,
+                                        )
+                                    "
+                                    class="text-xs text-muted-foreground"
+                                >
+                                    {{
+                                        formatMessageTimestamp(
+                                            conversation.last_message
+                                                ?.created_at ??
+                                                conversation.updated_at,
+                                        )
+                                    }}
+                                </time>
                                 <Badge
                                     v-if="conversation.unread_count > 0"
                                     class="min-w-7 px-2 py-1 text-sm font-semibold"
@@ -121,39 +187,9 @@ defineOptions({
                                 >
                                     {{ unreadLabel(conversation.unread_count) }}
                                 </Badge>
-
-                                <time
-                                    :datetime="conversation.updated_at"
-                                    class="text-xs text-muted-foreground"
-                                >
-                                    {{ formatDate(conversation.updated_at) }}
-                                </time>
                             </div>
-                        </div>
-
-                        <div
-                            class="flex flex-wrap items-center gap-2 text-xs text-muted-foreground"
-                        >
-                            <span
-                                class="rounded-full border border-border bg-background/70 px-3 py-1 dark:bg-input/30"
-                            >
-                                Teilnehmer:
-                                {{ conversation.participant_count }}
-                            </span>
-                            <span>
-                                Letzte Aktivität:
-                                {{ formatDate(conversation.updated_at) }}
-                            </span>
-                        </div>
-
-                        <Button as-child variant="secondary" class="w-full">
-                            <Link
-                                :href="`/messages/${conversation.conversation_id}`"
-                            >
-                                Unterhaltung öffnen
-                            </Link>
-                        </Button>
-                    </CardContent>
+                        </CardContent>
+                    </Link>
                 </Card>
             </div>
         </PageSection>

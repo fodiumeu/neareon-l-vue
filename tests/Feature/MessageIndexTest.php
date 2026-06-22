@@ -48,10 +48,56 @@ test('users only see conversations they participate in', function () {
             ->where('conversations.0.conversation_id', $visibleConversation->id)
             ->where('conversations.0.other_participant.display_name', 'Visible Participant')
             ->where('conversations.0.other_participant.username', 'visible_participant')
+            ->where('conversations.0.other_participant.profile_photo_url', null)
             ->where('conversations.0.participant_count', 2)
             ->where('conversations.0.unread_count', 0)
+            ->where('conversations.0.last_message', null)
             ->has('conversations.0.created_at')
             ->has('conversations.0.updated_at'),
+        );
+});
+
+test('conversation list provides the latest message preview and participant photo', function () {
+    $viewer = User::factory()->create();
+    createOnboardedProfile($viewer);
+    $otherUser = User::factory()->create();
+    Profile::factory()->for($otherUser)->create([
+        'display_name' => 'Preview Participant',
+        'username' => 'preview_participant',
+        'profile_photo_path' => 'profile-photos/preview.webp',
+    ]);
+    $conversation = Conversation::factory()->create();
+    addConversationParticipant($conversation, $viewer);
+    addConversationParticipant($conversation, $otherUser);
+    Message::factory()
+        ->for($conversation)
+        ->for($otherUser, 'sender')
+        ->create([
+            'body' => 'Ältere Nachricht',
+            'created_at' => now()->subMinute(),
+        ]);
+    $latestMessage = Message::factory()
+        ->for($conversation)
+        ->for($viewer, 'sender')
+        ->create([
+            'body' => 'Neueste Vorschau',
+            'created_at' => now(),
+        ]);
+
+    $this->actingAs($viewer)
+        ->get(route('messages.index'))
+        ->assertOk()
+        ->assertInertia(fn (Assert $page) => $page
+            ->where(
+                'conversations.0.other_participant.profile_photo_url',
+                '/storage/profile-photos/preview.webp',
+            )
+            ->where('conversations.0.last_message.body', 'Neueste Vorschau')
+            ->where(
+                'conversations.0.last_message.created_at',
+                $latestMessage->created_at->toIso8601String(),
+            )
+            ->where('conversations.0.last_message.is_own', true),
         );
 });
 

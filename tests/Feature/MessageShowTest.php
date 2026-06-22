@@ -27,6 +27,7 @@ test('a participant can open a conversation and sees the other participant', fun
     Profile::factory()->for($otherUser)->create([
         'display_name' => 'Other Participant',
         'username' => 'other_participant',
+        'profile_photo_path' => 'profile-photos/other.webp',
     ]);
     $conversation = Conversation::factory()->create();
     participateInConversation($conversation, $viewer);
@@ -39,7 +40,11 @@ test('a participant can open a conversation and sees the other participant', fun
             ->component('Messages/Show')
             ->where('conversation.conversation_id', $conversation->id)
             ->where('conversation.other_participant.display_name', 'Other Participant')
-            ->where('conversation.other_participant.username', 'other_participant'),
+            ->where('conversation.other_participant.username', 'other_participant')
+            ->where(
+                'conversation.other_participant.profile_photo_url',
+                '/storage/profile-photos/other.webp',
+            ),
         );
 });
 
@@ -186,9 +191,11 @@ test('conversation messages are loaded oldest first with sender data', function 
             ->where('conversation.messages.0.body', 'Ältere Nachricht')
             ->where('conversation.messages.0.sender.display_name', 'Sending Participant')
             ->where('conversation.messages.0.sender.username', 'sending_participant')
+            ->where('conversation.messages.0.is_own', false)
             ->where('conversation.messages.1.id', $newerMessage->id)
             ->where('conversation.messages.1.body', 'Neuere Nachricht')
-            ->where('conversation.messages.1.sender.display_name', 'Viewing Participant'),
+            ->where('conversation.messages.1.sender.display_name', 'Viewing Participant')
+            ->where('conversation.messages.1.is_own', true),
         );
 });
 

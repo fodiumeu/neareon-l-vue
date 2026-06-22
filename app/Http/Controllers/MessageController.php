@@ -36,7 +36,14 @@ class MessageController extends Controller
             ->with([
                 'participants:id,conversation_id,user_id',
                 'participants.user:id,name',
-                'participants.user.profile:user_id,display_name,username',
+                'participants.user.profile:user_id,display_name,username,profile_photo_path',
+                'latestMessage' => fn ($query) => $query->select([
+                    'messages.id',
+                    'messages.conversation_id',
+                    'messages.sender_id',
+                    'messages.body',
+                    'messages.created_at',
+                ]),
             ])
             ->orderByDesc('conversations.updated_at')
             ->get();
@@ -56,10 +63,22 @@ class MessageController extends Controller
                     'created_at' => $conversation->created_at->toIso8601String(),
                     'updated_at' => $conversation->updated_at->toIso8601String(),
                     'unread_count' => $unreadCounts[$conversation->id],
+                    'last_message' => $conversation->latestMessage === null
+                        ? null
+                        : [
+                            'body' => $conversation->latestMessage->body,
+                            'created_at' => $conversation->latestMessage
+                                ->created_at
+                                ->toIso8601String(),
+                            'is_own' => $conversation->latestMessage
+                                ->sender_id === $viewer->id,
+                        ],
                     'other_participant' => [
                         'display_name' => $otherUser?->profile?->display_name
                             ?? $otherUser?->name,
                         'username' => $otherUser?->profile?->username,
+                        'profile_photo_url' => $otherUser?->profile
+                            ?->profilePhotoUrl(),
                     ],
                 ];
             });
@@ -88,7 +107,7 @@ class MessageController extends Controller
         $conversation->load([
             'participants:id,conversation_id,user_id',
             'participants.user:id,name',
-            'participants.user.profile:user_id,display_name,username,message_permission',
+            'participants.user.profile:user_id,display_name,username,message_permission,profile_photo_path',
             'messages' => fn ($query) => $query
                 ->select([
                     'id',
@@ -124,12 +143,15 @@ class MessageController extends Controller
                     'display_name' => $otherUser?->profile?->display_name
                         ?? $otherUser?->name,
                     'username' => $otherUser?->profile?->username,
+                    'profile_photo_url' => $otherUser?->profile
+                        ?->profilePhotoUrl(),
                 ],
                 'messages' => $conversation->messages
                     ->map(fn ($message): array => [
                         'id' => $message->id,
                         'body' => $message->body,
                         'created_at' => $message->created_at->toIso8601String(),
+                        'is_own' => $message->sender_id === $viewer->id,
                         'sender' => [
                             'display_name' => $message->sender->profile?->display_name
                                 ?? $message->sender->name,
