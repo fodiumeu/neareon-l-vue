@@ -1,15 +1,32 @@
 <script setup lang="ts">
 import { Form, Head } from '@inertiajs/vue3';
+import { ShieldCheck } from 'lucide-vue-next';
+import { ref } from 'vue';
 import PageHeader from '@/components/PageHeader.vue';
 import PageSection from '@/components/PageSection.vue';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import ProfileAvatar from '@/components/ProfileAvatar.vue';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+import {
+    Dialog,
+    DialogClose,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from '@/components/ui/dialog';
 import { Spinner } from '@/components/ui/spinner';
+import {
+    formatContactRelativeTime,
+    formatContactRelativeTimeTitle,
+} from '@/lib/contactRelativeTime';
 
 type BlockedProfile = {
     blocked_at: string;
     display_name: string;
+    profile_photo_url: string | null;
     username: string;
 };
 
@@ -17,14 +34,14 @@ defineProps<{
     blockedProfiles: BlockedProfile[];
 }>();
 
+const unblockingUsername = ref<string | null>(null);
+
+const setUnblockDialogOpen = (username: string, open: boolean) => {
+    unblockingUsername.value = open ? username : null;
+};
+
 const avatarInitial = (profile: BlockedProfile) =>
     profile.display_name.charAt(0).toUpperCase();
-
-const formatDate = (value: string) =>
-    new Intl.DateTimeFormat('de-DE', {
-        dateStyle: 'medium',
-        timeStyle: 'short',
-    }).format(new Date(value));
 
 defineOptions({
     layout: {
@@ -42,7 +59,7 @@ defineOptions({
     <Head title="Blockierte Profile" />
 
     <div
-        class="mx-auto flex h-full w-full max-w-4xl flex-1 flex-col gap-6 overflow-x-auto p-4 sm:p-6"
+        class="mx-auto flex h-full w-full max-w-5xl flex-1 flex-col gap-6 overflow-x-hidden p-4 sm:p-6"
     >
         <PageHeader
             title="Blockierte Profile"
@@ -51,12 +68,26 @@ defineOptions({
 
         <PageSection v-if="blockedProfiles.length === 0">
             <Card
-                class="bg-card/95 shadow-md shadow-black/5 dark:shadow-black/25"
+                class="border-border/80 bg-card/95 shadow-md shadow-black/5 dark:shadow-black/25"
             >
-                <CardContent class="text-center sm:text-left">
-                    <p class="text-sm leading-6 text-muted-foreground">
-                        Du hast derzeit keine Profile blockiert.
-                    </p>
+                <CardContent
+                    class="flex flex-col items-center gap-4 px-6 py-10 text-center"
+                >
+                    <div
+                        class="flex size-12 items-center justify-center rounded-full border border-primary/25 bg-primary/10 text-primary"
+                    >
+                        <ShieldCheck class="size-6" aria-hidden="true" />
+                    </div>
+                    <div class="max-w-md space-y-1.5">
+                        <h2 class="font-semibold tracking-tight">
+                            Keine blockierten Profile
+                        </h2>
+                        <p class="text-sm leading-6 text-muted-foreground">
+                            Du hast derzeit keine Profile blockiert. Wenn du
+                            jemanden blockierst, kannst du die Blockierung hier
+                            später wieder aufheben.
+                        </p>
+                    </div>
                 </CardContent>
             </Card>
         </PageSection>
@@ -66,19 +97,17 @@ defineOptions({
                 <Card
                     v-for="profile in blockedProfiles"
                     :key="profile.username"
-                    class="bg-card/95 shadow-md shadow-black/5 dark:shadow-black/25"
+                    class="h-full border-border/80 bg-card/95 shadow-md shadow-black/5 transition-[border-color,box-shadow,transform] duration-200 motion-reduce:transition-none md:hover:-translate-y-0.5 md:hover:border-primary/35 md:hover:shadow-lg md:hover:shadow-primary/10 dark:shadow-black/25"
                 >
-                    <CardContent class="flex h-full flex-col gap-4">
-                        <div class="flex min-w-0 items-center gap-3">
-                            <Avatar
-                                class="size-12 shrink-0 border border-primary/25"
-                            >
-                                <AvatarFallback
-                                    class="bg-primary/15 text-base font-semibold text-primary"
-                                >
-                                    {{ avatarInitial(profile) }}
-                                </AvatarFallback>
-                            </Avatar>
+                    <CardContent class="flex h-full flex-col gap-3 p-5">
+                        <div class="flex min-w-0 items-start gap-4">
+                            <ProfileAvatar
+                                :photo-url="profile.profile_photo_url"
+                                :alt="profile.display_name"
+                                :fallback="avatarInitial(profile)"
+                                class="size-16 shrink-0 shadow-sm"
+                                fallback-class="text-xl"
+                            />
 
                             <div class="min-w-0 flex-1 space-y-1">
                                 <h2
@@ -94,27 +123,93 @@ defineOptions({
                             </div>
                         </div>
 
-                        <p class="text-xs text-muted-foreground">
-                            Blockiert am {{ formatDate(profile.blocked_at) }}
-                        </p>
-
-                        <Form
-                            :action="`/u/${profile.username}/block`"
-                            method="delete"
-                            :options="{ preserveScroll: true }"
-                            v-slot="{ processing }"
-                            class="mt-auto"
-                        >
-                            <Button
-                                type="submit"
+                        <div class="flex flex-wrap items-center gap-3">
+                            <Badge
                                 variant="secondary"
-                                :disabled="processing"
-                                class="w-full"
+                                class="border border-destructive/30 bg-destructive/10 text-destructive dark:bg-destructive/15"
                             >
-                                <Spinner v-if="processing" />
+                                Blockiert
+                            </Badge>
+                            <p class="text-xs text-muted-foreground">
+                                Blockiert:
+                                <time
+                                    :datetime="profile.blocked_at"
+                                    :title="
+                                        formatContactRelativeTimeTitle(
+                                            profile.blocked_at,
+                                        )
+                                    "
+                                >
+                                    {{
+                                        formatContactRelativeTime(
+                                            profile.blocked_at,
+                                        )
+                                    }}
+                                </time>
+                            </p>
+                        </div>
+
+                        <div class="mt-auto pt-1">
+                            <Button
+                                type="button"
+                                variant="secondary"
+                                class="w-full"
+                                @click="unblockingUsername = profile.username"
+                            >
                                 Blockierung aufheben
                             </Button>
-                        </Form>
+                        </div>
+
+                        <Dialog
+                            :open="unblockingUsername === profile.username"
+                            @update:open="
+                                setUnblockDialogOpen(profile.username, $event)
+                            "
+                        >
+                            <DialogContent>
+                                <Form
+                                    :action="`/u/${profile.username}/block`"
+                                    method="delete"
+                                    :options="{ preserveScroll: true }"
+                                    v-slot="{ processing }"
+                                    class="space-y-6"
+                                    @success="unblockingUsername = null"
+                                >
+                                    <DialogHeader class="space-y-3">
+                                        <DialogTitle>
+                                            Blockierung aufheben?
+                                        </DialogTitle>
+                                        <DialogDescription>
+                                            Die Blockierung von
+                                            {{ profile.display_name }} wird
+                                            entfernt. Ob anschließend
+                                            Interaktionen möglich sind, richtet
+                                            sich nach euren Profileinstellungen.
+                                        </DialogDescription>
+                                    </DialogHeader>
+
+                                    <DialogFooter class="gap-2">
+                                        <DialogClose as-child>
+                                            <Button
+                                                type="button"
+                                                variant="secondary"
+                                                :disabled="processing"
+                                            >
+                                                Abbrechen
+                                            </Button>
+                                        </DialogClose>
+                                        <Button
+                                            type="submit"
+                                            variant="destructive"
+                                            :disabled="processing"
+                                        >
+                                            <Spinner v-if="processing" />
+                                            Blockierung aufheben
+                                        </Button>
+                                    </DialogFooter>
+                                </Form>
+                            </DialogContent>
+                        </Dialog>
                     </CardContent>
                 </Card>
             </div>

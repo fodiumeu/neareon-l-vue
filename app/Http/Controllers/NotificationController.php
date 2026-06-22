@@ -2,7 +2,9 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\ContactRequestStatus;
 use App\Enums\InternalNotificationType;
+use App\Models\ContactRequest;
 use App\Models\ConversationParticipant;
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;
@@ -21,6 +23,10 @@ class NotificationController extends Controller
             ->latest()
             ->get();
         $this->hydrateLegacyMessageActorIds(
+            $notifications,
+            $request->user(),
+        );
+        $this->hydrateLegacyAcceptedContactRequestActorIds(
             $notifications,
             $request->user(),
         );
@@ -229,6 +235,83 @@ class NotificationController extends Controller
         }
 
         return null;
+    }
+
+    /**
+     * Older accepted contact request notifications did not store an actor id.
+     * Resolve an actor only when the stored name and request history identify
+     * exactly one receiver, without modifying the stored notification.
+     *
+     * @param  Collection<int, DatabaseNotification>  $notifications
+     */
+    private function hydrateLegacyAcceptedContactRequestActorIds(
+        Collection $notifications,
+        User $viewer,
+    ): void {
+        $legacyNotifications = $notifications
+            ->filter(fn (DatabaseNotification $notification): bool => (
+                $notification->data['type'] ?? null
+            ) === InternalNotificationType::ContactRequestAccepted->value
+                && empty($notification->data['actor_id']));
+        $actorNames = $legacyNotifications
+            ->map(fn (DatabaseNotification $notification): ?string => $this
+                ->actorName(
+                    (string) ($notification->data['message'] ?? ''),
+                    ' hat deine Kontaktanfrage angenommen.',
+                ))
+            ->filter()
+            ->unique()
+            ->values();
+
+        if ($actorNames->isEmpty()) {
+            return;
+        }
+
+        $actorIdsByName = ContactRequest::query()
+            ->where('sender_id', $viewer->id)
+            ->whereIn('status', [
+                ContactRequestStatus::Accepted->value,
+                ContactRequestStatus::Closed->value,
+            ])
+            ->with([
+                'receiver:id,name',
+                'receiver.profile:user_id,display_name',
+            ])
+            ->get(['id', 'receiver_id'])
+            ->map(fn (ContactRequest $contactRequest): array => [
+                'actor_id' => $contactRequest->receiver_id,
+                'actor_name' => $this->displayName($contactRequest->receiver),
+            ])
+            ->filter(fn (array $actor): bool => $actorNames
+                ->contains($actor['actor_name']))
+            ->groupBy('actor_name')
+            ->map(fn (Collection $actors): ?int => $actors
+                ->pluck('actor_id')
+                ->unique()
+                ->count() === 1
+                    ? (int) $actors->first()['actor_id']
+                    : null)
+            ->filter();
+
+        $legacyNotifications->each(function (
+            DatabaseNotification $notification,
+        ) use ($actorIdsByName): void {
+            $actorName = $this->actorName(
+                (string) ($notification->data['message'] ?? ''),
+                ' hat deine Kontaktanfrage angenommen.',
+            );
+            $actorId = $actorName === null
+                ? null
+                : $actorIdsByName->get($actorName);
+
+            if ($actorId === null) {
+                return;
+            }
+
+            $data = $notification->data;
+            $data['actor_id'] = $actorId;
+            $notification->setAttribute('data', $data);
+        });
     }
 
     /**

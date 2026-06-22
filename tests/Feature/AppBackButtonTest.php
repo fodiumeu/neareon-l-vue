@@ -76,6 +76,7 @@ test('natural app entry pages do not render the back button', function (
     'contacts' => 'Contacts/Index.vue',
     'received contact requests' => 'ContactRequests/Index.vue',
     'sent contact requests' => 'ContactRequests/Sent.vue',
+    'blocked profiles' => 'BlockedProfiles/Index.vue',
     'messages' => 'Messages/Index.vue',
     'notifications' => 'Notifications/Index.vue',
 ]);

@@ -338,6 +338,117 @@ test('legacy message notification resolves the sender photo from its conversatio
         );
 });
 
+test('legacy accepted contact request notification resolves the actor photo without persisting an actor id', function () {
+    [$sender, $receiver] = notificationUsers();
+    $receiver->profile->update([
+        'profile_photo_path' => 'profile-photos/legacy-contact.webp',
+    ]);
+    ContactRequest::factory()
+        ->for($sender, 'sender')
+        ->for($receiver, 'receiver')
+        ->create([
+            'status' => 'accepted',
+            'responded_at' => now(),
+        ]);
+    $sender->notify(new InternalNotification(
+        InternalNotificationType::ContactRequestAccepted,
+        'Kontaktanfrage angenommen',
+        'Recipient User hat deine Kontaktanfrage angenommen.',
+        '/contact-requests/sent',
+    ));
+    $notification = $sender->notifications()->sole();
+    $data = $notification->data;
+    unset($data['actor_id'], $data['conversation_id']);
+    $notification->forceFill(['data' => $data])->save();
+
+    $this->actingAs($sender)
+        ->get(route('notifications.index'))
+        ->assertInertia(fn (Assert $page) => $page
+            ->where('notificationItems.0.actor.display_name', 'Recipient User')
+            ->where(
+                'notificationItems.0.actor.profile_photo_url',
+                '/storage/profile-photos/legacy-contact.webp',
+            ),
+        );
+
+    expect($notification->fresh()->data)->not->toHaveKey('actor_id');
+});
+
+test('accepted contact request notification with an actor id keeps the existing actor resolution', function () {
+    [$sender, $receiver] = notificationUsers();
+    $receiver->profile->update([
+        'profile_photo_path' => 'profile-photos/current-contact.webp',
+    ]);
+    $sender->notify(new InternalNotification(
+        InternalNotificationType::ContactRequestAccepted,
+        'Kontaktanfrage angenommen',
+        'Recipient User hat deine Kontaktanfrage angenommen.',
+        '/contact-requests/sent',
+        $receiver->id,
+    ));
+
+    $this->actingAs($sender)
+        ->get(route('notifications.index'))
+        ->assertInertia(fn (Assert $page) => $page
+            ->where('notificationItems.0.actor.display_name', 'Recipient User')
+            ->where(
+                'notificationItems.0.actor.profile_photo_url',
+                '/storage/profile-photos/current-contact.webp',
+            ),
+        );
+
+    expect($sender->notifications()->sole()->data['actor_id'])
+        ->toBe($receiver->id);
+});
+
+test('legacy accepted contact request notification keeps the generic avatar when the actor is not uniquely resolvable', function (
+    string $case,
+) {
+    $sender = User::factory()->create();
+    createOnboardedProfile($sender);
+    $actorName = 'Mehrdeutiger Kontakt';
+
+    if ($case === 'ambiguous') {
+        foreach (range(1, 2) as $index) {
+            $receiver = User::factory()->create();
+            createOnboardedProfile($receiver, [
+                'display_name' => $actorName,
+                'username' => "ambiguous_contact_{$index}",
+            ]);
+            ContactRequest::factory()
+                ->for($sender, 'sender')
+                ->for($receiver, 'receiver')
+                ->create([
+                    'status' => 'accepted',
+                    'responded_at' => now(),
+                ]);
+        }
+    }
+
+    $sender->notify(new InternalNotification(
+        InternalNotificationType::ContactRequestAccepted,
+        'Kontaktanfrage angenommen',
+        "{$actorName} hat deine Kontaktanfrage angenommen.",
+        '/contact-requests/sent',
+    ));
+    $notification = $sender->notifications()->sole();
+    $data = $notification->data;
+    unset($data['actor_id'], $data['conversation_id']);
+    $notification->forceFill(['data' => $data])->save();
+
+    $this->actingAs($sender)
+        ->get(route('notifications.index'))
+        ->assertInertia(fn (Assert $page) => $page
+            ->where('notificationItems.0.title', $actorName)
+            ->where('notificationItems.0.actor', null),
+        );
+
+    expect($notification->fresh()->data)->not->toHaveKey('actor_id');
+})->with([
+    'ambiguous actor' => ['ambiguous'],
+    'missing actor' => ['missing'],
+]);
+
 test('five message notifications from one sender are presented as one group', function () {
     [$sender, $receiver] = notificationUsers();
 

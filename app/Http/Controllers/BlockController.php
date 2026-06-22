@@ -24,7 +24,7 @@ class BlockController extends Controller
             ->blockingRelationships()
             ->with([
                 'blocked:id,name',
-                'blocked.profile:user_id,username,display_name',
+                'blocked.profile:user_id,username,display_name,profile_photo_path',
             ])
             ->latest()
             ->get()
@@ -32,6 +32,7 @@ class BlockController extends Controller
                 'display_name' => $block->blocked->profile?->display_name
                     ?? $block->blocked->name,
                 'username' => $block->blocked->profile?->username,
+                'profile_photo_url' => $block->blocked->profile?->profilePhotoUrl(),
                 'blocked_at' => $block->created_at->toIso8601String(),
             ])
             ->filter(fn (array $profile): bool => $profile['username'] !== null)

@@ -6,6 +6,8 @@ use App\Enums\ProfileVisibility;
 use App\Models\Block;
 use App\Models\Follow;
 use App\Models\User;
+use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Storage;
 use Inertia\Testing\AssertableInertia as Assert;
 
 test('follow disabled state is provided to profile and discover views', function (
@@ -116,12 +118,16 @@ test('contact action UI renders disabled privacy states', function () {
 });
 
 test('blocked profiles page lists profiles blocked by the current user', function () {
+    Storage::fake('public');
+
     $viewer = User::factory()->create();
     createOnboardedProfile($viewer);
     $blockedUser = User::factory()->create();
+    $photoPath = 'profile-photos/blocked-profile.jpg';
     $blockedProfile = createOnboardedProfile($blockedUser, [
         'username' => 'listed_blocked_profile',
         'display_name' => 'Blockiertes Profil',
+        'profile_photo_path' => $photoPath,
     ]);
     $block = Block::factory()
         ->for($viewer, 'blocker')
@@ -137,9 +143,40 @@ test('blocked profiles page lists profiles blocked by the current user', functio
             ->where('blockedProfiles.0.display_name', 'Blockiertes Profil')
             ->where('blockedProfiles.0.username', $blockedProfile->username)
             ->where(
+                'blockedProfiles.0.profile_photo_url',
+                "/storage/{$photoPath}",
+            )
+            ->where(
                 'blockedProfiles.0.blocked_at',
                 $block->created_at->toIso8601String(),
             ),
+        );
+});
+
+test('blocked profiles are sorted newest first', function () {
+    $viewer = User::factory()->create();
+    createOnboardedProfile($viewer);
+    $olderUser = User::factory()->create();
+    createOnboardedProfile($olderUser, ['username' => 'older_blocked']);
+    $newerUser = User::factory()->create();
+    createOnboardedProfile($newerUser, ['username' => 'newer_blocked']);
+
+    Block::factory()
+        ->for($viewer, 'blocker')
+        ->for($olderUser, 'blocked')
+        ->create(['created_at' => now()->subHour()]);
+    Block::factory()
+        ->for($viewer, 'blocker')
+        ->for($newerUser, 'blocked')
+        ->create(['created_at' => now()]);
+
+    $this->actingAs($viewer)
+        ->get(route('blocked-profiles.index'))
+        ->assertOk()
+        ->assertInertia(fn (Assert $page) => $page
+            ->has('blockedProfiles', 2)
+            ->where('blockedProfiles.0.username', 'newer_blocked')
+            ->where('blockedProfiles.1.username', 'older_blocked'),
         );
 });
 
@@ -167,6 +204,48 @@ test('a user can unblock a profile from the blocked profiles page', function () 
         ->assertInertia(fn (Assert $page) => $page
             ->has('blockedProfiles', 0),
         );
+});
+
+test('blocked profiles page uses the shared polished card ux and confirmation dialog', function () {
+    $page = file_get_contents(
+        resource_path('js/pages/BlockedProfiles/Index.vue'),
+    );
+
+    expect($page)
+        ->toContain('class="size-16 shrink-0 shadow-sm"')
+        ->toContain('profile.profile_photo_url')
+        ->toContain('formatContactRelativeTime(')
+        ->toContain('formatContactRelativeTimeTitle(')
+        ->toContain('md:hover:border-primary/35')
+        ->toContain('motion-reduce:transition-none')
+        ->toContain('overflow-x-hidden')
+        ->toContain('Blockierung aufheben?')
+        ->toContain('euren Profileinstellungen')
+        ->toContain('Abbrechen')
+        ->toContain('Keine blockierten Profile')
+        ->toContain('ShieldCheck');
+});
+
+test('the blocked profiles index uses the required middleware', function () {
+    $middleware = Route::getRoutes()
+        ->getByName('blocked-profiles.index')
+        ->gatherMiddleware();
+
+    expect($middleware)->toContain(
+        'web',
+        'auth',
+        'age.gate',
+        'verified',
+        'onboarding.complete',
+    );
+});
+
+test('onboarding middleware protects the blocked profiles index', function () {
+    $user = User::factory()->create();
+
+    $this->actingAs($user)
+        ->get(route('blocked-profiles.index'))
+        ->assertRedirect(route('onboarding.details'));
 });
 
 test('blocked profiles navigation entry is placed before messages without a badge', function () {
