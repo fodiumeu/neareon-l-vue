@@ -8,6 +8,16 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Spinner } from '@/components/ui/spinner';
+import {
+    formatContactRelativeTime,
+    formatContactRelativeTimeTitle,
+} from '@/lib/contactRelativeTime';
+
+type NotificationActor = {
+    display_name: string;
+    profile_photo_url: string | null;
+    initials: string;
+};
 
 type InternalNotification = {
     id: string;
@@ -21,14 +31,11 @@ type InternalNotification = {
     is_message_group: boolean;
     is_activity_group: boolean;
     actors: string[];
+    actor_previews: NotificationActor[];
     visual_kind: 'actor' | 'contact-requests' | 'followers' | 'message';
-    cta_label: string;
-    actor: {
-        display_name: string;
-        profile_photo_url: string | null;
-        initials: string;
-    } | null;
-    open_url: string;
+    cta_label: string | null;
+    actor: NotificationActor | null;
+    open_url: string | null;
 };
 
 const props = defineProps<{
@@ -40,47 +47,11 @@ const hasUnreadNotifications = () =>
         (notification) => notification.read_at === null,
     );
 
-const startOfDay = (date: Date) =>
-    new Date(date.getFullYear(), date.getMonth(), date.getDate());
-
-const formatNotificationDate = (value: string) => {
-    const date = new Date(value);
-    const today = startOfDay(new Date());
-    const notificationDay = startOfDay(date);
-    const startOfWeek = new Date(today);
-    const dayOfWeek = startOfWeek.getDay();
-    startOfWeek.setDate(
-        startOfWeek.getDate() - (dayOfWeek === 0 ? 6 : dayOfWeek - 1),
-    );
-    const differenceInDays = Math.round(
-        (today.getTime() - notificationDay.getTime()) / 86_400_000,
-    );
-
-    if (differenceInDays === 0) {
-        return new Intl.DateTimeFormat('de-DE', {
-            hour: '2-digit',
-            minute: '2-digit',
-        }).format(date);
-    }
-
-    if (differenceInDays === 1) {
-        return 'Gestern';
-    }
-
-    if (notificationDay >= startOfWeek) {
-        return new Intl.DateTimeFormat('de-DE', {
-            weekday: 'long',
-        }).format(date);
-    }
-
-    return new Intl.DateTimeFormat('de-DE', {
-        day: '2-digit',
-        month: '2-digit',
-        year: 'numeric',
-    }).format(date);
-};
-
 const openNotification = (notification: InternalNotification) => {
+    if (!notification.open_url) {
+        return;
+    }
+
     router.visit(notification.open_url);
 };
 
@@ -100,7 +71,7 @@ defineOptions({
     <Head title="Benachrichtigungen" />
 
     <div
-        class="mx-auto flex h-full w-full max-w-4xl flex-1 flex-col gap-6 overflow-x-hidden p-4 sm:p-6"
+        class="mx-auto flex h-full w-full max-w-5xl flex-1 flex-col gap-6 overflow-x-hidden p-4 sm:p-6"
     >
         <PageHeader
             title="Benachrichtigungen"
@@ -112,14 +83,23 @@ defineOptions({
                 action="/notifications/read-all"
                 method="patch"
                 v-slot="{ processing }"
+                class="w-full sm:w-auto"
             >
                 <Button
                     type="submit"
                     variant="secondary"
                     :disabled="processing"
+                    :aria-busy="processing"
+                    class="w-full sm:w-auto"
                 >
                     <Spinner v-if="processing" />
-                    Alle als gelesen markieren
+                    <span aria-live="polite">
+                        {{
+                            processing
+                                ? 'Wird als gelesen markiert …'
+                                : 'Alle als gelesen markieren'
+                        }}
+                    </span>
                 </Button>
             </Form>
         </div>
@@ -139,26 +119,58 @@ defineOptions({
 
         <PageSection v-else>
             <div class="space-y-3">
-                <Link
+                <component
+                    :is="notification.open_url ? Link : 'div'"
                     v-for="notification in notificationItems"
                     :key="notification.id"
-                    :href="notification.open_url"
-                    class="group block rounded-xl outline-none focus-visible:ring-[3px] focus-visible:ring-ring/60"
-                    :aria-label="`${notification.title}: ${notification.cta_label}`"
+                    :href="notification.open_url ?? undefined"
+                    class="block rounded-xl"
+                    :class="{
+                        'group outline-none focus-visible:ring-[3px] focus-visible:ring-ring/60':
+                            notification.open_url,
+                    }"
+                    :aria-label="
+                        notification.cta_label
+                            ? `${notification.title}: ${notification.cta_label}`
+                            : undefined
+                    "
                     @keydown.space.prevent="openNotification(notification)"
                 >
                     <Card
-                        class="transition-[border-color,box-shadow,transform,background-color] duration-200 motion-reduce:transition-none md:group-hover:-translate-y-0.5 md:group-hover:border-primary/50 md:group-hover:shadow-lg md:group-hover:shadow-primary/10"
-                        :class="
+                        class="transition-[border-color,box-shadow,transform,background-color] duration-200 motion-reduce:transition-none"
+                        :class="[
                             notification.read_at === null
                                 ? 'border-primary/60 bg-primary/10 shadow-sm shadow-primary/10'
-                                : 'border-border/70 bg-card/80'
-                        "
+                                : 'border-border/70 bg-card/80',
+                            notification.open_url
+                                ? 'md:group-hover:-translate-y-0.5 md:group-hover:border-primary/50 md:group-hover:shadow-lg md:group-hover:shadow-primary/10'
+                                : '',
+                        ]"
                     >
-                        <CardContent class="min-h-28 space-y-4">
+                        <CardContent class="space-y-3 p-4 sm:p-5">
                             <div class="flex min-w-0 gap-3 sm:gap-4">
                                 <div
                                     v-if="
+                                        notification.visual_kind ===
+                                            'followers' &&
+                                        notification.actor_previews.length > 0
+                                    "
+                                    class="flex shrink-0 -space-x-3 py-1"
+                                    :aria-label="`${notification.actor_previews.length} aktuelle Follower`"
+                                >
+                                    <ProfileAvatar
+                                        v-for="(
+                                            actor, index
+                                        ) in notification.actor_previews"
+                                        :key="`${actor.display_name}-${index}`"
+                                        :photo-url="actor.profile_photo_url"
+                                        :alt="actor.display_name"
+                                        :fallback="actor.initials"
+                                        class="size-10 border-2 border-card shadow-sm sm:size-12"
+                                    />
+                                </div>
+                                <div
+                                    v-else-if="
                                         notification.visual_kind === 'followers'
                                     "
                                     class="flex size-12 shrink-0 items-center justify-center rounded-full border border-primary/35 bg-primary/15 text-primary sm:size-14"
@@ -206,6 +218,7 @@ defineOptions({
                                                     ? 'default'
                                                     : 'secondary'
                                             "
+                                            class="px-2.5 py-1"
                                         >
                                             {{
                                                 notification.read_at === null
@@ -238,10 +251,15 @@ defineOptions({
 
                                     <time
                                         :datetime="notification.created_at"
+                                        :title="
+                                            formatContactRelativeTimeTitle(
+                                                notification.created_at,
+                                            )
+                                        "
                                         class="block text-xs text-muted-foreground"
                                     >
                                         {{
-                                            formatNotificationDate(
+                                            formatContactRelativeTime(
                                                 notification.created_at,
                                             )
                                         }}
@@ -250,14 +268,15 @@ defineOptions({
                             </div>
 
                             <span
-                                class="inline-flex min-h-9 w-full items-center justify-center rounded-md border border-input bg-secondary px-4 py-2 text-sm font-medium text-secondary-foreground shadow-xs transition-colors group-hover:bg-secondary/80 sm:w-auto"
+                                v-if="notification.cta_label"
+                                class="inline-flex h-9 w-full items-center justify-center rounded-md border border-border/80 bg-secondary px-4 text-sm font-medium text-secondary-foreground shadow-xs transition-colors group-hover:bg-secondary/80 sm:w-auto"
                                 aria-hidden="true"
                             >
                                 {{ notification.cta_label }}
                             </span>
                         </CardContent>
                     </Card>
-                </Link>
+                </component>
             </div>
         </PageSection>
     </div>

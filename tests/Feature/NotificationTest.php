@@ -579,13 +579,70 @@ test('follower notifications are presented as one group with actors', function (
             ->where('notificationItems.0.message', '2 neue Follower')
             ->where('notificationItems.0.notification_count', 2)
             ->where('notificationItems.0.is_activity_group', true)
-            ->where('notificationItems.0.cta_label', 'Profile ansehen')
+            ->where('notificationItems.0.cta_label', null)
+            ->where('notificationItems.0.open_url', null)
             ->where('notificationItems.0.visual_kind', 'followers')
             ->where('notificationItems.0.actors', [
                 'Actor User',
                 'Second Follower',
             ])
             ->where('notificationItems.0.target_url', '/discover'),
+        );
+});
+
+test('follower notification groups expose up to three newest actor previews', function () {
+    $followed = User::factory()->create();
+    createOnboardedProfile($followed);
+    $followers = collect(range(1, 4))->map(function (int $index): User {
+        $follower = User::factory()->create();
+        createOnboardedProfile($follower, [
+            'display_name' => "Follower {$index}",
+            'profile_photo_path' => "profile-photos/follower-{$index}.webp",
+            'username' => "follower_{$index}",
+        ]);
+
+        return $follower;
+    });
+
+    $baseTime = now()->subHour();
+
+    foreach ($followers as $index => $follower) {
+        $followed->notify(new InternalNotification(
+            InternalNotificationType::NewFollower,
+            'Neuer Follower',
+            "{$follower->profile->display_name} folgt dir jetzt.",
+            "/u/{$follower->profile->username}",
+            $follower->id,
+        ));
+        $followed->notifications()
+            ->where('data->actor_id', $follower->id)
+            ->firstOrFail()
+            ->forceFill([
+                'created_at' => $baseTime->copy()->addMinutes($index),
+            ])
+            ->save();
+    }
+
+    $this->actingAs($followed)
+        ->get(route('notifications.index'))
+        ->assertInertia(fn (Assert $page) => $page
+            ->has('notificationItems.0.actor_previews', 3)
+            ->where(
+                'notificationItems.0.actor_previews.0.display_name',
+                'Follower 4',
+            )
+            ->where(
+                'notificationItems.0.actor_previews.0.profile_photo_url',
+                '/storage/profile-photos/follower-4.webp',
+            )
+            ->where(
+                'notificationItems.0.actor_previews.1.display_name',
+                'Follower 3',
+            )
+            ->where(
+                'notificationItems.0.actor_previews.2.display_name',
+                'Follower 2',
+            ),
         );
 });
 
@@ -755,29 +812,36 @@ test('notification center provides clickable accessible cards and polished ux', 
     expect($page)
         ->toContain('Noch keine Benachrichtigungen')
         ->toContain('Hier erscheinen neue Aktivitäten aus deiner Community.')
-        ->toContain("return 'Gestern'")
-        ->toContain("weekday: 'long'")
-        ->toContain("day: '2-digit'")
+        ->toContain('formatContactRelativeTime(')
+        ->toContain('formatContactRelativeTimeTitle(')
+        ->toContain(':title="')
         ->toContain('border-primary/60')
         ->toContain('<ProfileAvatar')
         ->toContain('<Users')
         ->toContain('<Handshake')
-        ->toContain('class="group block rounded-xl')
-        ->toContain(':href="notification.open_url"')
+        ->toContain(":is=\"notification.open_url ? Link : 'div'\"")
+        ->toContain(':href="notification.open_url ?? undefined"')
         ->toContain('@keydown.space.prevent="openNotification(notification)"')
         ->toContain('focus-visible:ring-[3px]')
         ->toContain('motion-reduce:transition-none')
         ->toContain('notification.cta_label')
         ->toContain('overflow-x-hidden')
-        ->toContain('Alle als gelesen markieren');
+        ->toContain('Alle als gelesen markieren')
+        ->toContain('Wird als gelesen markiert …')
+        ->toContain(':aria-busy="processing"')
+        ->toContain(':disabled="processing"')
+        ->toContain('class="px-2.5 py-1"');
 });
 
-test('follower and contact request groups keep their dedicated icons', function () {
+test('follower groups use actor previews with an icon fallback while contact request groups keep their icon', function () {
     $page = file_get_contents(
         resource_path('js/pages/Notifications/Index.vue'),
     );
 
     expect($page)
+        ->toContain('notification.actor_previews.length > 0')
+        ->toContain(') in notification.actor_previews"')
+        ->toContain(':photo-url="actor.profile_photo_url"')
         ->toContain("notification.visual_kind === 'followers'")
         ->toContain('<Users class="size-6 sm:size-7"')
         ->toContain("'contact-requests'")
@@ -785,6 +849,17 @@ test('follower and contact request groups keep their dedicated icons', function 
         ->toContain('v-else-if="notification.actor"')
         ->toContain(':photo-url="')
         ->toContain('notification.actor.profile_photo_url');
+});
+
+test('follower notification groups render without a misleading profile action', function () {
+    $page = file_get_contents(
+        resource_path('js/pages/Notifications/Index.vue'),
+    );
+
+    expect($page)
+        ->toContain('v-if="notification.cta_label"')
+        ->toContain("notification.open_url ? Link : 'div'")
+        ->toContain('notification.open_url ?? undefined');
 });
 
 test('single notification types use personal texts and contextual ctas', function (

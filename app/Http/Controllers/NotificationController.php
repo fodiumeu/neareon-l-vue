@@ -363,6 +363,9 @@ class NotificationController extends Controller
     ): array {
         /** @var DatabaseNotification $latest */
         $latest = $group->first();
+        $type = $latest->data['type'] ?? null;
+        $isFollowerGroup = $type
+            === InternalNotificationType::NewFollower->value;
 
         return [
             ...$this->notificationData($latest, $actors),
@@ -374,14 +377,21 @@ class NotificationController extends Controller
             'notification_count' => $group->count(),
             'is_activity_group' => true,
             'actor' => null,
-            'visual_kind' => match ($latest->data['type'] ?? null) {
+            'visual_kind' => match ($type) {
                 InternalNotificationType::NewFollower->value => 'followers',
                 InternalNotificationType::ContactRequestReceived->value => 'contact-requests',
                 default => 'actor',
             },
-            'cta_label' => $this->ctaLabel(
-                (string) ($latest->data['type'] ?? ''),
-            ),
+            'cta_label' => $isFollowerGroup
+                ? null
+                : $this->ctaLabel((string) $type),
+            'open_url' => $isFollowerGroup
+                ? null
+                : route(
+                    'notifications.open',
+                    $latest->id,
+                    absolute: false,
+                ),
             'actors' => $group
                 ->map(fn (DatabaseNotification $notification): ?string => $this
                     ->actorName(
@@ -390,6 +400,23 @@ class NotificationController extends Controller
                     ))
                 ->filter()
                 ->unique()
+                ->values()
+                ->all(),
+            'actor_previews' => $group
+                ->map(function (DatabaseNotification $notification) use (
+                    $actors,
+                ): ?User {
+                    $actorId = $notification->data['actor_id'] ?? null;
+
+                    return $actorId === null
+                        ? null
+                        : $actors->get((int) $actorId);
+                })
+                ->filter()
+                ->unique('id')
+                ->take(3)
+                ->map(fn (User $actor): array => $this
+                    ->actorPresentation($actor))
                 ->values()
                 ->all(),
         ];
@@ -441,6 +468,7 @@ class NotificationController extends Controller
             'is_message_group' => false,
             'is_activity_group' => false,
             'actors' => [],
+            'actor_previews' => [],
             'visual_kind' => match ($type) {
                 InternalNotificationType::NewFollower->value => 'followers',
                 InternalNotificationType::ContactRequestReceived->value => 'contact-requests',
@@ -450,15 +478,7 @@ class NotificationController extends Controller
             'cta_label' => $this->ctaLabel($type),
             'actor' => $actor === null
                 ? null
-                : [
-                    'display_name' => $this->displayName($actor),
-                    'profile_photo_url' => $actor->profile?->profilePhotoUrl(),
-                    'initials' => mb_strtoupper(mb_substr(
-                        $this->displayName($actor),
-                        0,
-                        1,
-                    )),
-                ],
+                : $this->actorPresentation($actor),
             'open_url' => route(
                 'notifications.open',
                 $notification->id,
@@ -515,6 +535,24 @@ class NotificationController extends Controller
     private function displayName(User $user): string
     {
         return $user->profile?->display_name ?? $user->name;
+    }
+
+    /**
+     * @return array{
+     *     display_name: string,
+     *     profile_photo_url: string|null,
+     *     initials: string
+     * }
+     */
+    private function actorPresentation(User $actor): array
+    {
+        $displayName = $this->displayName($actor);
+
+        return [
+            'display_name' => $displayName,
+            'profile_photo_url' => $actor->profile?->profilePhotoUrl(),
+            'initials' => mb_strtoupper(mb_substr($displayName, 0, 1)),
+        ];
     }
 
     private function ctaLabel(string $type): string
