@@ -87,6 +87,7 @@ class DiscoverController extends Controller
                 ->visibleProfileData(
                     $profile,
                     $viewer,
+                    includeCommonalities: true,
                     isFollowing: (bool) $profile->is_following,
                     isFollowedBy: (bool) $profile->is_followed_by,
                 ));

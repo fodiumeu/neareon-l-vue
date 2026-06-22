@@ -8,6 +8,7 @@ import ContactStatusBadge from '@/components/ContactStatusBadge.vue';
 import PageHeader from '@/components/PageHeader.vue';
 import PageSection from '@/components/PageSection.vue';
 import ProfileAvatar from '@/components/ProfileAvatar.vue';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -35,6 +36,8 @@ type DiscoverProfile = {
     region?: string | null;
     languages?: string[] | null;
     interests?: string[] | null;
+    common_languages?: string[];
+    common_interests?: string[];
 };
 
 type DiscoverFilters = {
@@ -415,21 +418,21 @@ defineOptions({
                 <Card
                     v-for="profile in profiles.data"
                     :key="profile.username"
-                    class="bg-card/95 shadow-md shadow-black/5 dark:shadow-black/25"
+                    class="h-full border-border/80 bg-card/95 shadow-md shadow-black/5 transition-[border-color,box-shadow,transform] duration-200 motion-reduce:transition-none md:hover:-translate-y-0.5 md:hover:border-primary/35 md:hover:shadow-lg md:hover:shadow-primary/10 dark:shadow-black/25"
                 >
-                    <CardContent class="flex h-full flex-col gap-5">
-                        <div class="flex items-start gap-3">
+                    <CardContent class="flex h-full flex-col gap-4 p-5">
+                        <div class="flex items-start gap-4">
                             <ProfileAvatar
                                 :photo-url="profile.profile_photo_url"
                                 :alt="profileLabel(profile)"
                                 :fallback="avatarInitial(profile)"
-                                class="size-12"
-                                fallback-class="text-base"
+                                class="size-16 shrink-0 shadow-sm"
+                                fallback-class="text-xl"
                             />
 
-                            <div class="min-w-0 flex-1 space-y-1">
+                            <div class="min-w-0 flex-1 space-y-1.5">
                                 <h2
-                                    class="truncate text-base font-semibold tracking-tight"
+                                    class="truncate text-lg font-bold tracking-tight text-card-foreground"
                                 >
                                     {{ profileLabel(profile) }}
                                 </h2>
@@ -484,12 +487,59 @@ defineOptions({
                         </div>
                         <p
                             v-else
-                            class="text-sm leading-6 text-muted-foreground"
+                            class="rounded-md border border-dashed border-border/80 bg-muted/30 px-3 py-2 text-sm leading-6 text-muted-foreground"
                         >
-                            Dieses Profil hat noch keine Bio hinterlegt.
+                            Dieses Mitglied hat noch keine Bio hinterlegt.
                         </p>
 
-                        <div class="space-y-3">
+                        <div class="space-y-2.5">
+                            <div
+                                v-if="profile.common_languages?.length"
+                                class="space-y-2"
+                            >
+                                <p
+                                    class="text-xs font-medium text-muted-foreground"
+                                >
+                                    Gemeinsame Sprachen
+                                </p>
+                                <div class="flex flex-wrap gap-1.5">
+                                    <Badge
+                                        v-for="language in profile.common_languages.slice(
+                                            0,
+                                            2,
+                                        )"
+                                        :key="language"
+                                        variant="secondary"
+                                    >
+                                        {{ language }}
+                                    </Badge>
+                                </div>
+                            </div>
+
+                            <div
+                                v-if="profile.common_interests?.length"
+                                class="space-y-2"
+                            >
+                                <p
+                                    class="text-xs font-medium text-muted-foreground"
+                                >
+                                    Gemeinsame Interessen
+                                </p>
+                                <div class="flex flex-wrap gap-1.5">
+                                    <Badge
+                                        v-for="interest in profile.common_interests.slice(
+                                            0,
+                                            3,
+                                        )"
+                                        :key="interest"
+                                        variant="outline"
+                                        class="border-primary/30 bg-primary/10"
+                                    >
+                                        {{ interest }}
+                                    </Badge>
+                                </div>
+                            </div>
+
                             <div
                                 v-if="profile.languages?.length"
                                 class="space-y-2"
@@ -499,14 +549,25 @@ defineOptions({
                                 >
                                     Sprachen
                                 </p>
-                                <div class="flex flex-wrap gap-2">
-                                    <span
-                                        v-for="language in profile.languages"
+                                <div class="flex flex-wrap gap-1.5">
+                                    <Badge
+                                        v-for="language in profile.languages.slice(
+                                            0,
+                                            3,
+                                        )"
                                         :key="language"
-                                        class="rounded-full border border-border bg-secondary px-3 py-1 text-xs font-medium text-secondary-foreground"
+                                        variant="secondary"
                                     >
                                         {{ language }}
-                                    </span>
+                                    </Badge>
+                                    <Badge
+                                        v-if="profile.languages.length > 3"
+                                        variant="outline"
+                                        class="text-muted-foreground"
+                                    >
+                                        +{{ profile.languages.length - 3 }}
+                                        weitere
+                                    </Badge>
                                 </div>
                             </div>
 
@@ -519,14 +580,26 @@ defineOptions({
                                 >
                                     Interessen
                                 </p>
-                                <div class="flex flex-wrap gap-2">
-                                    <span
-                                        v-for="interest in profile.interests"
+                                <div class="flex flex-wrap gap-1.5">
+                                    <Badge
+                                        v-for="interest in profile.interests.slice(
+                                            0,
+                                            3,
+                                        )"
                                         :key="interest"
-                                        class="rounded-full border border-primary/30 bg-primary/10 px-3 py-1 text-xs font-medium text-foreground"
+                                        variant="outline"
+                                        class="border-primary/30 bg-primary/10"
                                     >
                                         {{ interest }}
-                                    </span>
+                                    </Badge>
+                                    <Badge
+                                        v-if="profile.interests.length > 3"
+                                        variant="outline"
+                                        class="text-muted-foreground"
+                                    >
+                                        +{{ profile.interests.length - 3 }}
+                                        weitere
+                                    </Badge>
                                 </div>
                             </div>
 

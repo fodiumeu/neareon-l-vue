@@ -7,6 +7,7 @@ import ContactStatusBadge from '@/components/ContactStatusBadge.vue';
 import PageSection from '@/components/PageSection.vue';
 import ProfileMoreActions from '@/components/ProfileMoreActions.vue';
 import ProfilePhotoLightbox from '@/components/ProfilePhotoLightbox.vue';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import type { ContactStatus } from '@/types';
@@ -97,12 +98,12 @@ defineOptions({
                                 :photo-url="props.profile.profile_photo_url"
                                 :alt="displayName"
                                 :fallback="avatarInitial"
-                                class="size-20 shadow-inner lg:size-24"
-                                fallback-class="text-3xl"
+                                class="size-24 shadow-inner lg:size-28"
+                                fallback-class="text-3xl lg:text-4xl"
                             />
 
-                            <div class="min-w-0 flex-1 space-y-3">
-                                <div class="min-w-0">
+                            <div class="min-w-0 flex-1 space-y-4">
+                                <div class="min-w-0 space-y-1.5">
                                     <h1
                                         class="truncate text-2xl font-semibold tracking-tight sm:text-3xl"
                                     >
@@ -115,7 +116,7 @@ defineOptions({
                                     </p>
                                     <p
                                         v-if="hasVisibleSocialCounts"
-                                        class="mt-1 text-base font-medium whitespace-nowrap text-foreground/90"
+                                        class="pt-1 text-base font-semibold whitespace-nowrap text-foreground"
                                     >
                                         {{ props.profile.followers_count }}
                                         Follower
@@ -134,44 +135,63 @@ defineOptions({
                                     </p>
                                     <p
                                         v-if="props.profile.member_since"
-                                        class="mt-1 text-sm text-muted-foreground"
+                                        class="text-sm text-muted-foreground"
                                     >
                                         Mitglied seit
                                         {{ props.profile.member_since }}
                                     </p>
-                                    <p
+                                    <div
                                         v-if="
                                             props.profile.common_languages
                                                 ?.length
                                         "
-                                        class="mt-1 text-sm text-muted-foreground"
+                                        class="space-y-2 pt-1"
                                     >
-                                        {{
-                                            props.profile.common_languages
-                                                .length === 1
-                                                ? 'Gemeinsame Sprache:'
-                                                : 'Gemeinsame Sprachen:'
-                                        }}
-                                        {{
-                                            props.profile.common_languages.join(
-                                                ' • ',
-                                            )
-                                        }}
-                                    </p>
-                                    <p
+                                        <p
+                                            class="text-sm text-muted-foreground"
+                                        >
+                                            {{
+                                                props.profile.common_languages
+                                                    .length === 1
+                                                    ? 'Gemeinsame Sprache:'
+                                                    : 'Gemeinsame Sprachen:'
+                                            }}
+                                        </p>
+                                        <div class="flex flex-wrap gap-1.5">
+                                            <Badge
+                                                v-for="language in props.profile
+                                                    .common_languages"
+                                                :key="language"
+                                                variant="secondary"
+                                            >
+                                                {{ language }}
+                                            </Badge>
+                                        </div>
+                                    </div>
+                                    <div
                                         v-if="
                                             props.profile.common_interests
                                                 ?.length
                                         "
-                                        class="mt-1 text-sm text-muted-foreground"
+                                        class="space-y-2 pt-1"
                                     >
-                                        Gemeinsame Interessen:
-                                        {{
-                                            props.profile.common_interests.join(
-                                                ' • ',
-                                            )
-                                        }}
-                                    </p>
+                                        <p
+                                            class="text-sm text-muted-foreground"
+                                        >
+                                            Gemeinsame Interessen:
+                                        </p>
+                                        <div class="flex flex-wrap gap-1.5">
+                                            <Badge
+                                                v-for="interest in props.profile
+                                                    .common_interests"
+                                                :key="interest"
+                                                variant="outline"
+                                                class="border-primary/30 bg-primary/10"
+                                            >
+                                                {{ interest }}
+                                            </Badge>
+                                        </div>
+                                    </div>
                                 </div>
 
                                 <div class="flex flex-wrap gap-2">
@@ -229,8 +249,12 @@ defineOptions({
                                 >
                                     {{ props.profile.bio }}
                                 </p>
-                                <p v-else class="text-sm text-muted-foreground">
-                                    Dieses Profil hat noch keine Bio hinterlegt.
+                                <p
+                                    v-else
+                                    class="rounded-md border border-dashed border-border/80 bg-muted/30 px-3 py-2 text-sm text-muted-foreground"
+                                >
+                                    Dieses Mitglied hat noch keine Bio
+                                    hinterlegt.
                                 </p>
                             </div>
                         </div>

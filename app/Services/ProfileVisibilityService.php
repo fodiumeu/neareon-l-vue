@@ -25,6 +25,7 @@ class ProfileVisibilityService
         User $viewer,
         bool $includeSocialCounts = false,
         bool $includeProfileMetadata = false,
+        bool $includeCommonalities = false,
         ?bool $isFollowing = null,
         ?bool $isFollowedBy = null,
     ): array {
@@ -124,7 +125,7 @@ class ProfileVisibilityService
                 ->translatedFormat('F Y');
         }
 
-        if ($includeProfileMetadata && ! $isOwnProfile) {
+        if (($includeProfileMetadata || $includeCommonalities) && ! $isOwnProfile) {
             $viewerProfile = $viewer->profile;
 
             if ($viewerProfile !== null

@@ -142,7 +142,7 @@ test('hidden profile fields do not leak common languages or interests', function
         );
 });
 
-test('discover remains free of profile-only metadata', function () {
+test('discover exposes visible commonalities without profile-only membership metadata', function () {
     $viewer = User::factory()->create();
     createOnboardedProfile($viewer);
 
@@ -157,8 +157,8 @@ test('discover remains free of profile-only metadata', function () {
         ->assertInertia(fn (Assert $page) => $page
             ->where('profiles.data.0.username', 'discover_without_metadata')
             ->missing('profiles.data.0.member_since')
-            ->missing('profiles.data.0.common_languages')
-            ->missing('profiles.data.0.common_interests'),
+            ->where('profiles.data.0.common_languages', ['Deutsch'])
+            ->where('profiles.data.0.common_interests', ['Community']),
         );
 });
 
