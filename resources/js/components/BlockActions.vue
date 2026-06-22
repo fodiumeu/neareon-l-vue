@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { Form } from '@inertiajs/vue3';
+import { ref } from 'vue';
 import { Button } from '@/components/ui/button';
 import {
     Dialog,
@@ -17,6 +18,17 @@ defineProps<{
     isBlocked: boolean;
     username: string;
 }>();
+
+const emit = defineEmits<{
+    success: [];
+}>();
+
+const confirmationOpen = ref(false);
+
+const handleSuccess = () => {
+    confirmationOpen.value = false;
+    emit('success');
+};
 </script>
 
 <template>
@@ -26,6 +38,7 @@ defineProps<{
         method="delete"
         :options="{ preserveScroll: true }"
         v-slot="{ processing }"
+        @success="handleSuccess"
     >
         <Button
             type="submit"
@@ -38,7 +51,11 @@ defineProps<{
         </Button>
     </Form>
 
-    <Dialog v-else>
+    <Dialog
+        v-else
+        :open="confirmationOpen"
+        @update:open="confirmationOpen = $event"
+    >
         <DialogTrigger as-child>
             <Button variant="destructive" class="w-full"> Blockieren </Button>
         </DialogTrigger>
@@ -49,6 +66,7 @@ defineProps<{
                 :options="{ preserveScroll: true }"
                 v-slot="{ processing }"
                 class="space-y-6"
+                @success="handleSuccess"
             >
                 <DialogHeader class="space-y-3">
                     <DialogTitle>Benutzer blockieren?</DialogTitle>

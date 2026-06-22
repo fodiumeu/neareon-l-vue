@@ -102,6 +102,47 @@ test('sent contact requests are sorted newest first', function () {
         );
 });
 
+test('sent contact requests expose privacy aware commonalities', function () {
+    $sender = User::factory()->create();
+    createOnboardedProfile($sender);
+    $receiver = User::factory()->create();
+    createOnboardedProfile($receiver, [
+        'display_name' => 'Common Receiver',
+        'username' => 'common_receiver',
+    ]);
+    ContactRequest::factory()
+        ->for($sender, 'sender')
+        ->for($receiver, 'receiver')
+        ->create();
+
+    $this->actingAs($sender)
+        ->get(route('contact-requests.sent'))
+        ->assertInertia(fn (Assert $page) => $page
+            ->where('contactRequests.0.common_languages', ['Deutsch'])
+            ->where('contactRequests.0.common_interests', ['Community']),
+        );
+});
+
+test('sent contact request page uses the shared polished card ux', function () {
+    $page = file_get_contents(
+        resource_path('js/pages/ContactRequests/Sent.vue'),
+    );
+
+    expect($page)
+        ->toContain('class="size-16 shrink-0 shadow-sm"')
+        ->toContain('formatContactRelativeTime(')
+        ->toContain('formatContactRelativeTimeTitle(')
+        ->toContain('Gemeinsame Sprachen')
+        ->toContain('contactRequest.common_languages.length -')
+        ->toContain('Gemeinsame Interessen')
+        ->toContain('contactRequest.common_interests.length -')
+        ->toContain('md:hover:border-primary/35')
+        ->toContain('motion-reduce:transition-none')
+        ->toContain('overflow-x-hidden')
+        ->toContain('Profil ansehen')
+        ->not->toContain('Anfrage zurückziehen');
+});
+
 test('the sent contact request route uses the required middleware', function () {
     $middleware = Route::getRoutes()
         ->getByName('contact-requests.sent')

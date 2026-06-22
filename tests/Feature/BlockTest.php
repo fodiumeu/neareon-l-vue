@@ -287,6 +287,8 @@ test('block UI provides confirmation unblock and blocked messaging copy', functi
         ->toContain('keine Kontaktanfragen mehr')
         ->toContain('keine neuen Nachrichten mehr')
         ->toContain('Abbrechen')
+        ->toContain('@success="handleSuccess"')
+        ->toContain("emit('success')")
         ->toContain('Blockierung aufheben')
         ->and($profile)->toContain('Benutzer blockiert')
         ->and($messages)->toContain(

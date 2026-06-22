@@ -9,9 +9,11 @@ use App\Models\User;
 use App\Services\ConversationService;
 use App\Services\InternalNotificationService;
 use App\Services\PrivacyService;
+use App\Services\ProfileVisibilityService;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -23,6 +25,7 @@ class ContactRequestController extends Controller
         private readonly ConversationService $conversations,
         private readonly PrivacyService $privacy,
         private readonly InternalNotificationService $notifications,
+        private readonly ProfileVisibilityService $profileVisibility,
     ) {}
 
     /**
@@ -30,23 +33,60 @@ class ContactRequestController extends Controller
      */
     public function index(Request $request): Response
     {
-        $contactRequests = $request->user()
+        $viewer = $request->user();
+        $viewer->loadMissing([
+            'profile.languageOptions',
+            'profile.interestOptions',
+        ]);
+
+        $contactRequests = $viewer
             ->receivedContactRequests()
             ->where('status', ContactRequestStatus::Pending->value)
-            ->with('sender.profile')
+            ->with([
+                'sender.profile.languageOptions',
+                'sender.profile.interestOptions',
+            ])
             ->latest()
-            ->get()
-            ->map(fn (ContactRequest $contactRequest): array => [
-                'id' => $contactRequest->id,
-                'message' => $contactRequest->message,
-                'created_at' => $contactRequest->created_at->toIso8601String(),
-                'sender' => [
-                    'display_name' => $contactRequest->sender->profile?->display_name
-                        ?? $contactRequest->sender->name,
-                    'username' => $contactRequest->sender->profile?->username,
-                    'profile_photo_url' => $contactRequest->sender->profile?->profilePhotoUrl(),
-                ],
-            ]);
+            ->get();
+        [$followingIds, $followedByIds] = $this->relationshipIds(
+            $viewer,
+            $contactRequests->pluck('sender_id'),
+        );
+
+        $contactRequests = $contactRequests
+            ->map(function (ContactRequest $contactRequest) use (
+                $viewer,
+                $followingIds,
+                $followedByIds,
+            ): array {
+                $sender = $contactRequest->sender;
+                $sender->profile?->setRelation('user', $sender);
+                $visibleProfile = $sender->profile === null
+                    ? []
+                    : $this->profileVisibility->visibleProfileData(
+                        $sender->profile,
+                        $viewer,
+                        includeCommonalities: true,
+                        isFollowing: $followingIds->contains($sender->id),
+                        isFollowedBy: $followedByIds->contains($sender->id),
+                        commonLanguagesLimit: PHP_INT_MAX,
+                        commonInterestsLimit: PHP_INT_MAX,
+                    );
+
+                return [
+                    'id' => $contactRequest->id,
+                    'message' => $contactRequest->message,
+                    'created_at' => $contactRequest->created_at->toIso8601String(),
+                    'common_languages' => $visibleProfile['common_languages'] ?? [],
+                    'common_interests' => $visibleProfile['common_interests'] ?? [],
+                    'sender' => [
+                        'display_name' => $sender->profile?->display_name
+                            ?? $sender->name,
+                        'username' => $sender->profile?->username,
+                        'profile_photo_url' => $sender->profile?->profilePhotoUrl(),
+                    ],
+                ];
+            });
 
         return Inertia::render('ContactRequests/Index', [
             'contactRequests' => $contactRequests,
@@ -58,7 +98,13 @@ class ContactRequestController extends Controller
      */
     public function sent(Request $request): Response
     {
-        $contactRequests = $request->user()
+        $viewer = $request->user();
+        $viewer->loadMissing([
+            'profile.languageOptions',
+            'profile.interestOptions',
+        ]);
+
+        $contactRequests = $viewer
             ->sentContactRequests()
             ->select([
                 'id',
@@ -70,22 +116,51 @@ class ContactRequestController extends Controller
             ])
             ->with([
                 'receiver:id,name',
-                'receiver.profile:user_id,display_name,username,profile_photo_path',
+                'receiver.profile.languageOptions',
+                'receiver.profile.interestOptions',
             ])
             ->latest()
-            ->get()
-            ->map(fn (ContactRequest $contactRequest): array => [
-                'id' => $contactRequest->id,
-                'message' => $contactRequest->message,
-                'status' => $contactRequest->status->value,
-                'created_at' => $contactRequest->created_at->toIso8601String(),
-                'receiver' => [
-                    'display_name' => $contactRequest->receiver->profile?->display_name
-                        ?? $contactRequest->receiver->name,
-                    'username' => $contactRequest->receiver->profile?->username,
-                    'profile_photo_url' => $contactRequest->receiver->profile?->profilePhotoUrl(),
-                ],
-            ]);
+            ->get();
+        [$followingIds, $followedByIds] = $this->relationshipIds(
+            $viewer,
+            $contactRequests->pluck('receiver_id'),
+        );
+
+        $contactRequests = $contactRequests
+            ->map(function (ContactRequest $contactRequest) use (
+                $viewer,
+                $followingIds,
+                $followedByIds,
+            ): array {
+                $receiver = $contactRequest->receiver;
+                $receiver->profile?->setRelation('user', $receiver);
+                $visibleProfile = $receiver->profile === null
+                    ? []
+                    : $this->profileVisibility->visibleProfileData(
+                        $receiver->profile,
+                        $viewer,
+                        includeCommonalities: true,
+                        isFollowing: $followingIds->contains($receiver->id),
+                        isFollowedBy: $followedByIds->contains($receiver->id),
+                        commonLanguagesLimit: PHP_INT_MAX,
+                        commonInterestsLimit: PHP_INT_MAX,
+                    );
+
+                return [
+                    'id' => $contactRequest->id,
+                    'message' => $contactRequest->message,
+                    'status' => $contactRequest->status->value,
+                    'created_at' => $contactRequest->created_at->toIso8601String(),
+                    'common_languages' => $visibleProfile['common_languages'] ?? [],
+                    'common_interests' => $visibleProfile['common_interests'] ?? [],
+                    'receiver' => [
+                        'display_name' => $receiver->profile?->display_name
+                            ?? $receiver->name,
+                        'username' => $receiver->profile?->username,
+                        'profile_photo_url' => $receiver->profile?->profilePhotoUrl(),
+                    ],
+                ];
+            });
 
         return Inertia::render('ContactRequests/Sent', [
             'contactRequests' => $contactRequests,
@@ -295,5 +370,27 @@ class ContactRequestController extends Controller
             $message,
             'contact_requests_sender_id_receiver_id_unique',
         );
+    }
+
+    /**
+     * @param  Collection<int, int>  $userIds
+     * @return array{Collection<int, int>, Collection<int, int>}
+     */
+    private function relationshipIds(User $viewer, Collection $userIds): array
+    {
+        $userIds = $userIds->unique()->values();
+
+        if ($userIds->isEmpty()) {
+            return [collect(), collect()];
+        }
+
+        return [
+            $viewer->followingRelationships()
+                ->whereIn('followed_id', $userIds)
+                ->pluck('followed_id'),
+            $viewer->followerRelationships()
+                ->whereIn('follower_id', $userIds)
+                ->pluck('follower_id'),
+        ];
     }
 }

@@ -5,6 +5,8 @@ use App\Models\ContactRequest;
 use App\Models\Conversation;
 use App\Models\ConversationParticipant;
 use App\Models\Follow;
+use App\Models\InterestOption;
+use App\Models\LanguageOption;
 use App\Models\Message;
 use App\Models\Profile;
 use App\Models\User;
@@ -59,6 +61,70 @@ test('mutual follows appear in the contact list', function () {
             ->where('contacts.0.conversation_id', $conversation->id)
             ->where('contacts.0.connected_at', $incomingFollow->created_at->toIso8601String())
             ->where('contacts.0.last_activity_at', $conversation->updated_at->toIso8601String()),
+        );
+});
+
+test('contacts expose all visible common languages and interests', function () {
+    $viewer = User::factory()->create();
+    $viewerProfile = createOnboardedProfile($viewer, [
+        'username' => 'commonality_viewer',
+    ]);
+    $contact = User::factory()->create();
+    $contactProfile = createOnboardedProfile($contact, [
+        'display_name' => 'Common Contact',
+        'username' => 'common_contact',
+    ]);
+    createFollow($viewer, $contact);
+    createFollow($contact, $viewer);
+
+    $languages = collect(range(1, 4))->map(
+        fn (int $position): LanguageOption => LanguageOption::query()->create([
+            'code' => "contact-language-{$position}",
+            'label' => "Sprache {$position}",
+            'native_label' => "Sprache {$position}",
+            'sort_order' => $position,
+            'is_active' => true,
+        ]),
+    );
+    $interests = collect(range(1, 5))->map(
+        fn (int $position): InterestOption => InterestOption::query()->create([
+            'slug' => "contact-interest-{$position}",
+            'label' => "Interesse {$position}",
+            'sort_order' => $position,
+            'is_active' => true,
+        ]),
+    );
+
+    foreach ($languages as $position => $language) {
+        $viewerProfile->languageOptions()->attach($language, [
+            'position' => $position + 1,
+        ]);
+        $contactProfile->languageOptions()->attach($language, [
+            'position' => $position + 1,
+        ]);
+    }
+
+    $viewerProfile->interestOptions()->attach($interests->pluck('id')->all());
+    $contactProfile->interestOptions()->attach($interests->pluck('id')->all());
+
+    $this->actingAs($viewer)
+        ->get(route('contacts.index'))
+        ->assertInertia(fn (Assert $page) => $page
+            ->where('contacts.0.common_languages', [
+                'Deutsch',
+                'Sprache 1',
+                'Sprache 2',
+                'Sprache 3',
+                'Sprache 4',
+            ])
+            ->where('contacts.0.common_interests', [
+                'Community',
+                'Interesse 1',
+                'Interesse 2',
+                'Interesse 3',
+                'Interesse 4',
+                'Interesse 5',
+            ]),
         );
 });
 
@@ -274,6 +340,32 @@ test('the contacts page exposes profile message and removal actions', function (
         ->toContain('ausgetauschte Nachrichten')
         ->toContain('bleiben erhalten.')
         ->toContain('Abbrechen');
+});
+
+test('the contacts page uses polished cards relative times and compact commonality badges', function () {
+    $page = file_get_contents(resource_path('js/pages/Contacts/Index.vue'));
+    $relativeTime = file_get_contents(
+        resource_path('js/lib/contactRelativeTime.ts'),
+    );
+
+    expect($page)
+        ->toContain('class="size-16 shrink-0 shadow-sm"')
+        ->toContain('formatContactRelativeTime(')
+        ->toContain('formatContactRelativeTimeTitle(')
+        ->toContain('Gemeinsame Sprachen')
+        ->toContain('contact.common_languages.slice(')
+        ->toContain('contact.common_languages.length - 2')
+        ->toContain('Gemeinsame Interessen')
+        ->toContain('contact.common_interests.slice(')
+        ->toContain('contact.common_interests.length - 3')
+        ->toContain('motion-reduce:transition-none')
+        ->toContain('md:hover:border-primary/35')
+        ->and($relativeTime)
+        ->toContain("return 'heute'")
+        ->toContain("return 'gestern'")
+        ->toContain("'Minute' : 'Minuten'")
+        ->toContain("'Stunde' : 'Stunden'")
+        ->toContain("'Tag' : 'Tagen'");
 });
 
 test('the contact removal route uses the required middleware', function () {

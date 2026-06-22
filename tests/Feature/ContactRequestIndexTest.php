@@ -105,6 +105,48 @@ test('pending contact requests are sorted newest first', function () {
         );
 });
 
+test('received contact requests expose privacy aware commonalities', function () {
+    $receiver = User::factory()->create();
+    createOnboardedProfile($receiver);
+    $sender = User::factory()->create();
+    createOnboardedProfile($sender, [
+        'display_name' => 'Common Sender',
+        'username' => 'common_sender',
+    ]);
+    ContactRequest::factory()
+        ->for($sender, 'sender')
+        ->for($receiver, 'receiver')
+        ->create();
+
+    $this->actingAs($receiver)
+        ->get(route('contact-requests.index'))
+        ->assertInertia(fn (Assert $page) => $page
+            ->where('contactRequests.0.common_languages', ['Deutsch'])
+            ->where('contactRequests.0.common_interests', ['Community']),
+        );
+});
+
+test('received contact request page uses the shared polished card ux', function () {
+    $page = file_get_contents(
+        resource_path('js/pages/ContactRequests/Index.vue'),
+    );
+
+    expect($page)
+        ->toContain('class="size-16 shrink-0 shadow-sm"')
+        ->toContain('formatContactRelativeTime(')
+        ->toContain('formatContactRelativeTimeTitle(')
+        ->toContain('Gemeinsame Sprachen')
+        ->toContain('contactRequest.common_languages.length -')
+        ->toContain('Gemeinsame Interessen')
+        ->toContain('contactRequest.common_interests.length -')
+        ->toContain('md:hover:border-primary/35')
+        ->toContain('motion-reduce:transition-none')
+        ->toContain('overflow-x-hidden')
+        ->toContain('Annehmen')
+        ->toContain('Ablehnen')
+        ->toContain('Profil ansehen');
+});
+
 test('age gate middleware protects the contact request index', function () {
     $user = User::factory()->withoutAgeGate()->create();
 

@@ -10,8 +10,30 @@ test('profile safety actions are grouped behind a secondary more actions trigger
         ->toContain('variant="secondary"')
         ->toContain('Weitere Aktionen')
         ->toContain('<ReportDialog :username="username"')
-        ->toContain('<BlockActions :is-blocked="isBlocked"')
-        ->toContain('Abbrechen');
+        ->toContain('<BlockActions')
+        ->toContain('@success="open = false"')
+        ->toContain('Schließen');
+});
+
+test('more actions closes after successful block or unblock actions', function () {
+    $moreActions = file_get_contents(
+        resource_path('js/components/ProfileMoreActions.vue'),
+    );
+    $blockActions = file_get_contents(
+        resource_path('js/components/BlockActions.vue'),
+    );
+
+    expect($moreActions)
+        ->toContain('const open = ref(false)')
+        ->toContain(':open="open"')
+        ->toContain('@update:open="open = $event"')
+        ->toContain('@success="open = false"')
+        ->toContain('Schließen')
+        ->and($blockActions)
+        ->toContain('const confirmationOpen = ref(false)')
+        ->toContain("emit('success')")
+        ->toContain('@success="handleSuccess"')
+        ->toContain('confirmationOpen.value = false');
 });
 
 test('existing report and block components remain the action implementations', function () {

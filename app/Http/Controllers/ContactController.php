@@ -7,6 +7,7 @@ use App\Models\ConversationParticipant;
 use App\Models\User;
 use App\Services\ContactRequestLifecycleService;
 use App\Services\ConversationService;
+use App\Services\ProfileVisibilityService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -19,6 +20,7 @@ class ContactController extends Controller
     public function __construct(
         private readonly ConversationService $conversations,
         private readonly ContactRequestLifecycleService $contactRequests,
+        private readonly ProfileVisibilityService $profileVisibility,
     ) {}
 
     /**
@@ -27,6 +29,10 @@ class ContactController extends Controller
     public function index(Request $request): Response
     {
         $viewer = $request->user();
+        $viewer->loadMissing([
+            'profile.languageOptions',
+            'profile.interestOptions',
+        ]);
 
         $directConversations = $viewer->conversations()
             ->select('conversations.*')
@@ -60,18 +66,31 @@ class ContactController extends Controller
                 fn ($query) => $query->where('blocker_id', $viewer->id),
             )
             ->with([
-                'profile',
+                'profile.languageOptions',
+                'profile.interestOptions',
                 'followingRelationships' => fn ($query) => $query
                     ->where('followed_id', $viewer->id),
             ])
             ->get()
-            ->map(function (User $contact) use ($directConversations): array {
+            ->map(function (User $contact) use ($directConversations, $viewer): array {
                 $conversation = $directConversations->get($contact->id);
                 $incomingFollow = $contact->followingRelationships->first();
                 $connectedAt = collect([
                     $contact->pivot->created_at,
                     $incomingFollow?->created_at,
                 ])->filter()->max();
+                $contact->profile?->setRelation('user', $contact);
+                $visibleProfile = $contact->profile === null
+                    ? []
+                    : $this->profileVisibility->visibleProfileData(
+                        $contact->profile,
+                        $viewer,
+                        includeCommonalities: true,
+                        isFollowing: true,
+                        isFollowedBy: true,
+                        commonLanguagesLimit: PHP_INT_MAX,
+                        commonInterestsLimit: PHP_INT_MAX,
+                    );
 
                 return [
                     'id' => $contact->id,
@@ -82,6 +101,8 @@ class ContactController extends Controller
                     'connected_at' => $connectedAt?->toIso8601String(),
                     'conversation_id' => $conversation?->id,
                     'last_activity_at' => $conversation?->updated_at->toIso8601String(),
+                    'common_languages' => $visibleProfile['common_languages'] ?? [],
+                    'common_interests' => $visibleProfile['common_interests'] ?? [],
                 ];
             })
             ->filter(fn (array $contact): bool => $contact['username'] !== null)

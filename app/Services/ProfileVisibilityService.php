@@ -28,6 +28,8 @@ class ProfileVisibilityService
         bool $includeCommonalities = false,
         ?bool $isFollowing = null,
         ?bool $isFollowedBy = null,
+        int $commonLanguagesLimit = 3,
+        int $commonInterestsLimit = 4,
     ): array {
         $isOwnProfile = $profile->user->is($viewer);
         $isFollowing = ! $isOwnProfile
@@ -144,7 +146,7 @@ class ProfileVisibilityService
                             true,
                         ),
                     )
-                    ->take(3)
+                    ->take($commonLanguagesLimit)
                     ->pluck('label')
                     ->values()
                     ->all();
@@ -171,7 +173,7 @@ class ProfileVisibilityService
                             true,
                         ),
                     )
-                    ->take(4)
+                    ->take($commonInterestsLimit)
                     ->pluck('label')
                     ->values()
                     ->all();

@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { MoreHorizontal } from 'lucide-vue-next';
+import { ref } from 'vue';
 import BlockActions from '@/components/BlockActions.vue';
 import ReportDialog from '@/components/ReportDialog.vue';
 import { Button } from '@/components/ui/button';
@@ -18,10 +19,12 @@ defineProps<{
     isBlocked: boolean;
     username: string;
 }>();
+
+const open = ref(false);
 </script>
 
 <template>
-    <Dialog>
+    <Dialog :open="open" @update:open="open = $event">
         <DialogTrigger as-child>
             <Button variant="secondary" class="w-full">
                 <MoreHorizontal aria-hidden="true" />
@@ -39,13 +42,17 @@ defineProps<{
 
             <div class="grid gap-2">
                 <ReportDialog :username="username" />
-                <BlockActions :is-blocked="isBlocked" :username="username" />
+                <BlockActions
+                    :is-blocked="isBlocked"
+                    :username="username"
+                    @success="open = false"
+                />
             </div>
 
             <DialogFooter>
                 <DialogClose as-child>
                     <Button type="button" variant="secondary">
-                        Abbrechen
+                        Schließen
                     </Button>
                 </DialogClose>
             </DialogFooter>

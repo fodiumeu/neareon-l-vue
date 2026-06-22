@@ -1,13 +1,20 @@
 <script setup lang="ts">
-import { Form, Head } from '@inertiajs/vue3';
+import { Form, Head, Link } from '@inertiajs/vue3';
 import PageHeader from '@/components/PageHeader.vue';
 import PageSection from '@/components/PageSection.vue';
 import ProfileAvatar from '@/components/ProfileAvatar.vue';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Spinner } from '@/components/ui/spinner';
+import {
+    formatContactRelativeTime,
+    formatContactRelativeTimeTitle,
+} from '@/lib/contactRelativeTime';
 
 type ContactRequest = {
+    common_interests: string[];
+    common_languages: string[];
     id: number;
     message: string | null;
     created_at: string;
@@ -25,12 +32,6 @@ defineProps<{
 const avatarInitial = (contactRequest: ContactRequest) =>
     contactRequest.sender.display_name.charAt(0).toUpperCase();
 
-const formatDate = (value: string) =>
-    new Intl.DateTimeFormat('de-DE', {
-        dateStyle: 'medium',
-        timeStyle: 'short',
-    }).format(new Date(value));
-
 defineOptions({
     layout: {
         breadcrumbs: [
@@ -47,7 +48,7 @@ defineOptions({
     <Head title="Kontaktanfragen" />
 
     <div
-        class="mx-auto flex h-full w-full max-w-4xl flex-1 flex-col gap-6 overflow-x-auto p-4 sm:p-6"
+        class="mx-auto flex h-full w-full max-w-5xl flex-1 flex-col gap-6 overflow-x-hidden p-4 sm:p-6"
     >
         <PageHeader
             title="Kontaktanfragen"
@@ -67,22 +68,22 @@ defineOptions({
         </PageSection>
 
         <PageSection v-else>
-            <div class="space-y-4">
+            <div class="grid gap-4 sm:grid-cols-2">
                 <Card
                     v-for="contactRequest in contactRequests"
                     :key="contactRequest.id"
-                    class="bg-card/95 shadow-md shadow-black/5 dark:shadow-black/25"
+                    class="h-full border-border/80 bg-card/95 shadow-md shadow-black/5 transition-[border-color,box-shadow,transform] duration-200 motion-reduce:transition-none md:hover:-translate-y-0.5 md:hover:border-primary/35 md:hover:shadow-lg md:hover:shadow-primary/10 dark:shadow-black/25"
                 >
-                    <CardContent class="space-y-4">
-                        <div class="flex items-start gap-3">
+                    <CardContent class="flex h-full flex-col gap-3 p-5">
+                        <div class="flex min-w-0 items-start gap-4">
                             <ProfileAvatar
                                 :photo-url="
                                     contactRequest.sender.profile_photo_url
                                 "
                                 :alt="contactRequest.sender.display_name"
                                 :fallback="avatarInitial(contactRequest)"
-                                class="size-12"
-                                fallback-class="text-base"
+                                class="size-16 shrink-0 shadow-sm"
+                                fallback-class="text-xl"
                             />
 
                             <div class="min-w-0 flex-1 space-y-1">
@@ -98,14 +99,25 @@ defineOptions({
                                     @{{ contactRequest.sender.username }}
                                 </p>
                             </div>
+                        </div>
 
+                        <p class="text-xs text-muted-foreground">
+                            Eingegangen:
                             <time
                                 :datetime="contactRequest.created_at"
-                                class="shrink-0 text-xs text-muted-foreground"
+                                :title="
+                                    formatContactRelativeTimeTitle(
+                                        contactRequest.created_at,
+                                    )
+                                "
                             >
-                                {{ formatDate(contactRequest.created_at) }}
+                                {{
+                                    formatContactRelativeTime(
+                                        contactRequest.created_at,
+                                    )
+                                }}
                             </time>
-                        </div>
+                        </p>
 
                         <p
                             v-if="contactRequest.message"
@@ -114,7 +126,82 @@ defineOptions({
                             {{ contactRequest.message }}
                         </p>
 
-                        <div class="flex flex-col gap-2 sm:flex-row">
+                        <div
+                            v-if="contactRequest.common_languages.length"
+                            class="space-y-2"
+                        >
+                            <p
+                                class="text-xs font-medium text-muted-foreground"
+                            >
+                                Gemeinsame Sprachen
+                            </p>
+                            <div class="flex flex-wrap gap-1.5">
+                                <Badge
+                                    v-for="language in contactRequest.common_languages.slice(
+                                        0,
+                                        2,
+                                    )"
+                                    :key="language"
+                                    variant="secondary"
+                                >
+                                    {{ language }}
+                                </Badge>
+                                <Badge
+                                    v-if="
+                                        contactRequest.common_languages.length >
+                                        2
+                                    "
+                                    variant="outline"
+                                    class="text-muted-foreground"
+                                >
+                                    +{{
+                                        contactRequest.common_languages.length -
+                                        2
+                                    }}
+                                    weitere
+                                </Badge>
+                            </div>
+                        </div>
+
+                        <div
+                            v-if="contactRequest.common_interests.length"
+                            class="space-y-2"
+                        >
+                            <p
+                                class="text-xs font-medium text-muted-foreground"
+                            >
+                                Gemeinsame Interessen
+                            </p>
+                            <div class="flex flex-wrap gap-1.5">
+                                <Badge
+                                    v-for="interest in contactRequest.common_interests.slice(
+                                        0,
+                                        3,
+                                    )"
+                                    :key="interest"
+                                    variant="outline"
+                                    class="border-primary/30 bg-primary/10"
+                                >
+                                    {{ interest }}
+                                </Badge>
+                                <Badge
+                                    v-if="
+                                        contactRequest.common_interests.length >
+                                        3
+                                    "
+                                    variant="outline"
+                                    class="text-muted-foreground"
+                                >
+                                    +{{
+                                        contactRequest.common_interests.length -
+                                        3
+                                    }}
+                                    weitere
+                                </Badge>
+                            </div>
+                        </div>
+
+                        <div class="mt-auto grid gap-2 pt-1">
                             <Form
                                 :action="`/contact-requests/${contactRequest.id}/accept`"
                                 method="patch"
@@ -123,7 +210,7 @@ defineOptions({
                                 <Button
                                     type="submit"
                                     :disabled="processing"
-                                    class="w-full sm:w-auto"
+                                    class="w-full"
                                 >
                                     <Spinner v-if="processing" />
                                     Annehmen
@@ -139,12 +226,25 @@ defineOptions({
                                     type="submit"
                                     variant="secondary"
                                     :disabled="processing"
-                                    class="w-full sm:w-auto"
+                                    class="w-full"
                                 >
                                     <Spinner v-if="processing" />
                                     Ablehnen
                                 </Button>
                             </Form>
+
+                            <Button
+                                v-if="contactRequest.sender.username"
+                                as-child
+                                variant="secondary"
+                                class="w-full"
+                            >
+                                <Link
+                                    :href="`/u/${contactRequest.sender.username}`"
+                                >
+                                    Profil ansehen
+                                </Link>
+                            </Button>
                         </div>
                     </CardContent>
                 </Card>

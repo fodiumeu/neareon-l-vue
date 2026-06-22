@@ -54,7 +54,7 @@ test('profile actions keep primary interactions visible and move safety actions 
         ->toContain('Weitere Aktionen')
         ->toContain('<ReportDialog')
         ->toContain('<BlockActions')
-        ->toContain('Abbrechen');
+        ->toContain('Schließen');
 });
 
 test('profile details combine languages and interests in one compact card', function () {
