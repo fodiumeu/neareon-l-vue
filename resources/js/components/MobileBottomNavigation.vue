@@ -20,8 +20,19 @@ const isActiveItem = (href: (typeof mobileBottomNavItems)[number]['href']) => {
         );
     }
 
-    if (path.startsWith('/settings')) {
-        return isCurrentOrParentUrl('/settings');
+    if (path === '/contacts') {
+        return [
+            '/contacts',
+            '/followers',
+            '/following',
+            '/contact-requests',
+            '/contact-requests/sent',
+            '/blocked-profiles',
+        ].some((communityPath) => isCurrentUrl(communityPath));
+    }
+
+    if (path === '/messages') {
+        return isCurrentOrParentUrl('/messages');
     }
 
     return isCurrentUrl(href);
@@ -34,7 +45,7 @@ const isActiveItem = (href: (typeof mobileBottomNavItems)[number]['href']) => {
         aria-label="Mobile Hauptnavigation"
         class="fixed inset-x-0 bottom-0 z-40 border-t border-border/80 bg-card/95 px-3 pt-2 pb-[calc(env(safe-area-inset-bottom)+0.5rem)] shadow-[0_-12px_30px_rgba(0,0,0,0.16)] backdrop-blur md:hidden dark:shadow-[0_-16px_36px_rgba(0,0,0,0.45)]"
     >
-        <div class="mx-auto grid max-w-md grid-cols-4 gap-1">
+        <div class="mx-auto grid max-w-md grid-cols-5 gap-1">
             <Link
                 v-for="item in mobileBottomNavItems"
                 :key="item.title"

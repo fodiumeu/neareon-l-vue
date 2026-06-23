@@ -17,10 +17,10 @@ import {
 import { useLiveBadgePolling } from '@/composables/useLiveBadgePolling';
 import {
     footerNavItems,
-    getMainNavItems,
+    getMainNavGroups,
 } from '@/config/navigation/app-navigation';
 import { dashboard } from '@/routes';
-import type { NavItem, User } from '@/types';
+import type { NavGroup, NavItem, User } from '@/types';
 
 const page = usePage<{
     auth: {
@@ -41,16 +41,26 @@ const page = usePage<{
     };
 }>();
 
-const filterItemsByUserAccess = (items: NavItem[]): NavItem[] => {
+const canAccessItem = (item: NavItem): boolean => {
     const user = page.props.auth.user;
 
-    return items.filter((item) => {
-        if (item.requiresAdmin) {
-            return user?.role === 'admin';
-        }
+    if (item.requiresAdmin) {
+        return user?.role === 'admin' || user?.role === 'owner';
+    }
 
-        return true;
-    });
+    return true;
+};
+
+const filterItemsByUserAccess = (items: NavItem[]): NavItem[] =>
+    items.filter(canAccessItem);
+
+const filterGroupsByUserAccess = (groups: NavGroup[]): NavGroup[] => {
+    return groups
+        .map((group) => ({
+            ...group,
+            items: group.items.filter(canAccessItem),
+        }))
+        .filter((group) => group.items.length > 0);
 };
 
 const { counts: liveBadgeCounts, pulsing: pulsingBadges } = useLiveBadgePolling(
@@ -62,9 +72,9 @@ const { counts: liveBadgeCounts, pulsing: pulsingBadges } = useLiveBadgePolling(
     () => page.props.auth.user !== null,
 );
 
-const visibleMainNavItems = computed(() =>
-    filterItemsByUserAccess(
-        getMainNavItems({
+const visibleMainNavGroups = computed(() =>
+    filterGroupsByUserAccess(
+        getMainNavGroups({
             adminLabel: page.props.project.adminLabel,
             pendingContactRequestsCount: liveBadgeCounts.pendingContactRequests,
             pulseContactRequests: pulsingBadges.pendingContactRequests,
@@ -96,7 +106,7 @@ const visibleFooterNavItems = computed(() =>
         </SidebarHeader>
 
         <SidebarContent>
-            <NavMain :items="visibleMainNavItems" />
+            <NavMain :groups="visibleMainNavGroups" />
         </SidebarContent>
 
         <SidebarFooter>

@@ -10,24 +10,39 @@ use Inertia\Testing\AssertableInertia as Assert;
 
 test('main navigation config contains the mobile bottom navigation targets', function () {
     $navigation = file_get_contents(resource_path('js/config/navigation/app-navigation.ts'));
+    $mobileNavigation = substr(
+        $navigation,
+        strpos($navigation, 'mobileBottomNavItems'),
+    );
 
     expect($navigation)
         ->toContain('mobileBottomNavItems')
+        ->and($mobileNavigation)
         ->toContain("title: 'Home'")
         ->toContain("title: 'Entdecken'")
+        ->toContain("title: 'Community'")
+        ->toContain("href: '/contacts'")
+        ->toContain("title: 'Nachrichten'")
+        ->toContain("href: '/messages'")
         ->toContain("title: 'Profil'")
-        ->toContain("title: 'Einstellungen'")
         ->toContain("href: '/discover'")
         ->toContain("href: '/profile'")
-        ->toContain('editSettingsProfile()')
+        ->not->toContain("title: 'Einstellungen'")
+        ->and($navigation)
         ->not->toContain("title: 'Chats'");
 });
 
-test('main navigation contains all contact destinations', function () {
+test('desktop navigation is grouped for community communication profile and admin areas', function () {
     $navigation = file_get_contents(resource_path('js/config/navigation/app-navigation.ts'));
-    $sidebar = file_get_contents(resource_path('js/components/AppSidebar.vue'));
+    $navMain = file_get_contents(resource_path('js/components/NavMain.vue'));
 
     expect($navigation)
+        ->toContain('getMainNavGroups')
+        ->toContain("title: 'Hauptbereich'")
+        ->toContain("title: 'Community'")
+        ->toContain("title: 'Kommunikation'")
+        ->toContain("title: 'Profil & Konto'")
+        ->toContain("title: 'Admin'")
         ->toContain("title: 'Kontakte'")
         ->toContain("href: '/contacts'")
         ->toContain("title: 'Follower'")
@@ -45,9 +60,62 @@ test('main navigation contains all contact destinations', function () {
         ->toContain("href: '/messages'")
         ->toContain('badge:')
         ->toContain("'99+'")
-        ->and($sidebar)
+        ->toContain("href: '/notifications'")
+        ->toContain('unreadNotificationsCount')
+        ->toContain("title: 'Einstellungen'")
+        ->toContain('editSettingsProfile()')
+        ->toContain("title: 'Nutzer / Rollen'")
+        ->toContain("href: '/admin#benutzer'")
+        ->toContain("title: 'Moderation / Reports'")
+        ->toContain("href: '/admin/reports'")
+        ->toContain("title: 'Stammdaten'")
+        ->toContain("href: '/admin/options'")
+        ->toContain("title: 'Sprachen'")
+        ->toContain("href: '/admin/options/languages'")
+        ->toContain("title: 'Interessen'")
+        ->toContain("href: '/admin/options/interests'")
+        ->and($navMain)
+        ->toContain('v-for="group in groups"')
+        ->toContain('<SidebarGroupLabel>{{ group.title }}</SidebarGroupLabel>')
+        ->toContain('SidebarMenuBadge');
+});
+
+test('sidebar preserves badge props and allows admin navigation for admins and owners only', function () {
+    $sidebar = file_get_contents(resource_path('js/components/AppSidebar.vue'));
+
+    expect($sidebar)
         ->toContain('page.props.messages.unreadCount')
-        ->toContain('unreadMessagesCount');
+        ->toContain('unreadMessagesCount')
+        ->toContain('page.props.notifications.unreadCount')
+        ->toContain('unreadNotificationsCount')
+        ->toContain("user?.role === 'admin' || user?.role === 'owner'");
+});
+
+test('mobile navigation keeps a compact five item structure', function () {
+    $footer = file_get_contents(
+        resource_path('js/components/MobileBottomNavigation.vue'),
+    );
+    $navigation = file_get_contents(resource_path('js/config/navigation/app-navigation.ts'));
+    $mobileNavigation = substr(
+        $navigation,
+        strpos($navigation, 'mobileBottomNavItems'),
+    );
+
+    expect($footer)
+        ->toContain('grid-cols-5')
+        ->toContain("path === '/contacts'")
+        ->toContain("'/followers'")
+        ->toContain("'/following'")
+        ->toContain("'/contact-requests'")
+        ->toContain("'/contact-requests/sent'")
+        ->toContain("'/blocked-profiles'")
+        ->toContain("path === '/messages'")
+        ->and($mobileNavigation)
+        ->toContain("title: 'Community'")
+        ->toContain("href: '/contacts'")
+        ->toContain("title: 'Nachrichten'")
+        ->toContain("href: '/messages'")
+        ->not->toContain("title: 'Einstellungen'");
 });
 
 test('the shared messages prop sums unread messages across conversations', function () {

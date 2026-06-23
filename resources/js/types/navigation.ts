@@ -15,3 +15,8 @@ export type NavItem = {
     isActive?: boolean;
     requiresAdmin?: boolean;
 };
+
+export type NavGroup = {
+    title: string;
+    items: NavItem[];
+};
