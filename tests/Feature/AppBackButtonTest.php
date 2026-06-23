@@ -39,7 +39,7 @@ test('message conversations use the message list as fallback', function () {
     expect($messagePage)
         ->toContain('<AppBackButton')
         ->toContain('fallback="/messages"')
-        ->toContain('label="Zurück zu den Nachrichten"');
+        ->toContain('label="Zurück"');
 });
 
 test('profile editing uses the own profile as fallback', function () {

@@ -147,7 +147,8 @@ class ContactController extends Controller
         $viewer = $request->user();
 
         abort_unless(
-            $viewer->isMutualWith($contact),
+            ! $viewer->hasBlockWith($contact)
+                && $viewer->isMutualWith($contact),
             HttpResponse::HTTP_FORBIDDEN,
         );
 

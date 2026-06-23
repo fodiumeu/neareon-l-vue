@@ -1,6 +1,7 @@
 <?php
 
 use App\Enums\ContactRequestStatus;
+use App\Models\Block;
 use App\Models\ContactRequest;
 use App\Models\Conversation;
 use App\Models\ConversationParticipant;
@@ -324,6 +325,39 @@ test('the message action opens or creates the contacts conversation', function (
         ->assertRedirect(route('messages.show', $conversation));
 
     expect(Conversation::query()->count())->toBe(1);
+});
+
+test('the message action rejects users without a mutual contact', function () {
+    $viewer = User::factory()->create();
+    createOnboardedProfile($viewer);
+    $contact = User::factory()->create();
+    Profile::factory()->for($contact)->create();
+    createFollow($viewer, $contact);
+
+    $this->actingAs($viewer)
+        ->post(route('contacts.messages', $contact))
+        ->assertForbidden();
+
+    expect(Conversation::query()->count())->toBe(0);
+});
+
+test('the message action remains blocked when stale mutual follows exist', function () {
+    $viewer = User::factory()->create();
+    createOnboardedProfile($viewer);
+    $contact = User::factory()->create();
+    Profile::factory()->for($contact)->create();
+    createFollow($viewer, $contact);
+    createFollow($contact, $viewer);
+    Block::factory()
+        ->for($viewer, 'blocker')
+        ->for($contact, 'blocked')
+        ->create();
+
+    $this->actingAs($viewer)
+        ->post(route('contacts.messages', $contact))
+        ->assertForbidden();
+
+    expect(Conversation::query()->count())->toBe(0);
 });
 
 test('the contacts page exposes profile message and removal actions', function () {

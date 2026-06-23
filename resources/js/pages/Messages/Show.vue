@@ -307,7 +307,7 @@ defineOptions({
     >
         <AppBackButton
             fallback="/messages"
-            label="Zurück zu den Nachrichten"
+            label="Zurück"
             class="hidden md:inline-flex"
         />
 

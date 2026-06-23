@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Form, Link } from '@inertiajs/vue3';
+import { Form } from '@inertiajs/vue3';
 import { Button } from '@/components/ui/button';
 import { Spinner } from '@/components/ui/spinner';
 import type { ContactStatus } from '@/types';
@@ -55,9 +55,17 @@ defineProps<{
     </div>
 
     <div v-else class="flex flex-col gap-2">
-        <Button v-if="status === 'connected'" as-child class="w-full">
-            <Link :href="`/messages?with=${userId}`">Nachricht senden</Link>
-        </Button>
+        <Form
+            v-if="status === 'connected'"
+            :action="`/contacts/${userId}/messages`"
+            method="post"
+            v-slot="{ processing }"
+        >
+            <Button type="submit" :disabled="processing" class="w-full">
+                <Spinner v-if="processing" />
+                Nachricht senden
+            </Button>
+        </Form>
 
         <Form
             v-if="isFollowing || canFollow"
