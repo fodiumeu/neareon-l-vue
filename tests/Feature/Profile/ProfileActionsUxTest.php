@@ -51,7 +51,8 @@ test('existing report and block components remain the action implementations', f
         ->not->toContain('/block')
         ->not->toContain('/reports')
         ->and($blockActions)
-        ->toContain(':action="`/u/${username}/block`"')
+        ->toContain('blockUserAction(username)')
+        ->toContain('unblockUserAction(username)')
         ->and($reportDialog)
         ->toContain(':action="`/u/${username}/reports`"');
 });
@@ -62,7 +63,7 @@ test('message and unfollow visual priorities remain in contact actions', functio
     );
 
     expect($contactActions)
-        ->toContain('Nachricht senden')
+        ->toContain('contactMessageAction(userId)')
         ->toContain(":variant=\"isFollowing ? 'secondary' : 'default'\"")
-        ->toContain("{{ isFollowing ? 'Entfolgen' : 'Folgen' }}");
+        ->toContain('followAction(username, isFollowing).label');
 });

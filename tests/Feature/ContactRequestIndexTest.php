@@ -142,8 +142,8 @@ test('received contact request page uses the shared polished card ux', function 
         ->toContain('md:hover:border-primary/35')
         ->toContain('motion-reduce:transition-none')
         ->toContain('overflow-x-hidden')
-        ->toContain('Annehmen')
-        ->toContain('Ablehnen')
+        ->toContain('acceptContactRequestAction')
+        ->toContain('rejectContactRequestAction')
         ->toContain('Profil ansehen');
 });
 

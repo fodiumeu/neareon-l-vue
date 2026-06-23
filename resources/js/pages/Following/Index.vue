@@ -11,6 +11,7 @@ import {
     formatContactRelativeTime,
     formatContactRelativeTimeTitle,
 } from '@/lib/contactRelativeTime';
+import { profileUrl } from '@/lib/relationshipActions';
 import type { ContactStatus } from '@/types';
 
 type FollowedProfile = {
@@ -183,7 +184,9 @@ defineOptions({
 
                         <div class="mt-auto pt-1">
                             <Button as-child variant="secondary" class="w-full">
-                                <Link :href="`/u/${followedProfile.username}`">
+                                <Link
+                                    :href="profileUrl(followedProfile.username)"
+                                >
                                     Profil ansehen
                                 </Link>
                             </Button>

@@ -22,6 +22,7 @@ import {
     formatContactRelativeTime,
     formatContactRelativeTimeTitle,
 } from '@/lib/contactRelativeTime';
+import { unblockUserAction } from '@/lib/relationshipActions';
 
 type BlockedProfile = {
     blocked_at: string;
@@ -156,7 +157,7 @@ defineOptions({
                                 class="w-full"
                                 @click="unblockingUsername = profile.username"
                             >
-                                Blockierung aufheben
+                                {{ unblockUserAction(profile.username).label }}
                             </Button>
                         </div>
 
@@ -168,8 +169,14 @@ defineOptions({
                         >
                             <DialogContent>
                                 <Form
-                                    :action="`/u/${profile.username}/block`"
-                                    method="delete"
+                                    :action="
+                                        unblockUserAction(profile.username)
+                                            .action
+                                    "
+                                    :method="
+                                        unblockUserAction(profile.username)
+                                            .method
+                                    "
                                     :options="{ preserveScroll: true }"
                                     v-slot="{ processing }"
                                     class="space-y-6"
@@ -207,7 +214,11 @@ defineOptions({
                                             :disabled="processing"
                                         >
                                             <Spinner v-if="processing" />
-                                            Blockierung aufheben
+                                            {{
+                                                unblockUserAction(
+                                                    profile.username,
+                                                ).label
+                                            }}
                                         </Button>
                                     </DialogFooter>
                                 </Form>

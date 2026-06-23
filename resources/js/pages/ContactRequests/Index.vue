@@ -11,6 +11,11 @@ import {
     formatContactRelativeTime,
     formatContactRelativeTimeTitle,
 } from '@/lib/contactRelativeTime';
+import {
+    acceptContactRequestAction,
+    profileUrl,
+    rejectContactRequestAction,
+} from '@/lib/relationshipActions';
 
 type ContactRequest = {
     common_interests: string[];
@@ -203,8 +208,16 @@ defineOptions({
 
                         <div class="mt-auto grid gap-2 pt-1">
                             <Form
-                                :action="`/contact-requests/${contactRequest.id}/accept`"
-                                method="patch"
+                                :action="
+                                    acceptContactRequestAction(
+                                        contactRequest.id,
+                                    ).action
+                                "
+                                :method="
+                                    acceptContactRequestAction(
+                                        contactRequest.id,
+                                    ).method
+                                "
                                 v-slot="{ processing }"
                             >
                                 <Button
@@ -213,13 +226,25 @@ defineOptions({
                                     class="w-full"
                                 >
                                     <Spinner v-if="processing" />
-                                    Annehmen
+                                    {{
+                                        acceptContactRequestAction(
+                                            contactRequest.id,
+                                        ).label
+                                    }}
                                 </Button>
                             </Form>
 
                             <Form
-                                :action="`/contact-requests/${contactRequest.id}/decline`"
-                                method="patch"
+                                :action="
+                                    rejectContactRequestAction(
+                                        contactRequest.id,
+                                    ).action
+                                "
+                                :method="
+                                    rejectContactRequestAction(
+                                        contactRequest.id,
+                                    ).method
+                                "
                                 v-slot="{ processing }"
                             >
                                 <Button
@@ -229,7 +254,11 @@ defineOptions({
                                     class="w-full"
                                 >
                                     <Spinner v-if="processing" />
-                                    Ablehnen
+                                    {{
+                                        rejectContactRequestAction(
+                                            contactRequest.id,
+                                        ).label
+                                    }}
                                 </Button>
                             </Form>
 
@@ -240,7 +269,11 @@ defineOptions({
                                 class="w-full"
                             >
                                 <Link
-                                    :href="`/u/${contactRequest.sender.username}`"
+                                    :href="
+                                        profileUrl(
+                                            contactRequest.sender.username,
+                                        )
+                                    "
                                 >
                                     Profil ansehen
                                 </Link>

@@ -253,7 +253,7 @@ test('the following page is read only and links to profiles', function () {
         ->toContain('Kontakt')
         ->toContain('Anfrage offen')
         ->toContain('Profil ansehen')
-        ->toContain('`/u/${followedProfile.username}`')
+        ->toContain('profileUrl(followedProfile.username)')
         ->toContain('← Vorherige')
         ->toContain('Nächste →')
         ->not->toContain('Entfolgen')

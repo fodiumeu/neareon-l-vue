@@ -291,7 +291,7 @@ test('block UI provides confirmation unblock and blocked messaging copy', functi
         ->toContain('Abbrechen')
         ->toContain('@success="handleSuccess"')
         ->toContain("emit('success')")
-        ->toContain('Blockierung aufheben')
+        ->toContain('unblockUserAction(username).label')
         ->and($profile)->toContain('Benutzer blockiert')
         ->and($messages)->toContain(
             'Zwischen euch besteht eine Blockierung. Neue Nachrichten sind nicht möglich.',

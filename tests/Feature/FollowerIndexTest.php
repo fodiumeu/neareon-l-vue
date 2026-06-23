@@ -193,7 +193,7 @@ test('the followers page is read only and links to profiles', function () {
         ->toContain('Kontakt')
         ->toContain('Anfrage offen')
         ->toContain('Profil ansehen')
-        ->toContain('`/u/${follower.username}`')
+        ->toContain('profileUrl(follower.username)')
         ->toContain('← Vorherige')
         ->toContain('Nächste →')
         ->not->toContain('Du folgst ebenfalls')

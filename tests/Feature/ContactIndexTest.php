@@ -365,10 +365,9 @@ test('the contacts page exposes profile message and removal actions', function (
 
     expect($page)
         ->toContain('Profil ansehen')
-        ->toContain('`/u/${contact.username}`')
-        ->toContain('Nachricht senden')
-        ->toContain('`/contacts/${contact.id}/messages`')
-        ->toContain('Verbindung entfernen')
+        ->toContain('profileUrl(contact.username)')
+        ->toContain('contactMessageAction')
+        ->toContain('removeContactAction')
         ->toContain('Verbindung entfernen?')
         ->toContain('Bereits')
         ->toContain('ausgetauschte Nachrichten')

@@ -110,9 +110,9 @@ test('contact action UI renders disabled privacy states', function () {
     );
 
     expect($actions)
-        ->toContain('Dieses Profil erlaubt keine neuen Follower')
-        ->toContain('Dieses Profil nimmt keine Kontaktanfragen an')
-        ->toContain('Folge diesem Profil zuerst')
+        ->toContain('relationshipActionUnavailableText.followDisabled')
+        ->toContain('relationshipActionUnavailableText.contactRequestDisabled')
+        ->toContain('relationshipActionUnavailableText.contactRequestFollowRequired')
         ->toContain('v-if="isFollowing || canFollow"')
         ->toContain("status === 'none' && canSendContactRequest");
 });

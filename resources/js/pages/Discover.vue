@@ -14,6 +14,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Spinner } from '@/components/ui/spinner';
+import { profileUrl } from '@/lib/relationshipActions';
 import type { ContactStatus } from '@/types';
 
 type DiscoverProfile = {
@@ -632,7 +633,7 @@ defineOptions({
                             />
 
                             <Button as-child variant="secondary" class="w-full">
-                                <Link :href="`/u/${profile.username}`">
+                                <Link :href="profileUrl(profile.username)">
                                     Profil ansehen
                                 </Link>
                             </Button>

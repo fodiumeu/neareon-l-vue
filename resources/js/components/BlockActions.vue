@@ -13,6 +13,7 @@ import {
     DialogTrigger,
 } from '@/components/ui/dialog';
 import { Spinner } from '@/components/ui/spinner';
+import { blockUserAction, unblockUserAction } from '@/lib/relationshipActions';
 
 defineProps<{
     isBlocked: boolean;
@@ -34,8 +35,8 @@ const handleSuccess = () => {
 <template>
     <Form
         v-if="isBlocked"
-        :action="`/u/${username}/block`"
-        method="delete"
+        :action="unblockUserAction(username).action"
+        :method="unblockUserAction(username).method"
         :options="{ preserveScroll: true }"
         v-slot="{ processing }"
         @success="handleSuccess"
@@ -47,7 +48,7 @@ const handleSuccess = () => {
             class="w-full"
         >
             <Spinner v-if="processing" />
-            Blockierung aufheben
+            {{ unblockUserAction(username).label }}
         </Button>
     </Form>
 
@@ -61,8 +62,8 @@ const handleSuccess = () => {
         </DialogTrigger>
         <DialogContent>
             <Form
-                :action="`/u/${username}/block`"
-                method="post"
+                :action="blockUserAction(username).action"
+                :method="blockUserAction(username).method"
                 :options="{ preserveScroll: true }"
                 v-slot="{ processing }"
                 class="space-y-6"
@@ -94,7 +95,7 @@ const handleSuccess = () => {
                         :disabled="processing"
                     >
                         <Spinner v-if="processing" />
-                        Blockieren
+                        {{ blockUserAction(username).label }}
                     </Button>
                 </DialogFooter>
             </Form>

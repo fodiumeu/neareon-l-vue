@@ -2,6 +2,14 @@
 import { Form } from '@inertiajs/vue3';
 import { Button } from '@/components/ui/button';
 import { Spinner } from '@/components/ui/spinner';
+import {
+    acceptContactRequestAction,
+    contactMessageAction,
+    followAction,
+    rejectContactRequestAction,
+    relationshipActionUnavailableText,
+    sendContactRequestAction,
+} from '@/lib/relationshipActions';
 import type { ContactStatus } from '@/types';
 
 defineProps<{
@@ -23,21 +31,21 @@ defineProps<{
         class="flex flex-col gap-2 sm:flex-row"
     >
         <Form
-            :action="`/contact-requests/${contactRequestId}/accept`"
-            method="patch"
+            :action="acceptContactRequestAction(contactRequestId).action"
+            :method="acceptContactRequestAction(contactRequestId).method"
             :options="{ preserveScroll: true }"
             v-slot="{ processing }"
             class="flex-1"
         >
             <Button type="submit" :disabled="processing" class="w-full">
                 <Spinner v-if="processing" />
-                Annehmen
+                {{ acceptContactRequestAction(contactRequestId).label }}
             </Button>
         </Form>
 
         <Form
-            :action="`/contact-requests/${contactRequestId}/decline`"
-            method="patch"
+            :action="rejectContactRequestAction(contactRequestId).action"
+            :method="rejectContactRequestAction(contactRequestId).method"
             :options="{ preserveScroll: true }"
             v-slot="{ processing }"
             class="flex-1"
@@ -49,7 +57,7 @@ defineProps<{
                 class="w-full"
             >
                 <Spinner v-if="processing" />
-                Ablehnen
+                {{ rejectContactRequestAction(contactRequestId).label }}
             </Button>
         </Form>
     </div>
@@ -57,20 +65,20 @@ defineProps<{
     <div v-else class="flex flex-col gap-2">
         <Form
             v-if="status === 'connected'"
-            :action="`/contacts/${userId}/messages`"
-            method="post"
+            :action="contactMessageAction(userId).action"
+            :method="contactMessageAction(userId).method"
             v-slot="{ processing }"
         >
             <Button type="submit" :disabled="processing" class="w-full">
                 <Spinner v-if="processing" />
-                Nachricht senden
+                {{ contactMessageAction(userId).label }}
             </Button>
         </Form>
 
         <Form
             v-if="isFollowing || canFollow"
-            :action="`/u/${username}/follow`"
-            :method="isFollowing ? 'delete' : 'post'"
+            :action="followAction(username, isFollowing).action"
+            :method="followAction(username, isFollowing).method"
             :options="{ preserveScroll: true }"
             v-slot="{ processing }"
         >
@@ -87,7 +95,7 @@ defineProps<{
                 class="w-full"
             >
                 <Spinner v-if="processing" />
-                {{ isFollowing ? 'Entfolgen' : 'Folgen' }}
+                {{ followAction(username, isFollowing).label }}
             </Button>
         </Form>
 
@@ -98,20 +106,20 @@ defineProps<{
             disabled
             class="w-full"
         >
-            Dieses Profil erlaubt keine neuen Follower
+            {{ relationshipActionUnavailableText.followDisabled }}
         </Button>
 
         <Form
             v-if="status === 'none' && canSendContactRequest"
-            action="/contact-requests"
-            method="post"
+            :action="sendContactRequestAction().action"
+            :method="sendContactRequestAction().method"
             :options="{ preserveScroll: true }"
             v-slot="{ processing }"
         >
             <input type="hidden" name="receiver_id" :value="userId" />
             <Button type="submit" :disabled="processing" class="w-full">
                 <Spinner v-if="processing" />
-                Kontaktanfrage senden
+                {{ sendContactRequestAction().label }}
             </Button>
         </Form>
 
@@ -125,7 +133,7 @@ defineProps<{
             disabled
             class="w-full"
         >
-            Folge diesem Profil zuerst
+            {{ relationshipActionUnavailableText.contactRequestFollowRequired }}
         </Button>
 
         <Button
@@ -138,7 +146,7 @@ defineProps<{
             disabled
             class="w-full"
         >
-            Dieses Profil nimmt keine Kontaktanfragen an
+            {{ relationshipActionUnavailableText.contactRequestDisabled }}
         </Button>
 
         <Button
@@ -148,7 +156,7 @@ defineProps<{
             disabled
             class="w-full"
         >
-            Kontaktanfrage gesendet
+            {{ relationshipActionUnavailableText.contactRequestSent }}
         </Button>
     </div>
 </template>

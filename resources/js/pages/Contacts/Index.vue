@@ -29,6 +29,11 @@ import {
     formatContactRelativeTime,
     formatContactRelativeTimeTitle,
 } from '@/lib/contactRelativeTime';
+import {
+    contactMessageAction,
+    profileUrl,
+    removeContactAction,
+} from '@/lib/relationshipActions';
 
 type Contact = {
     common_interests: string[];
@@ -235,8 +240,12 @@ defineOptions({
 
                         <div class="mt-auto grid gap-2 pt-1">
                             <Form
-                                :action="`/contacts/${contact.id}/messages`"
-                                method="post"
+                                :action="
+                                    contactMessageAction(contact.id).action
+                                "
+                                :method="
+                                    contactMessageAction(contact.id).method
+                                "
                                 v-slot="{ processing }"
                             >
                                 <Button
@@ -245,12 +254,12 @@ defineOptions({
                                     class="w-full"
                                 >
                                     <Spinner v-if="processing" />
-                                    Nachricht senden
+                                    {{ contactMessageAction(contact.id).label }}
                                 </Button>
                             </Form>
 
                             <Button as-child variant="secondary" class="w-full">
-                                <Link :href="`/u/${contact.username}`">
+                                <Link :href="profileUrl(contact.username)">
                                     Profil ansehen
                                 </Link>
                             </Button>
@@ -269,7 +278,10 @@ defineOptions({
                                             disconnectingContactId = contact.id
                                         "
                                     >
-                                        Verbindung entfernen
+                                        {{
+                                            removeContactAction(contact.id)
+                                                .label
+                                        }}
                                     </DropdownMenuItem>
                                 </DropdownMenuContent>
                             </DropdownMenu>
@@ -282,8 +294,14 @@ defineOptions({
                             >
                                 <DialogContent>
                                     <Form
-                                        :action="`/contacts/${contact.id}`"
-                                        method="delete"
+                                        :action="
+                                            removeContactAction(contact.id)
+                                                .action
+                                        "
+                                        :method="
+                                            removeContactAction(contact.id)
+                                                .method
+                                        "
                                         :options="{ preserveScroll: true }"
                                         v-slot="{ processing }"
                                         class="space-y-6"
@@ -316,7 +334,11 @@ defineOptions({
                                                 :disabled="processing"
                                             >
                                                 <Spinner v-if="processing" />
-                                                Verbindung entfernen
+                                                {{
+                                                    removeContactAction(
+                                                        contact.id,
+                                                    ).label
+                                                }}
                                             </Button>
                                         </DialogFooter>
                                     </Form>

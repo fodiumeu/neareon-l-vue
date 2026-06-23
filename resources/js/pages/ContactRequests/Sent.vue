@@ -11,6 +11,7 @@ import {
     formatContactRelativeTime,
     formatContactRelativeTimeTitle,
 } from '@/lib/contactRelativeTime';
+import { profileUrl } from '@/lib/relationshipActions';
 import type { ContactRequestStatus } from '@/types';
 
 type SentContactRequest = {
@@ -216,7 +217,11 @@ defineOptions({
                                 class="w-full"
                             >
                                 <Link
-                                    :href="`/u/${contactRequest.receiver.username}`"
+                                    :href="
+                                        profileUrl(
+                                            contactRequest.receiver.username,
+                                        )
+                                    "
                                 >
                                     Profil ansehen
                                 </Link>
