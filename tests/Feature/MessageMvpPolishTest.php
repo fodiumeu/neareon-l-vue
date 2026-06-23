@@ -55,7 +55,7 @@ test('message empty states use friendly mvp guidance', function () {
     expect($index)
         ->toContain('Du hast aktuell noch keine Nachrichten.')
         ->toContain(
-            'Kontaktiere Mitglieder aus der Community, um',
+            'Öffne das Profil eines Kontakts, um eine Unterhaltung',
         )
         ->and($show)
         ->toContain('Hier erscheinen eure Nachrichten.')

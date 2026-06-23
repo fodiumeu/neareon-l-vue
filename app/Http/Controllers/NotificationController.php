@@ -31,7 +31,7 @@ class NotificationController extends Controller
             $request->user(),
         );
         $actors = User::query()
-            ->with('profile:user_id,display_name,profile_photo_path')
+            ->with('profile:user_id,username,display_name,profile_photo_path')
             ->whereKey(
                 $notifications
                     ->pluck('data')
@@ -62,7 +62,10 @@ class NotificationController extends Controller
 
         $this->markDisplayedGroupAsRead($request, $storedNotification);
 
-        $targetUrl = $storedNotification->data['target_url'] ?? null;
+        $targetUrl = $this->acceptedContactProfileUrl(
+            $storedNotification,
+            $request->user(),
+        ) ?? ($storedNotification->data['target_url'] ?? null);
 
         if (
             ! is_string($targetUrl)
@@ -239,8 +242,9 @@ class NotificationController extends Controller
 
     /**
      * Older accepted contact request notifications did not store an actor id.
-     * Resolve an actor only when the stored name and request history identify
-     * exactly one receiver, without modifying the stored notification.
+     * Resolve an actor by request history, direct conversations or follow
+     * relationships only when the stored name identifies exactly one user,
+     * without modifying the stored notification.
      *
      * @param  Collection<int, DatabaseNotification>  $notifications
      */
@@ -293,9 +297,146 @@ class NotificationController extends Controller
                     : null)
             ->filter();
 
-        $legacyNotifications->each(function (
+        $this->hydrateAcceptedContactRequestActorIds(
+            $legacyNotifications,
+            $actorIdsByName,
+        );
+
+        $unresolvedActorNames = $this->acceptedContactRequestActorNames(
+            $legacyNotifications,
+        );
+
+        if ($unresolvedActorNames->isNotEmpty()) {
+            $conversationActors = ConversationParticipant::query()
+                ->where('user_id', '!=', $viewer->id)
+                ->whereHas(
+                    'conversation',
+                    fn ($query) => $query
+                        ->whereHas(
+                            'participants',
+                            fn ($query) => $query->where(
+                                'user_id',
+                                $viewer->id,
+                            ),
+                        )
+                        ->has('participants', '=', 2),
+                )
+                ->with([
+                    'user:id,name',
+                    'user.profile:user_id,display_name',
+                ])
+                ->get()
+                ->pluck('user')
+                ->filter();
+
+            $this->hydrateAcceptedContactRequestActorIds(
+                $legacyNotifications,
+                $this->uniqueActorIdsByName(
+                    $conversationActors,
+                    $unresolvedActorNames,
+                ),
+            );
+        }
+
+        $unresolvedActorNames = $this->acceptedContactRequestActorNames(
+            $legacyNotifications,
+        );
+
+        if ($unresolvedActorNames->isNotEmpty()) {
+            $followActors = User::query()
+                ->whereKeyNot($viewer->id)
+                ->where(function ($query) use ($viewer): void {
+                    $query
+                        ->whereHas(
+                            'followingRelationships',
+                            fn ($query) => $query->where(
+                                'followed_id',
+                                $viewer->id,
+                            ),
+                        )
+                        ->orWhereHas(
+                            'followerRelationships',
+                            fn ($query) => $query->where(
+                                'follower_id',
+                                $viewer->id,
+                            ),
+                        );
+                })
+                ->with('profile:user_id,display_name')
+                ->get(['id', 'name']);
+
+            $this->hydrateAcceptedContactRequestActorIds(
+                $legacyNotifications,
+                $this->uniqueActorIdsByName(
+                    $followActors,
+                    $unresolvedActorNames,
+                ),
+            );
+        }
+    }
+
+    /**
+     * @param  Collection<int, DatabaseNotification>  $notifications
+     * @return Collection<int, string>
+     */
+    private function acceptedContactRequestActorNames(
+        Collection $notifications,
+    ): Collection {
+        return $notifications
+            ->filter(fn (DatabaseNotification $notification): bool => empty(
+                $notification->data['actor_id']
+            ))
+            ->map(fn (DatabaseNotification $notification): ?string => $this
+                ->actorName(
+                    (string) ($notification->data['message'] ?? ''),
+                    ' hat deine Kontaktanfrage angenommen.',
+                ))
+            ->filter()
+            ->unique()
+            ->values();
+    }
+
+    /**
+     * @param  Collection<int, User>  $actors
+     * @param  Collection<int, string>  $actorNames
+     * @return Collection<string, int>
+     */
+    private function uniqueActorIdsByName(
+        Collection $actors,
+        Collection $actorNames,
+    ): Collection {
+        return $actors
+            ->map(fn (User $actor): array => [
+                'actor_id' => $actor->id,
+                'actor_name' => $this->displayName($actor),
+            ])
+            ->filter(fn (array $actor): bool => $actorNames
+                ->contains($actor['actor_name']))
+            ->groupBy('actor_name')
+            ->map(fn (Collection $matchingActors): ?int => $matchingActors
+                ->pluck('actor_id')
+                ->unique()
+                ->count() === 1
+                    ? (int) $matchingActors->first()['actor_id']
+                    : null)
+            ->filter();
+    }
+
+    /**
+     * @param  Collection<int, DatabaseNotification>  $notifications
+     * @param  Collection<string, int>  $actorIdsByName
+     */
+    private function hydrateAcceptedContactRequestActorIds(
+        Collection $notifications,
+        Collection $actorIdsByName,
+    ): void {
+        $notifications->each(function (
             DatabaseNotification $notification,
         ) use ($actorIdsByName): void {
+            if (! empty($notification->data['actor_id'])) {
+                return;
+            }
+
             $actorName = $this->actorName(
                 (string) ($notification->data['message'] ?? ''),
                 ' hat deine Kontaktanfrage angenommen.',
@@ -435,6 +576,7 @@ class NotificationController extends Controller
         $type = (string) ($notification->data['type'] ?? '');
         $title = (string) ($notification->data['title'] ?? '');
         $message = (string) ($notification->data['message'] ?? '');
+        $targetUrl = $notification->data['target_url'] ?? null;
 
         if ($type === InternalNotificationType::NewFollower->value) {
             $title = 'Diese Mitglieder folgen dir jetzt';
@@ -448,6 +590,13 @@ class NotificationController extends Controller
                     ?? $title
                 : $this->displayName($actor);
             $message = 'hat deine Kontaktanfrage angenommen';
+            $targetUrl = $actor?->profile?->username === null
+                ? $targetUrl
+                : route(
+                    'public-profile.show',
+                    $actor->profile->username,
+                    absolute: false,
+                );
         } elseif ($type === InternalNotificationType::ContactRequestDeclined->value) {
             $title = $actor === null
                 ? $this->actorName($message, ' hat deine Kontaktanfrage abgelehnt.')
@@ -461,7 +610,7 @@ class NotificationController extends Controller
             'type' => $type,
             'title' => $title,
             'message' => $message,
-            'target_url' => $notification->data['target_url'],
+            'target_url' => $targetUrl,
             'created_at' => $notification->created_at->toIso8601String(),
             'read_at' => $notification->read_at?->toIso8601String(),
             'notification_count' => 1,
@@ -553,6 +702,43 @@ class NotificationController extends Controller
             'profile_photo_url' => $actor->profile?->profilePhotoUrl(),
             'initials' => mb_strtoupper(mb_substr($displayName, 0, 1)),
         ];
+    }
+
+    private function acceptedContactProfileUrl(
+        DatabaseNotification $notification,
+        User $viewer,
+    ): ?string {
+        if (
+            ($notification->data['type'] ?? null)
+            !== InternalNotificationType::ContactRequestAccepted->value
+        ) {
+            return null;
+        }
+
+        if (empty($notification->data['actor_id'])) {
+            $this->hydrateLegacyAcceptedContactRequestActorIds(
+                collect([$notification]),
+                $viewer,
+            );
+        }
+
+        $actorId = $notification->data['actor_id'] ?? null;
+
+        if ($actorId === null) {
+            return null;
+        }
+
+        $actor = User::query()
+            ->with('profile:user_id,username')
+            ->find((int) $actorId);
+
+        return $actor?->profile?->username === null
+            ? null
+            : route(
+                'public-profile.show',
+                $actor->profile->username,
+                absolute: false,
+            );
     }
 
     private function ctaLabel(string $type): string

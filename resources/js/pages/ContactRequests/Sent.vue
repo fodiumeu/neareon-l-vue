@@ -54,7 +54,7 @@ defineOptions({
     >
         <PageHeader
             title="Gesendete Kontaktanfragen"
-            description="Hier siehst du alle Kontaktanfragen, die du gesendet hast."
+            description="Hier siehst du deine gesendeten Kontaktanfragen und ihren aktuellen Status."
         />
 
         <PageSection v-if="contactRequests.length === 0">

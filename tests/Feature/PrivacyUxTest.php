@@ -110,9 +110,9 @@ test('contact action UI renders disabled privacy states', function () {
     );
 
     expect($actions)
-        ->toContain('Folgen deaktiviert')
-        ->toContain('Kontaktanfragen deaktiviert')
-        ->toContain('Erst folgen')
+        ->toContain('Dieses Profil erlaubt keine neuen Follower')
+        ->toContain('Dieses Profil nimmt keine Kontaktanfragen an')
+        ->toContain('Folge diesem Profil zuerst')
         ->toContain('v-if="isFollowing || canFollow"')
         ->toContain("status === 'none' && canSendContactRequest");
 });
@@ -221,6 +221,9 @@ test('blocked profiles page uses the shared polished card ux and confirmation di
         ->toContain('overflow-x-hidden')
         ->toContain('Blockierung aufheben?')
         ->toContain('euren Profileinstellungen')
+        ->toContain('Frühere Follow- und')
+        ->toContain('Kontaktbeziehungen werden nicht')
+        ->toContain('automatisch wiederhergestellt.')
         ->toContain('Abbrechen')
         ->toContain('Keine blockierten Profile')
         ->toContain('ShieldCheck');

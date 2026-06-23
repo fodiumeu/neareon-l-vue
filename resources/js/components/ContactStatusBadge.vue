@@ -9,10 +9,10 @@ const props = defineProps<{
 const label = computed(
     () =>
         ({
-            none: 'Keine Verbindung',
+            none: 'Noch kein Kontakt',
             outgoing_request: 'Kontaktanfrage gesendet',
             incoming_request: 'Kontaktanfrage erhalten',
-            connected: 'Verbunden',
+            connected: 'Kontakt',
         })[props.status],
 );
 </script>

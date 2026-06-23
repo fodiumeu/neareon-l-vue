@@ -98,7 +98,7 @@ defineProps<{
             disabled
             class="w-full"
         >
-            Folgen deaktiviert
+            Dieses Profil erlaubt keine neuen Follower
         </Button>
 
         <Form
@@ -125,7 +125,7 @@ defineProps<{
             disabled
             class="w-full"
         >
-            Erst folgen
+            Folge diesem Profil zuerst
         </Button>
 
         <Button
@@ -138,7 +138,7 @@ defineProps<{
             disabled
             class="w-full"
         >
-            Kontaktanfragen deaktiviert
+            Dieses Profil nimmt keine Kontaktanfragen an
         </Button>
 
         <Button

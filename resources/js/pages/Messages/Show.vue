@@ -500,8 +500,8 @@ defineOptions({
                     <p class="text-sm leading-6 text-muted-foreground">
                         {{
                             conversation.is_blocked
-                                ? 'Dieser Benutzer wurde blockiert. Neue Nachrichten sind nicht möglich.'
-                                : 'Diese Verbindung wurde beendet. Für neue Nachrichten ist eine neue Verbindung erforderlich.'
+                                ? 'Zwischen euch besteht eine Blockierung. Neue Nachrichten sind nicht möglich.'
+                                : 'Ihr seid nicht mehr als Kontakte verbunden. Für neue Nachrichten müsst ihr euch wieder gegenseitig folgen.'
                         }}
                     </p>
                     <textarea

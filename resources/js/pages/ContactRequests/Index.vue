@@ -52,7 +52,7 @@ defineOptions({
     >
         <PageHeader
             title="Kontaktanfragen"
-            description="Hier siehst du offene Kontaktanfragen, die du erhalten hast."
+            description="Hier siehst du offene Kontaktanfragen, die du erhalten hast. Wenn du eine Anfrage annimmst, folgt ihr euch gegenseitig und werdet Kontakte."
         />
 
         <PageSection v-if="contactRequests.length === 0">
@@ -61,7 +61,7 @@ defineOptions({
             >
                 <CardContent class="text-center sm:text-left">
                     <p class="text-sm leading-6 text-muted-foreground">
-                        Derzeit liegen keine Kontaktanfragen vor.
+                        Du hast derzeit keine offenen Kontaktanfragen.
                     </p>
                 </CardContent>
             </Card>

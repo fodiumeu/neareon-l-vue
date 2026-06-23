@@ -185,6 +185,9 @@ defineOptions({
                                             entfernt. Ob anschließend
                                             Interaktionen möglich sind, richtet
                                             sich nach euren Profileinstellungen.
+                                            Frühere Follow- und
+                                            Kontaktbeziehungen werden nicht
+                                            automatisch wiederhergestellt.
                                         </DialogDescription>
                                     </DialogHeader>
 

@@ -374,6 +374,85 @@ test('legacy accepted contact request notification resolves the actor photo with
     expect($notification->fresh()->data)->not->toHaveKey('actor_id');
 });
 
+test('legacy accepted contact request notification falls back to a unique direct conversation actor', function () {
+    [$sender, $receiver] = notificationUsers();
+    $receiver->profile->update([
+        'profile_photo_path' => 'profile-photos/conversation-contact.webp',
+    ]);
+    $conversation = Conversation::factory()->create();
+    ConversationParticipant::factory()
+        ->for($conversation)
+        ->for($sender)
+        ->create();
+    ConversationParticipant::factory()
+        ->for($conversation)
+        ->for($receiver)
+        ->create();
+    $sender->notify(new InternalNotification(
+        InternalNotificationType::ContactRequestAccepted,
+        'Kontaktanfrage angenommen',
+        'Recipient User hat deine Kontaktanfrage angenommen.',
+        '/contact-requests/sent',
+    ));
+    $notification = $sender->notifications()->sole();
+    $data = $notification->data;
+    unset($data['actor_id'], $data['conversation_id']);
+    $notification->forceFill(['data' => $data])->save();
+
+    $this->actingAs($sender)
+        ->get(route('notifications.index'))
+        ->assertInertia(fn (Assert $page) => $page
+            ->where('notificationItems.0.actor.display_name', 'Recipient User')
+            ->where(
+                'notificationItems.0.actor.profile_photo_url',
+                '/storage/profile-photos/conversation-contact.webp',
+            )
+            ->where('notificationItems.0.target_url', '/u/recipient_user'),
+        );
+
+    $this->get(route('notifications.open', $notification))
+        ->assertRedirect('/u/recipient_user');
+
+    expect($notification->fresh()->data)->not->toHaveKey('actor_id');
+});
+
+test('legacy accepted contact request notification falls back to a unique follow actor', function () {
+    [$sender, $receiver] = notificationUsers();
+    $receiver->profile->update([
+        'profile_photo_path' => 'profile-photos/follow-contact.webp',
+    ]);
+    Follow::query()->create([
+        'follower_id' => $sender->id,
+        'followed_id' => $receiver->id,
+    ]);
+    $sender->notify(new InternalNotification(
+        InternalNotificationType::ContactRequestAccepted,
+        'Kontaktanfrage angenommen',
+        'Recipient User hat deine Kontaktanfrage angenommen.',
+        '/contact-requests/sent',
+    ));
+    $notification = $sender->notifications()->sole();
+    $data = $notification->data;
+    unset($data['actor_id'], $data['conversation_id']);
+    $notification->forceFill(['data' => $data])->save();
+
+    $this->actingAs($sender)
+        ->get(route('notifications.index'))
+        ->assertInertia(fn (Assert $page) => $page
+            ->where('notificationItems.0.actor.display_name', 'Recipient User')
+            ->where(
+                'notificationItems.0.actor.profile_photo_url',
+                '/storage/profile-photos/follow-contact.webp',
+            )
+            ->where('notificationItems.0.target_url', '/u/recipient_user'),
+        );
+
+    $this->get(route('notifications.open', $notification))
+        ->assertRedirect('/u/recipient_user');
+
+    expect($notification->fresh()->data)->not->toHaveKey('actor_id');
+});
+
 test('accepted contact request notification with an actor id keeps the existing actor resolution', function () {
     [$sender, $receiver] = notificationUsers();
     $receiver->profile->update([
@@ -448,6 +527,59 @@ test('legacy accepted contact request notification keeps the generic avatar when
     'ambiguous actor' => ['ambiguous'],
     'missing actor' => ['missing'],
 ]);
+
+test('legacy accepted contact request notification keeps the safe fallback for ambiguous conversation and follow actors', function () {
+    $sender = User::factory()->create();
+    createOnboardedProfile($sender);
+    $actorName = 'Mehrdeutiger Kontakt';
+
+    foreach (range(1, 2) as $index) {
+        $receiver = User::factory()->create();
+        createOnboardedProfile($receiver, [
+            'display_name' => $actorName,
+            'username' => "ambiguous_fallback_{$index}",
+        ]);
+        $conversation = Conversation::factory()->create();
+        ConversationParticipant::factory()
+            ->for($conversation)
+            ->for($sender)
+            ->create();
+        ConversationParticipant::factory()
+            ->for($conversation)
+            ->for($receiver)
+            ->create();
+        Follow::query()->create([
+            'follower_id' => $sender->id,
+            'followed_id' => $receiver->id,
+        ]);
+    }
+
+    $sender->notify(new InternalNotification(
+        InternalNotificationType::ContactRequestAccepted,
+        'Kontaktanfrage angenommen',
+        "{$actorName} hat deine Kontaktanfrage angenommen.",
+        '/contact-requests/sent',
+    ));
+    $notification = $sender->notifications()->sole();
+    $data = $notification->data;
+    unset($data['actor_id'], $data['conversation_id']);
+    $notification->forceFill(['data' => $data])->save();
+
+    $this->actingAs($sender)
+        ->get(route('notifications.index'))
+        ->assertInertia(fn (Assert $page) => $page
+            ->where('notificationItems.0.actor', null)
+            ->where(
+                'notificationItems.0.target_url',
+                '/contact-requests/sent',
+            ),
+        );
+
+    $this->get(route('notifications.open', $notification))
+        ->assertRedirect('/contact-requests/sent');
+
+    expect($notification->fresh()->data)->not->toHaveKey('actor_id');
+});
 
 test('five message notifications from one sender are presented as one group', function () {
     [$sender, $receiver] = notificationUsers();
@@ -720,8 +852,8 @@ test('all notifications can be marked as read', function () {
         );
 });
 
-test('opening a notification marks it as read and redirects to its target', function () {
-    [$user, $actor] = notificationUsers();
+test('opening an accepted contact request notification redirects to the actor profile', function () {
+    [$actor, $user] = notificationUsers();
     $user->notify(new InternalNotification(
         InternalNotificationType::ContactRequestAccepted,
         'Kontaktanfrage angenommen',
@@ -733,10 +865,55 @@ test('opening a notification marks it as read and redirects to its target', func
 
     $this->actingAs($user)
         ->get(route('notifications.open', $notification))
-        ->assertRedirect('/contact-requests/sent');
+        ->assertRedirect('/u/actor_user');
 
     expect($notification->fresh()->read_at)->not->toBeNull()
         ->and($user->unreadNotifications()->count())->toBe(0);
+});
+
+test('opening a legacy accepted contact request notification resolves the actor profile without persisting an actor id', function () {
+    [$sender, $receiver] = notificationUsers();
+    ContactRequest::factory()
+        ->for($sender, 'sender')
+        ->for($receiver, 'receiver')
+        ->create([
+            'status' => 'accepted',
+            'responded_at' => now(),
+        ]);
+    $sender->notify(new InternalNotification(
+        InternalNotificationType::ContactRequestAccepted,
+        'Kontaktanfrage angenommen',
+        'Recipient User hat deine Kontaktanfrage angenommen.',
+        '/contact-requests/sent',
+    ));
+    $notification = $sender->notifications()->sole();
+    $data = $notification->data;
+    unset($data['actor_id'], $data['conversation_id']);
+    $notification->forceFill(['data' => $data])->save();
+
+    $this->actingAs($sender)
+        ->get(route('notifications.open', $notification))
+        ->assertRedirect('/u/recipient_user');
+
+    expect($notification->fresh()->data)->not->toHaveKey('actor_id');
+});
+
+test('opening an unresolvable legacy accepted notification keeps its stored fallback target', function () {
+    [$user] = notificationUsers();
+    $user->notify(new InternalNotification(
+        InternalNotificationType::ContactRequestAccepted,
+        'Kontaktanfrage angenommen',
+        'Unbekannter Kontakt hat deine Kontaktanfrage angenommen.',
+        '/contact-requests/sent',
+    ));
+    $notification = $user->notifications()->sole();
+    $data = $notification->data;
+    unset($data['actor_id'], $data['conversation_id']);
+    $notification->forceFill(['data' => $data])->save();
+
+    $this->actingAs($user)
+        ->get(route('notifications.open', $notification))
+        ->assertRedirect('/contact-requests/sent');
 });
 
 test('users cannot open another users notification', function () {
@@ -800,6 +977,7 @@ test('notification items are sorted newest first and contain actor presentation 
                 'notificationItems.1.message',
                 'hat deine Kontaktanfrage angenommen',
             )
+            ->where('notificationItems.1.target_url', '/u/actor_user')
             ->where('notificationItems.1.cta_label', 'Kontakt ansehen'),
         );
 });

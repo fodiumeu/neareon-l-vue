@@ -284,15 +284,17 @@ test('block UI provides confirmation unblock and blocked messaging copy', functi
 
     expect($blockActions)
         ->toContain('Benutzer blockieren?')
-        ->toContain('keine Kontaktanfragen mehr')
-        ->toContain('keine neuen Nachrichten mehr')
+        ->toContain('Euer Kontakt und eure Follow-Beziehungen werden beendet.')
+        ->toContain('Offene Kontaktanfragen werden entfernt.')
+        ->toContain('Bestehende')
+        ->toContain('Nachrichten bleiben erhalten')
         ->toContain('Abbrechen')
         ->toContain('@success="handleSuccess"')
         ->toContain("emit('success')")
         ->toContain('Blockierung aufheben')
         ->and($profile)->toContain('Benutzer blockiert')
         ->and($messages)->toContain(
-            'Dieser Benutzer wurde blockiert. Neue Nachrichten sind nicht möglich.',
+            'Zwischen euch besteht eine Blockierung. Neue Nachrichten sind nicht möglich.',
         );
 });
 

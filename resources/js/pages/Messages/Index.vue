@@ -75,8 +75,8 @@ defineOptions({
                         Du hast aktuell noch keine Nachrichten.
                     </h2>
                     <p class="text-sm leading-6 text-muted-foreground">
-                        Kontaktiere Mitglieder aus der Community, um
-                        Unterhaltungen zu starten.
+                        Öffne das Profil eines Kontakts, um eine Unterhaltung zu
+                        starten.
                     </p>
                 </CardContent>
             </Card>

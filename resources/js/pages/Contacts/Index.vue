@@ -76,7 +76,7 @@ defineOptions({
     >
         <PageHeader
             title="Kontakte"
-            description="Hier siehst du alle Benutzer, mit denen du gegenseitig verbunden bist."
+            description="Kontakte sind Mitglieder, denen du folgst und die dir ebenfalls folgen."
         />
 
         <PageSection v-if="contacts.length === 0">
@@ -85,7 +85,8 @@ defineOptions({
             >
                 <CardContent class="text-center sm:text-left">
                     <p class="text-sm leading-6 text-muted-foreground">
-                        Du hast derzeit noch keine Kontakte.
+                        Du hast derzeit noch keine Kontakte. Ein Kontakt
+                        entsteht, wenn ihr euch gegenseitig folgt.
                     </p>
                 </CardContent>
             </Card>
@@ -134,7 +135,7 @@ defineOptions({
                             class="space-y-1 text-xs text-muted-foreground"
                         >
                             <p v-if="contact.connected_at">
-                                Verbunden seit:
+                                Kontakt seit:
                                 <time
                                     :datetime="contact.connected_at"
                                     :title="

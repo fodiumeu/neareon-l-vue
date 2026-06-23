@@ -71,9 +71,10 @@ const handleSuccess = () => {
                 <DialogHeader class="space-y-3">
                     <DialogTitle>Benutzer blockieren?</DialogTitle>
                     <DialogDescription>
-                        Dieser Benutzer kann dir keine Kontaktanfragen mehr
-                        senden und keine neuen Nachrichten mehr mit dir
-                        austauschen.
+                        Euer Kontakt und eure Follow-Beziehungen werden beendet.
+                        Offene Kontaktanfragen werden entfernt. Bestehende
+                        Nachrichten bleiben erhalten, neue Kontaktanfragen und
+                        Nachrichten sind nicht mehr möglich.
                     </DialogDescription>
                 </DialogHeader>
 
