@@ -10,6 +10,7 @@ use App\Http\Controllers\ContactController;
 use App\Http\Controllers\ContactRequestController;
 use App\Http\Controllers\DiscoverController;
 use App\Http\Controllers\FollowController;
+use App\Http\Controllers\FollowerController;
 use App\Http\Controllers\MessageController;
 use App\Http\Controllers\NavigationBadgeController;
 use App\Http\Controllers\NotificationController;
@@ -43,6 +44,8 @@ Route::middleware(['auth', 'age.gate', 'verified'])->group(function () {
 Route::middleware(['auth', 'age.gate', 'verified', 'onboarding.complete'])->group(function () {
     Route::get('contacts', [ContactController::class, 'index'])
         ->name('contacts.index');
+    Route::get('followers', [FollowerController::class, 'index'])
+        ->name('followers.index');
     Route::delete('contacts/{contact}', [ContactController::class, 'destroy'])
         ->name('contacts.destroy');
     Route::post('contacts/{contact}/messages', [ContactController::class, 'message'])

@@ -10,6 +10,7 @@ import {
     Settings,
     Shield,
     UserCircle,
+    Users,
 } from 'lucide-vue-next';
 import { dashboard } from '@/routes';
 import { edit as editSettingsProfile } from '@/routes/profile';
@@ -50,6 +51,11 @@ export const getMainNavItems = ({
         title: 'Kontakte',
         href: '/contacts',
         icon: ContactRound,
+    },
+    {
+        title: 'Follower',
+        href: '/followers',
+        icon: Users,
     },
     {
         title: 'Kontaktanfragen',

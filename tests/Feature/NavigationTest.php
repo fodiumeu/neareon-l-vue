@@ -30,6 +30,8 @@ test('main navigation contains all contact destinations', function () {
     expect($navigation)
         ->toContain("title: 'Kontakte'")
         ->toContain("href: '/contacts'")
+        ->toContain("title: 'Follower'")
+        ->toContain("href: '/followers'")
         ->toContain("title: 'Kontaktanfragen'")
         ->toContain("href: '/contact-requests'")
         ->toContain("title: 'Gesendete Anfragen'")
@@ -142,6 +144,7 @@ test('guests remain protected from contact navigation destinations', function (
         ->assertRedirect(route('login'));
 })->with([
     'contacts.index',
+    'followers.index',
     'contact-requests.index',
     'contact-requests.sent',
     'blocked-profiles.index',
