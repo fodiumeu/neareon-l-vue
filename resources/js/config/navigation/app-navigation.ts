@@ -58,6 +58,11 @@ export const getMainNavItems = ({
         icon: Users,
     },
     {
+        title: 'Ich folge',
+        href: '/following',
+        icon: Users,
+    },
+    {
         title: 'Kontaktanfragen',
         href: '/contact-requests',
         icon: Inbox,
