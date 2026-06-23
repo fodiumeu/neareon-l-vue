@@ -1,13 +1,11 @@
 <script setup lang="ts">
-import { Form, Head, Link, router } from '@inertiajs/vue3';
+import { Head, Link, router } from '@inertiajs/vue3';
 import { Handshake, Users } from 'lucide-vue-next';
 import PageHeader from '@/components/PageHeader.vue';
 import PageSection from '@/components/PageSection.vue';
 import ProfileAvatar from '@/components/ProfileAvatar.vue';
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { Spinner } from '@/components/ui/spinner';
 import {
     formatContactRelativeTime,
     formatContactRelativeTimeTitle,
@@ -38,14 +36,9 @@ type InternalNotification = {
     open_url: string | null;
 };
 
-const props = defineProps<{
+defineProps<{
     notificationItems: InternalNotification[];
 }>();
-
-const hasUnreadNotifications = () =>
-    props.notificationItems.some(
-        (notification) => notification.read_at === null,
-    );
 
 const openNotification = (notification: InternalNotification) => {
     if (!notification.open_url) {
@@ -77,32 +70,6 @@ defineOptions({
             title="Benachrichtigungen"
             description="Hier findest du Neuigkeiten zu Kontakten, Followern und Nachrichten."
         />
-
-        <div v-if="hasUnreadNotifications()" class="flex justify-end">
-            <Form
-                action="/notifications/read-all"
-                method="patch"
-                v-slot="{ processing }"
-                class="w-full sm:w-auto"
-            >
-                <Button
-                    type="submit"
-                    variant="secondary"
-                    :disabled="processing"
-                    :aria-busy="processing"
-                    class="w-full sm:w-auto"
-                >
-                    <Spinner v-if="processing" />
-                    <span aria-live="polite">
-                        {{
-                            processing
-                                ? 'Wird als gelesen markiert …'
-                                : 'Alle als gelesen markieren'
-                        }}
-                    </span>
-                </Button>
-            </Form>
-        </div>
 
         <PageSection v-if="notificationItems.length === 0">
             <Card

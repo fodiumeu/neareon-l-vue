@@ -30,6 +30,7 @@ class NotificationController extends Controller
             $notifications,
             $request->user(),
         );
+        $this->markNotificationsAsRead($notifications);
         $actors = User::query()
             ->with('profile:user_id,username,display_name,profile_photo_path')
             ->whereKey(
@@ -49,6 +50,33 @@ class NotificationController extends Controller
                 $actors,
             ),
         ]);
+    }
+
+    /**
+     * Mark the displayed notifications as read while keeping the rendered
+     * collection in sync with the database state.
+     *
+     * @param  Collection<int, DatabaseNotification>  $notifications
+     */
+    private function markNotificationsAsRead(Collection $notifications): void
+    {
+        $unreadNotifications = $notifications
+            ->filter(fn (DatabaseNotification $notification): bool => $notification->read_at === null);
+
+        if ($unreadNotifications->isEmpty()) {
+            return;
+        }
+
+        $readAt = now();
+
+        DatabaseNotification::query()
+            ->whereIn('id', $unreadNotifications->pluck('id'))
+            ->update(['read_at' => $readAt]);
+
+        $unreadNotifications->each(
+            fn (DatabaseNotification $notification) => $notification
+                ->setAttribute('read_at', $readAt),
+        );
     }
 
     public function open(

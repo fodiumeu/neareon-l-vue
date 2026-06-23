@@ -242,9 +242,11 @@ test('notification page lists only the authenticated users notifications', funct
                 'notificationItems.0.title',
                 'Diese Mitglieder folgen dir jetzt',
             )
-            ->where('notificationItems.0.read_at', null)
+            ->whereNot('notificationItems.0.read_at', null)
             ->where('notificationItems.0.target_url', '/u/actor_user'),
         );
+
+    expect($user->unreadNotifications()->count())->toBe(0);
 });
 
 test('one message notification is presented as one message group', function () {
@@ -778,7 +780,7 @@ test('follower notification groups expose up to three newest actor previews', fu
         );
 });
 
-test('activity group is unread when at least one notification is unread', function () {
+test('opening the notification page marks displayed activity groups as read', function () {
     [$follower, $followed] = notificationUsers();
 
     foreach (range(1, 2) as $index) {
@@ -795,8 +797,10 @@ test('activity group is unread when at least one notification is unread', functi
     $this->actingAs($followed)
         ->get(route('notifications.index'))
         ->assertInertia(fn (Assert $page) => $page
-            ->where('notificationItems.0.read_at', null),
+            ->whereNot('notificationItems.0.read_at', null),
         );
+
+    expect($followed->unreadNotifications()->count())->toBe(0);
 });
 
 test('activity group is read when all notifications are read', function () {
@@ -1004,11 +1008,10 @@ test('notification center provides clickable accessible cards and polished ux', 
         ->toContain('motion-reduce:transition-none')
         ->toContain('notification.cta_label')
         ->toContain('overflow-x-hidden')
-        ->toContain('Alle als gelesen markieren')
-        ->toContain('Wird als gelesen markiert …')
-        ->toContain(':aria-busy="processing"')
-        ->toContain(':disabled="processing"')
-        ->toContain('class="px-2.5 py-1"');
+        ->toContain('class="px-2.5 py-1"')
+        ->not->toContain('Alle als gelesen markieren')
+        ->not->toContain('Wird als gelesen markiert …')
+        ->not->toContain('action="/notifications/read-all"');
 });
 
 test('follower groups use actor previews with an icon fallback while contact request groups keep their icon', function () {
