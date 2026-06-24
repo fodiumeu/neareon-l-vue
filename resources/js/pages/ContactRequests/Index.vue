@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { Form, Head, Link } from '@inertiajs/vue3';
+import CommunityBackLink from '@/components/CommunityBackLink.vue';
 import PageHeader from '@/components/PageHeader.vue';
 import PageSection from '@/components/PageSection.vue';
 import ProfileAvatar from '@/components/ProfileAvatar.vue';
@@ -55,6 +56,8 @@ defineOptions({
     <div
         class="mx-auto flex h-full w-full max-w-5xl flex-1 flex-col gap-6 overflow-x-hidden p-4 sm:p-6"
     >
+        <CommunityBackLink />
+
         <PageHeader
             title="Kontaktanfragen"
             description="Hier siehst du offene Kontaktanfragen, die du erhalten hast. Wenn du eine Anfrage annimmst, folgt ihr euch gegenseitig und werdet Kontakte."

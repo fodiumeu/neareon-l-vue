@@ -2,6 +2,7 @@
 import { Form, Head } from '@inertiajs/vue3';
 import { ShieldCheck } from 'lucide-vue-next';
 import { ref } from 'vue';
+import CommunityBackLink from '@/components/CommunityBackLink.vue';
 import PageHeader from '@/components/PageHeader.vue';
 import PageSection from '@/components/PageSection.vue';
 import ProfileAvatar from '@/components/ProfileAvatar.vue';
@@ -62,6 +63,8 @@ defineOptions({
     <div
         class="mx-auto flex h-full w-full max-w-5xl flex-1 flex-col gap-6 overflow-x-hidden p-4 sm:p-6"
     >
+        <CommunityBackLink />
+
         <PageHeader
             title="Blockierte Profile"
             description="Hier kannst du von dir blockierte Profile verwalten."

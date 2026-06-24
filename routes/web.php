@@ -6,6 +6,7 @@ use App\Http\Controllers\Admin\LanguageOptionController;
 use App\Http\Controllers\Admin\ReportController as AdminReportController;
 use App\Http\Controllers\AgeGateController;
 use App\Http\Controllers\BlockController;
+use App\Http\Controllers\CommunityController;
 use App\Http\Controllers\ContactController;
 use App\Http\Controllers\ContactRequestController;
 use App\Http\Controllers\DiscoverController;
@@ -43,6 +44,8 @@ Route::middleware(['auth', 'age.gate', 'verified'])->group(function () {
 });
 
 Route::middleware(['auth', 'age.gate', 'verified', 'onboarding.complete'])->group(function () {
+    Route::get('community', CommunityController::class)
+        ->name('community.index');
     Route::get('contacts', [ContactController::class, 'index'])
         ->name('contacts.index');
     Route::get('followers', [FollowerController::class, 'index'])

@@ -62,6 +62,11 @@ export const getMainNavGroups = ({
         title: 'Community',
         items: [
             {
+                title: 'Übersicht',
+                href: '/community',
+                icon: LayoutGrid,
+            },
+            {
                 title: 'Kontakte',
                 href: '/contacts',
                 icon: ContactRound,
@@ -209,7 +214,7 @@ export const mobileBottomNavItems: NavItem[] = [
     },
     {
         title: 'Community',
-        href: '/contacts',
+        href: '/community',
         icon: ContactRound,
     },
     {

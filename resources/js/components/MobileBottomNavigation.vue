@@ -20,8 +20,9 @@ const isActiveItem = (href: (typeof mobileBottomNavItems)[number]['href']) => {
         );
     }
 
-    if (path === '/contacts') {
+    if (path === '/community') {
         return [
+            '/community',
             '/contacts',
             '/followers',
             '/following',
@@ -53,7 +54,7 @@ const isActiveItem = (href: (typeof mobileBottomNavItems)[number]['href']) => {
                 :aria-current="isActiveItem(item.href) ? 'page' : undefined"
                 :class="
                     cn(
-                        'flex min-h-14 flex-col items-center justify-center gap-1 rounded-xl px-2 text-xs font-medium text-muted-foreground transition-colors',
+                        'flex min-h-14 flex-col items-center justify-center gap-1 rounded-xl px-2 text-xs font-medium text-muted-foreground transition-colors focus-visible:border-primary/60 focus-visible:ring-[3px] focus-visible:ring-primary/45 focus-visible:outline-none',
                         isActiveItem(item.href)
                             ? 'border border-primary/25 bg-primary/15 text-primary shadow-sm shadow-primary/10'
                             : 'border border-transparent hover:bg-accent/80 hover:text-accent-foreground',
