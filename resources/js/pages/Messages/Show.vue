@@ -376,7 +376,7 @@ defineOptions({
                                 : [
                                       'rounded-2xl border px-4 py-2.5 text-sm leading-6 [overflow-wrap:anywhere] whitespace-pre-wrap shadow-sm',
                                       message.is_own
-                                          ? 'rounded-br-md border-primary/30 bg-[color-mix(in_oklab,var(--primary),black_12%)] px-5 py-3 text-base leading-7 text-white'
+                                          ? 'rounded-br-md border-action-primary/40 bg-action-primary px-5 py-3 text-base leading-7 text-action-primary-foreground shadow-action-primary/20'
                                           : 'rounded-bl-md border-border bg-card text-card-foreground',
                                   ],
                         ]"

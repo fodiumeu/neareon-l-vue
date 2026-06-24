@@ -13,6 +13,13 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@/components/ui/select';
 import { Spinner } from '@/components/ui/spinner';
 import { profileUrl } from '@/lib/relationshipActions';
 import type { ContactStatus } from '@/types';
@@ -84,6 +91,13 @@ const selectedInterest = ref(props.filters.interest);
 const filtersOpen = ref(false);
 const isMobile = useMediaQuery('(max-width: 767px)');
 let searchTimer: ReturnType<typeof setTimeout> | null = null;
+const allFilterValue = '__all__';
+const discoverSelectTriggerClass =
+    'w-full border-input bg-background text-foreground hover:border-ring/70 hover:bg-accent/40 focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 dark:border-border/90 dark:bg-input/35 dark:hover:bg-accent/45';
+const discoverSelectContentClass =
+    'border-border bg-popover text-popover-foreground shadow-xl shadow-black/30';
+const discoverSelectItemClass =
+    'focus:bg-[color-mix(in_oklab,var(--neareon-green)_55%,var(--popover))] focus:text-popover-foreground data-[highlighted]:bg-[color-mix(in_oklab,var(--neareon-green)_55%,var(--popover))] data-[highlighted]:text-popover-foreground data-[state=checked]:bg-action-primary data-[state=checked]:text-action-primary-foreground data-[state=checked]:focus:bg-action-primary data-[state=checked]:focus:text-action-primary-foreground';
 
 const pageNumbers = computed(() => {
     const start = Math.max(
@@ -175,6 +189,35 @@ const resetFilters = () => {
     selectedInterest.value = '';
     applyFilters();
 };
+
+const toSelectValue = (value: string) => value || allFilterValue;
+
+const fromSelectValue = (value: string | number | boolean | null | undefined) =>
+    typeof value === 'string' && value !== allFilterValue ? value : '';
+
+const selectedRegionOption = computed({
+    get: () => toSelectValue(selectedRegion.value),
+    set: (value) => {
+        selectedRegion.value = fromSelectValue(value);
+        applyFilters();
+    },
+});
+
+const selectedLanguageOption = computed({
+    get: () => toSelectValue(selectedLanguage.value),
+    set: (value) => {
+        selectedLanguage.value = fromSelectValue(value);
+        applyFilters();
+    },
+});
+
+const selectedInterestOption = computed({
+    get: () => toSelectValue(selectedInterest.value),
+    set: (value) => {
+        selectedInterest.value = fromSelectValue(value);
+        applyFilters();
+    },
+});
 
 watch(
     () => [props.search, props.filters] as const,
@@ -309,62 +352,110 @@ defineOptions({
                     >
                         <div class="grid gap-2">
                             <Label for="discover-region">Region</Label>
-                            <select
-                                id="discover-region"
-                                v-model="selectedRegion"
+                            <input
+                                type="hidden"
                                 name="region"
-                                class="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-xs focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
-                                @change="applyFilters"
-                            >
-                                <option value="">Alle Regionen</option>
-                                <option
-                                    v-for="region in filterOptions.regions"
-                                    :key="region"
-                                    :value="region"
+                                :value="selectedRegion"
+                            />
+                            <Select v-model="selectedRegionOption">
+                                <SelectTrigger
+                                    id="discover-region"
+                                    :class="discoverSelectTriggerClass"
+                                    aria-label="Region auswählen"
                                 >
-                                    {{ region }}
-                                </option>
-                            </select>
+                                    <SelectValue placeholder="Alle Regionen" />
+                                </SelectTrigger>
+                                <SelectContent
+                                    :class="discoverSelectContentClass"
+                                >
+                                    <SelectItem
+                                        :value="allFilterValue"
+                                        :class="discoverSelectItemClass"
+                                    >
+                                        Alle Regionen
+                                    </SelectItem>
+                                    <SelectItem
+                                        v-for="region in filterOptions.regions"
+                                        :key="region"
+                                        :value="region"
+                                        :class="discoverSelectItemClass"
+                                    >
+                                        {{ region }}
+                                    </SelectItem>
+                                </SelectContent>
+                            </Select>
                         </div>
 
                         <div class="grid gap-2">
                             <Label for="discover-language">Sprache</Label>
-                            <select
-                                id="discover-language"
-                                v-model="selectedLanguage"
+                            <input
+                                type="hidden"
                                 name="language"
-                                class="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-xs focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
-                                @change="applyFilters"
-                            >
-                                <option value="">Alle Sprachen</option>
-                                <option
-                                    v-for="language in filterOptions.languages"
-                                    :key="language"
-                                    :value="language"
+                                :value="selectedLanguage"
+                            />
+                            <Select v-model="selectedLanguageOption">
+                                <SelectTrigger
+                                    id="discover-language"
+                                    :class="discoverSelectTriggerClass"
+                                    aria-label="Sprache auswählen"
                                 >
-                                    {{ language }}
-                                </option>
-                            </select>
+                                    <SelectValue placeholder="Alle Sprachen" />
+                                </SelectTrigger>
+                                <SelectContent
+                                    :class="discoverSelectContentClass"
+                                >
+                                    <SelectItem
+                                        :value="allFilterValue"
+                                        :class="discoverSelectItemClass"
+                                    >
+                                        Alle Sprachen
+                                    </SelectItem>
+                                    <SelectItem
+                                        v-for="language in filterOptions.languages"
+                                        :key="language"
+                                        :value="language"
+                                        :class="discoverSelectItemClass"
+                                    >
+                                        {{ language }}
+                                    </SelectItem>
+                                </SelectContent>
+                            </Select>
                         </div>
 
                         <div class="grid gap-2">
                             <Label for="discover-interest">Interesse</Label>
-                            <select
-                                id="discover-interest"
-                                v-model="selectedInterest"
+                            <input
+                                type="hidden"
                                 name="interest"
-                                class="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-xs focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
-                                @change="applyFilters"
-                            >
-                                <option value="">Alle Interessen</option>
-                                <option
-                                    v-for="interest in filterOptions.interests"
-                                    :key="interest"
-                                    :value="interest"
+                                :value="selectedInterest"
+                            />
+                            <Select v-model="selectedInterestOption">
+                                <SelectTrigger
+                                    id="discover-interest"
+                                    :class="discoverSelectTriggerClass"
+                                    aria-label="Interesse auswählen"
                                 >
-                                    {{ interest }}
-                                </option>
-                            </select>
+                                    <SelectValue placeholder="Alle Interessen" />
+                                </SelectTrigger>
+                                <SelectContent
+                                    :class="discoverSelectContentClass"
+                                >
+                                    <SelectItem
+                                        :value="allFilterValue"
+                                        :class="discoverSelectItemClass"
+                                    >
+                                        Alle Interessen
+                                    </SelectItem>
+                                    <SelectItem
+                                        v-for="interest in filterOptions.interests"
+                                        :key="interest"
+                                        :value="interest"
+                                        :class="discoverSelectItemClass"
+                                    >
+                                        {{ interest }}
+                                    </SelectItem>
+                                </SelectContent>
+                            </Select>
                         </div>
 
                         <Button

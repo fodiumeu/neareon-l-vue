@@ -112,17 +112,21 @@ test('contact removal is hidden behind the more actions menu', function () {
         ->toContain('disconnectingContactId = contact.id');
 });
 
-test('discover and profile selects use the shared readable native select styling', function () {
+test('discover uses custom filter selects while profile edit keeps readable native select styling', function () {
     $discover = file_get_contents(resource_path('js/pages/Discover.vue'));
     $profile = file_get_contents(resource_path('js/pages/Profile/Edit.vue'));
     $styles = file_get_contents(resource_path('css/app.css'));
 
     expect($discover)
         ->toContain('class="discover-filter-controls"')
+        ->toContain("from '@/components/ui/select'")
+        ->toContain('<Select v-model="selectedRegionOption">')
+        ->toContain('<Select v-model="selectedLanguageOption">')
+        ->toContain('<Select v-model="selectedInterestOption">')
+        ->not->toContain('<select')
         ->and($profile)
         ->toContain('class="profile-edit-form space-y-6"')
         ->and($styles)
-        ->toContain('.discover-filter-controls select')
         ->toContain('.profile-edit-form select')
         ->toContain('option:checked')
         ->toContain('option:hover')

@@ -7,9 +7,10 @@ test('own messages remove the du label and use stronger readable styling', funct
         ->toContain('v-if="!message.is_own"')
         ->not->toContain("message.is_own ? 'Du'")
         ->toContain(
-            'bg-[color-mix(in_oklab,var(--primary),black_12%)]',
+            'bg-action-primary',
         )
-        ->toContain('px-5 py-3 text-base leading-7 text-white')
+        ->toContain('text-action-primary-foreground')
+        ->toContain('px-5 py-3 text-base leading-7')
         ->toContain('dark:text-white/70')
         ->toContain('text-[0.8125rem]');
 });

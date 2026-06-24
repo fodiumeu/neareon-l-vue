@@ -43,7 +43,7 @@ const isActiveItem = (href: (typeof mobileBottomNavItems)[number]['href']) => {
     <nav
         v-if="isVisible"
         aria-label="Mobile Hauptnavigation"
-        class="fixed inset-x-0 bottom-0 z-40 border-t border-border/80 bg-card/95 px-3 pt-2 pb-[calc(env(safe-area-inset-bottom)+0.5rem)] shadow-[0_-12px_30px_rgba(0,0,0,0.16)] backdrop-blur md:hidden dark:shadow-[0_-16px_36px_rgba(0,0,0,0.45)]"
+        class="fixed inset-x-0 bottom-0 z-40 border-t border-border/80 bg-card/95 px-3 pt-2 pb-[calc(env(safe-area-inset-bottom)+0.5rem)] shadow-[0_-16px_36px_rgba(0,0,0,0.22)] backdrop-blur-xl md:hidden dark:border-primary/15 dark:shadow-[0_-18px_42px_rgba(0,0,0,0.55)]"
     >
         <div class="mx-auto grid max-w-md grid-cols-5 gap-1">
             <Link
@@ -55,8 +55,8 @@ const isActiveItem = (href: (typeof mobileBottomNavItems)[number]['href']) => {
                     cn(
                         'flex min-h-14 flex-col items-center justify-center gap-1 rounded-xl px-2 text-xs font-medium text-muted-foreground transition-colors',
                         isActiveItem(item.href)
-                            ? 'bg-primary/15 text-primary'
-                            : 'hover:bg-accent hover:text-accent-foreground',
+                            ? 'border border-primary/25 bg-primary/15 text-primary shadow-sm shadow-primary/10'
+                            : 'border border-transparent hover:bg-accent/80 hover:text-accent-foreground',
                     )
                 "
             >

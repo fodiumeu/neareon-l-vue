@@ -45,26 +45,34 @@ defineOptions({
 
         <PageSection>
             <Card
-                class="bg-card/95 shadow-lg shadow-black/10 dark:shadow-black/30"
+                class="overflow-hidden bg-card/95 shadow-lg shadow-black/10 dark:border-primary/20 dark:shadow-black/35"
             >
-                <CardContent class="space-y-6">
+                <CardContent class="relative space-y-6">
+                    <div
+                        class="pointer-events-none absolute -top-24 -right-20 size-56 rounded-full bg-action-primary/14 blur-3xl"
+                        aria-hidden="true"
+                    />
                     <div class="max-w-3xl space-y-3">
                         <p
-                            class="text-xs font-semibold tracking-wide text-primary uppercase"
+                            class="relative text-xs font-semibold tracking-[0.18em] text-primary uppercase"
                         >
                             Home
                         </p>
-                        <h2 class="text-2xl font-semibold tracking-tight">
+                        <h2
+                            class="relative text-2xl font-semibold tracking-tight"
+                        >
                             Baue dein NEAREON-Profil weiter aus.
                         </h2>
-                        <p class="text-sm leading-6 text-muted-foreground">
+                        <p
+                            class="relative text-sm leading-6 text-muted-foreground"
+                        >
                             Halte dein Profil aktuell, entdecke sichtbare
                             Community-Profile und nutze die vorhandenen
                             NEAREON-Funktionen ohne Umwege.
                         </p>
                     </div>
 
-                    <div class="flex flex-col gap-3 sm:flex-row">
+                    <div class="relative flex flex-col gap-3 sm:flex-row">
                         <Button as-child>
                             <Link :href="discover()">Entdecken</Link>
                         </Button>
@@ -77,7 +85,7 @@ defineOptions({
         </PageSection>
 
         <PageSection v-if="page.props.project.hasStarterDefaults">
-            <Card class="border-primary/30 bg-primary/10">
+            <Card class="border-primary/30 bg-primary/10 shadow-primary/5">
                 <CardContent class="space-y-3">
                     <h2 class="text-base font-medium">NEAREON-Basis aktiv</h2>
                     <p

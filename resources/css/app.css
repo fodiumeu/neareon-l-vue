@@ -28,6 +28,9 @@
 
     --color-primary: var(--primary);
     --color-primary-foreground: var(--primary-foreground);
+    --color-action-primary: var(--action-primary);
+    --color-action-primary-foreground: var(--action-primary-foreground);
+    --color-action-primary-hover: var(--action-primary-hover);
 
     --color-secondary: var(--secondary);
     --color-secondary-foreground: var(--secondary-foreground);
@@ -90,7 +93,9 @@
 }
 
 :root {
+    --neareon-green: #a7ff52;
     --brand-accent: hsl(250 91% 66%);
+    --brand-energy: var(--neareon-green);
     --brand-accent-foreground: hsl(0 0% 98%);
     --app-radius: 0.625rem;
     --app-content-max-width: 80rem;
@@ -104,6 +109,9 @@
     --popover-foreground: hsl(229 38% 10%);
     --primary: hsl(250 91% 60%);
     --primary-foreground: hsl(0 0% 98%);
+    --action-primary: #5a45c8;
+    --action-primary-foreground: hsl(0 0% 100%);
+    --action-primary-hover: #6d58e8;
     --secondary: hsl(226 32% 91%);
     --secondary-foreground: hsl(230 36% 16%);
     --muted: hsl(226 28% 93%);
@@ -133,41 +141,46 @@
 }
 
 .dark {
-    --brand-accent: hsl(257 91% 68%);
-    --brand-accent-foreground: hsl(0 0% 98%);
-    --background: hsl(230 46% 7%);
-    --foreground: hsl(220 35% 96%);
-    --card: hsl(231 38% 11% / 0.9);
+    --neareon-green: #a7ff52;
+    --brand-accent: hsl(257 88% 70%);
+    --brand-energy: var(--neareon-green);
+    --brand-accent-foreground: hsl(240 45% 8%);
+    --background: #030318;
+    --foreground: hsl(222 44% 97%);
+    --card: hsl(240 72% 7% / 0.9);
     --card-foreground: hsl(220 35% 96%);
-    --popover: hsl(232 42% 10% / 0.98);
+    --popover: hsl(240 64% 8% / 0.98);
     --popover-foreground: hsl(220 35% 96%);
-    --primary: hsl(257 91% 68%);
-    --primary-foreground: hsl(240 45% 8%);
-    --secondary: hsl(231 32% 16%);
+    --primary: #a7ff52;
+    --primary-foreground: #030318;
+    --action-primary: #5a45c8;
+    --action-primary-foreground: hsl(245 100% 98%);
+    --action-primary-hover: #6d58e8;
+    --secondary: #05051f;
     --secondary-foreground: hsl(220 35% 96%);
-    --muted: hsl(231 28% 15%);
-    --muted-foreground: hsl(220 18% 70%);
-    --accent: hsl(246 46% 19%);
-    --accent-foreground: hsl(236 95% 88%);
+    --muted: #070720;
+    --muted-foreground: hsl(220 19% 74%);
+    --accent: hsl(257 54% 20%);
+    --accent-foreground: hsl(232 100% 92%);
     --destructive: hsl(0 78% 58%);
     --destructive-foreground: hsl(0 0% 98%);
-    --border: hsl(230 24% 24%);
-    --input: hsl(231 28% 18%);
-    --ring: hsl(257 91% 68%);
-    --chart-1: hsl(257 91% 68%);
-    --chart-2: hsl(190 95% 55%);
+    --border: hsl(236 39% 23%);
+    --input: hsl(239 44% 16%);
+    --ring: #a7ff52;
+    --chart-1: #a7ff52;
+    --chart-2: hsl(257 88% 70%);
     --chart-3: hsl(279 86% 72%);
     --chart-4: hsl(220 91% 68%);
     --chart-5: hsl(330 87% 68%);
-    --sidebar-background: hsl(232 48% 8%);
+    --sidebar-background: #05051f;
     --sidebar-foreground: hsl(220 30% 92%);
-    --sidebar-primary: hsl(257 91% 68%);
-    --sidebar-primary-foreground: hsl(240 45% 8%);
-    --sidebar-accent: hsl(246 46% 18%);
-    --sidebar-accent-foreground: hsl(236 95% 88%);
-    --sidebar-border: hsl(230 28% 20%);
-    --sidebar-ring: hsl(257 91% 68%);
-    --sidebar: hsl(232 48% 8%);
+    --sidebar-primary: #a7ff52;
+    --sidebar-primary-foreground: #030318;
+    --sidebar-accent: #070720;
+    --sidebar-accent-foreground: hsl(222 44% 97%);
+    --sidebar-border: hsl(239 40% 18%);
+    --sidebar-ring: #a7ff52;
+    --sidebar: #05051f;
 }
 
 @layer base {
@@ -177,26 +190,49 @@
     body {
         @apply bg-background text-foreground;
     }
+
+    .dark body {
+        background-image:
+            radial-gradient(
+                circle at 16% 0%,
+                color-mix(in oklab, var(--brand-accent) 22%, transparent),
+                transparent 30rem
+            ),
+            radial-gradient(
+                circle at 88% 8%,
+                color-mix(in oklab, var(--brand-energy) 12%, transparent),
+                transparent 24rem
+            ),
+            linear-gradient(180deg, #030318 0%, #05051f 48%, #030318 100%);
+        background-attachment: fixed;
+        color-scheme: dark;
+    }
 }
 
 @layer components {
-    .discover-filter-controls select,
     .profile-edit-form select {
         color-scheme: light dark;
         @apply bg-background text-foreground transition-colors hover:border-ring/70 hover:bg-accent/40 focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50;
     }
 
-    .discover-filter-controls select option,
     .profile-edit-form select option {
         background-color: var(--popover);
         color: var(--popover-foreground);
     }
 
-    .discover-filter-controls select option:hover,
-    .discover-filter-controls select option:checked,
-    .profile-edit-form select option:hover,
     .profile-edit-form select option:checked {
-        background-color: var(--accent);
-        color: var(--accent-foreground);
+        background-color: var(--action-primary);
+        color: var(--action-primary-foreground);
+    }
+
+    .profile-edit-form select option:hover,
+    .profile-edit-form select option:focus,
+    .profile-edit-form select option:active {
+        background-color: color-mix(
+            in oklab,
+            var(--neareon-green) 55%,
+            var(--popover)
+        );
+        color: var(--popover-foreground);
     }
 }
