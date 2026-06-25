@@ -22,6 +22,8 @@ type GroupDetail = {
     name: string;
     description?: string | null;
     region?: string | null;
+    postal_code?: string | null;
+    country_code?: string | null;
     visibility: 'public' | 'request' | 'private';
     visibility_label: string;
     member_count: number;
@@ -48,6 +50,9 @@ const visibilityBadgeClass = (visibility: GroupDetail['visibility']) =>
           : 'border-primary/30 bg-primary/10 text-primary';
 
 const avatarInitial = (name: string) => name.charAt(0).toUpperCase();
+
+const locationLabel = (group: GroupDetail) =>
+    [group.postal_code, group.region].filter(Boolean).join(' ');
 
 defineOptions({
     layout: {
@@ -96,6 +101,12 @@ defineOptions({
                                     {{ group.region }}
                                 </Badge>
                                 <Badge
+                                    v-if="group.postal_code"
+                                    variant="secondary"
+                                >
+                                    {{ group.postal_code }}
+                                </Badge>
+                                <Badge
                                     v-if="group.membership"
                                     variant="outline"
                                     class="border-primary/30 bg-primary/10 text-primary"
@@ -125,6 +136,18 @@ defineOptions({
                                 <p class="text-muted-foreground">Mitglieder</p>
                                 <p class="text-lg font-semibold">
                                     {{ group.member_count }}
+                                </p>
+                            </div>
+                            <div v-if="group.region || group.postal_code">
+                                <p class="text-muted-foreground">Standort</p>
+                                <p class="font-medium">
+                                    {{ locationLabel(group) }}
+                                </p>
+                                <p
+                                    v-if="group.country_code"
+                                    class="text-xs text-muted-foreground"
+                                >
+                                    {{ group.country_code }}
                                 </p>
                             </div>
                             <div v-if="group.owner">

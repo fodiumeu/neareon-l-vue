@@ -17,6 +17,8 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
     'slug',
     'description',
     'region',
+    'postal_code',
+    'country_code',
     'visibility',
     'status',
 ])]

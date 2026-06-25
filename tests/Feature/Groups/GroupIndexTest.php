@@ -17,6 +17,9 @@ test('groups index shows public and request groups but hides unrelated private g
     $publicGroup = Group::factory()->create([
         'name' => 'Public Community',
         'slug' => 'public-community',
+        'region' => 'Hamburg',
+        'postal_code' => '20095',
+        'country_code' => 'DE',
         'visibility' => Group::VISIBILITY_PUBLIC,
     ]);
     $requestGroup = Group::factory()->create([
@@ -37,6 +40,9 @@ test('groups index shows public and request groups but hides unrelated private g
             ->component('Groups/Index')
             ->has('groups.data', 2)
             ->where('groups.data.0.name', $publicGroup->name)
+            ->where('groups.data.0.region', 'Hamburg')
+            ->where('groups.data.0.postal_code', '20095')
+            ->where('groups.data.0.country_code', 'DE')
             ->where('groups.data.0.visibility_label', 'Öffentlich')
             ->where('groups.data.1.name', $requestGroup->name)
             ->where('groups.data.1.visibility_label', 'Anfrage'),
@@ -93,6 +99,7 @@ test('groups index page includes empty state card and read only group actions', 
         ->toContain('Gruppen entdecken')
         ->toContain('Entdecke öffentliche und offene Gruppen')
         ->toContain('Noch keine Gruppen zum Entdecken sichtbar.')
+        ->toContain('group.postal_code')
         ->toContain('Gruppe ansehen')
         ->toContain('visibility_label')
         ->toContain('member_count')

@@ -185,6 +185,8 @@ class GroupController extends Controller
             'slug' => $group->slug,
             'description' => $group->description,
             'region' => $group->region,
+            'postal_code' => $group->postal_code,
+            'country_code' => $group->country_code,
             'visibility' => $group->visibility,
             'visibility_label' => $this->visibilityLabel($group->visibility),
             'member_count' => $group->active_members_count ?? 0,

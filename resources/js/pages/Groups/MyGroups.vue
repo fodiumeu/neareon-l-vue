@@ -13,6 +13,8 @@ type GroupSummary = {
     slug: string;
     description?: string | null;
     region?: string | null;
+    postal_code?: string | null;
+    country_code?: string | null;
     visibility: 'public' | 'request' | 'private';
     visibility_label: string;
     member_count: number;
@@ -119,10 +121,14 @@ defineOptions({
                                     {{ group.name }}
                                 </h2>
                                 <p
-                                    v-if="group.region"
+                                    v-if="group.region || group.postal_code"
                                     class="truncate text-sm text-muted-foreground"
                                 >
-                                    {{ group.region }}
+                                    {{
+                                        [group.postal_code, group.region]
+                                            .filter(Boolean)
+                                            .join(' ')
+                                    }}
                                 </p>
                             </div>
 
@@ -139,6 +145,18 @@ defineOptions({
                         </p>
 
                         <div class="flex flex-wrap gap-2">
+                            <span
+                                v-if="group.region"
+                                class="rounded-full border border-border bg-background/70 px-3 py-1 text-xs font-medium text-muted-foreground dark:bg-input/30"
+                            >
+                                {{ group.region }}
+                            </span>
+                            <span
+                                v-if="group.postal_code"
+                                class="rounded-full border border-border bg-background/70 px-3 py-1 text-xs font-medium text-muted-foreground dark:bg-input/30"
+                            >
+                                {{ group.postal_code }}
+                            </span>
                             <span
                                 class="rounded-full border border-border bg-background/70 px-3 py-1 text-xs font-medium text-muted-foreground dark:bg-input/30"
                             >

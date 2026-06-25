@@ -16,6 +16,9 @@ test('my groups shows owned active and pending memberships', function () {
     $ownedGroup = Group::factory()->for($viewer, 'owner')->create([
         'name' => 'Owned Group',
         'slug' => 'owned-group',
+        'region' => 'Berlin',
+        'postal_code' => '10115',
+        'country_code' => 'DE',
         'visibility' => Group::VISIBILITY_PRIVATE,
         'created_at' => now()->subMinutes(2),
     ]);
@@ -58,6 +61,9 @@ test('my groups shows owned active and pending memberships', function () {
             ->where('groups.data.1.name', $activeGroup->name)
             ->where('groups.data.1.membership.role_label', 'Mitglied')
             ->where('groups.data.2.name', $ownedGroup->name)
+            ->where('groups.data.2.region', 'Berlin')
+            ->where('groups.data.2.postal_code', '10115')
+            ->where('groups.data.2.country_code', 'DE')
             ->where('groups.data.2.membership.role_label', 'Besitzer'),
         );
 });
@@ -81,6 +87,7 @@ test('my groups empty state links to group discovery', function () {
         ->toContain('Entdecke Gruppen und finde passende Communities.')
         ->toContain('href="/groups"')
         ->toContain('Gruppen entdecken')
+        ->toContain('group.postal_code')
         ->not->toContain('Gruppe erstellen')
         ->not->toContain('Beitreten');
 });

@@ -18,6 +18,8 @@ test('public group detail is visible for onboarded members', function () {
         'slug' => 'local-running',
         'description' => 'Gemeinsam laufen in der Region.',
         'region' => 'Berlin',
+        'postal_code' => '10115',
+        'country_code' => 'DE',
         'visibility' => Group::VISIBILITY_PUBLIC,
     ]);
 
@@ -29,6 +31,8 @@ test('public group detail is visible for onboarded members', function () {
             ->where('group.name', 'Local Running')
             ->where('group.description', 'Gemeinsam laufen in der Region.')
             ->where('group.region', 'Berlin')
+            ->where('group.postal_code', '10115')
+            ->where('group.country_code', 'DE')
             ->where('group.visibility_label', 'Öffentlich')
             ->where('group.owner.name', 'Owner Profile')
             ->where('group.member_count', 0),
@@ -116,6 +120,9 @@ test('group detail page keeps future actions as informational read only hints', 
 
     expect($page)
         ->toContain('Zurück zu Gruppen')
+        ->toContain('Standort')
+        ->toContain('locationLabel(group)')
+        ->toContain('group.postal_code')
         ->toContain('Weitere Gruppenfunktionen wie Beitritt, Chat und Events')
         ->toContain('Neueste Mitglieder')
         ->not->toContain('Gruppe bearbeiten')

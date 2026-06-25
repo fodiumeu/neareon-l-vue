@@ -21,6 +21,27 @@ test('group belongs to an owner and exposes membership relationships', function 
         ->and($owner->ownedGroups()->first()->is($group))->toBeTrue();
 });
 
+test('group stores postal code and country code location fields', function () {
+    $group = Group::factory()->create([
+        'region' => 'Hamburg',
+        'postal_code' => '20095',
+        'country_code' => 'DE',
+    ]);
+
+    expect($group->refresh())
+        ->region->toBe('Hamburg')
+        ->postal_code->toBe('20095')
+        ->country_code->toBe('DE');
+});
+
+test('group factory creates a simple regional location foundation', function () {
+    $group = Group::factory()->create();
+
+    expect($group->region)->not->toBeNull()
+        ->and($group->postal_code)->not->toBeNull()
+        ->and($group->country_code)->toBe('DE');
+});
+
 test('group membership is unique per user and group', function () {
     $user = User::factory()->create();
     $group = Group::factory()->create();
