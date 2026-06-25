@@ -28,11 +28,13 @@ type GroupDetail = {
     visibility: 'public' | 'request' | 'private';
     visibility_label: string;
     member_count: number;
+    can_edit: boolean;
     category: {
         id: number;
         slug: string;
         label: string;
     } | null;
+    edit_url: string;
     owner?: {
         name: string;
         username?: string | null;
@@ -98,6 +100,12 @@ defineOptions({
             :title="group.name"
             description="Gruppen-Foundation für regionale und thematische Community-Bereiche."
         />
+
+        <div v-if="group.can_edit" class="flex justify-start sm:justify-end">
+            <Button as-child variant="secondary" class="w-full sm:w-auto">
+                <Link :href="group.edit_url">Gruppe bearbeiten</Link>
+            </Button>
+        </div>
 
         <PageSection>
             <Card

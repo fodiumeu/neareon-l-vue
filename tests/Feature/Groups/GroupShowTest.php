@@ -45,6 +45,7 @@ test('public group detail is visible for onboarded members', function () {
             ->where('group.visibility_label', 'Öffentlich')
             ->where('group.owner.name', 'Owner Profile')
             ->where('group.member_count', 0)
+            ->where('group.can_edit', false)
             ->where('group.category.label', 'Fitness')
             ->where('group.membership', null),
         );
@@ -63,6 +64,8 @@ test('group detail exposes owner membership for my groups backlink', function ()
         ->assertOk()
         ->assertInertia(fn (Assert $page) => $page
             ->component('Groups/Show')
+            ->where('group.can_edit', true)
+            ->where('group.edit_url', route('groups.edit', $group->slug))
             ->where('group.membership.role_label', 'Besitzer')
             ->where('group.membership.status', GroupMember::STATUS_ACTIVE),
         );
@@ -170,6 +173,8 @@ test('group detail page keeps future actions as informational read only hints', 
         ->toContain('group.category.label')
         ->toContain('Weitere Gruppenfunktionen wie Beitritt, Chat und Events')
         ->toContain('Neueste Mitglieder')
-        ->not->toContain('Gruppe bearbeiten')
+        ->toContain('Gruppe bearbeiten')
+        ->toContain('group.can_edit')
+        ->toContain('group.edit_url')
         ->not->toContain('Beitreten');
 });

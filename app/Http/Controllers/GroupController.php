@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\StoreGroupRequest;
+use App\Http\Requests\UpdateGroupRequest;
 use App\Models\Group;
 use App\Models\GroupMember;
 use App\Models\InterestOption;
@@ -54,23 +55,7 @@ class GroupController extends Controller
     {
         return Inertia::render('Groups/Create', [
             'categoryOptions' => $this->categoryOptions(),
-            'visibilityOptions' => [
-                [
-                    'value' => Group::VISIBILITY_PUBLIC,
-                    'label' => 'Öffentlich',
-                    'description' => 'Alle Mitglieder können die Gruppe finden und ansehen.',
-                ],
-                [
-                    'value' => Group::VISIBILITY_REQUEST,
-                    'label' => 'Anfrage',
-                    'description' => 'Mitglieder können die Gruppe finden; Beitritt erfolgt später per Anfrage.',
-                ],
-                [
-                    'value' => Group::VISIBILITY_PRIVATE,
-                    'label' => 'Privat',
-                    'description' => 'Nur Mitglieder können die Gruppe sehen.',
-                ],
-            ],
+            'visibilityOptions' => $this->visibilityOptions(),
         ]);
     }
 
@@ -103,6 +88,39 @@ class GroupController extends Controller
 
         return to_route('groups.show', ['group' => $group->slug])
             ->with('success', 'Gruppe wurde erstellt.');
+    }
+
+    /**
+     * Show the group edit form.
+     */
+    public function edit(Request $request, Group $group): Response
+    {
+        $viewer = $request->user();
+
+        abort_unless($this->canManageGroup($group, $viewer), 403);
+
+        $group->load(['category']);
+
+        return Inertia::render('Groups/Edit', [
+            'categoryOptions' => $this->categoryOptions(),
+            'group' => $this->groupFormData($group),
+            'visibilityOptions' => $this->visibilityOptions(),
+        ]);
+    }
+
+    /**
+     * Update an existing group.
+     */
+    public function update(UpdateGroupRequest $request, Group $group): RedirectResponse
+    {
+        $viewer = $request->user();
+
+        abort_unless($this->canManageGroup($group, $viewer), 403);
+
+        $group->update($request->validated());
+
+        return to_route('groups.show', ['group' => $group->slug])
+            ->with('success', 'Gruppe wurde aktualisiert.');
     }
 
     /**
@@ -272,6 +290,30 @@ class GroupController extends Controller
             'member_count' => $group->active_members_count ?? 0,
             'owner' => $this->userData($group->owner),
             'membership' => $membershipData,
+            'can_edit' => $this->canManageGroup($group, $viewer),
+            'category' => $group->category !== null
+                ? $this->categoryData($group->category)
+                : null,
+            'edit_url' => route('groups.edit', ['group' => $group->slug]),
+            'url' => route('groups.show', ['group' => $group->slug]),
+        ];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function groupFormData(Group $group): array
+    {
+        return [
+            'id' => $group->id,
+            'name' => $group->name,
+            'slug' => $group->slug,
+            'description' => $group->description,
+            'region' => $group->region,
+            'postal_code' => $group->postal_code,
+            'country_code' => $group->country_code,
+            'visibility' => $group->visibility,
+            'category_interest_option_id' => $group->category_interest_option_id,
             'category' => $group->category !== null
                 ? $this->categoryData($group->category)
                 : null,
@@ -304,6 +346,35 @@ class GroupController extends Controller
             'slug' => $option->slug,
             'label' => $option->label,
         ];
+    }
+
+    /**
+     * @return list<array{value: string, label: string, description: string}>
+     */
+    private function visibilityOptions(): array
+    {
+        return [
+            [
+                'value' => Group::VISIBILITY_PUBLIC,
+                'label' => 'Öffentlich',
+                'description' => 'Alle Mitglieder können die Gruppe finden und ansehen.',
+            ],
+            [
+                'value' => Group::VISIBILITY_REQUEST,
+                'label' => 'Anfrage',
+                'description' => 'Mitglieder können die Gruppe finden; Beitritt erfolgt später per Anfrage.',
+            ],
+            [
+                'value' => Group::VISIBILITY_PRIVATE,
+                'label' => 'Privat',
+                'description' => 'Nur Mitglieder können die Gruppe sehen.',
+            ],
+        ];
+    }
+
+    private function canManageGroup(Group $group, User $viewer): bool
+    {
+        return $group->owner_id === $viewer->id || $viewer->canAccessAdmin();
     }
 
     /**

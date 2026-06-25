@@ -55,6 +55,10 @@ Route::middleware(['auth', 'age.gate', 'verified', 'onboarding.complete'])->grou
         ->name('groups.store');
     Route::get('my-groups', [GroupController::class, 'mine'])
         ->name('groups.mine');
+    Route::get('groups/{group:slug}/edit', [GroupController::class, 'edit'])
+        ->name('groups.edit');
+    Route::patch('groups/{group:slug}', [GroupController::class, 'update'])
+        ->name('groups.update');
     Route::get('groups/{group:slug}', [GroupController::class, 'show'])
         ->name('groups.show');
     Route::get('contacts', [ContactController::class, 'index'])
