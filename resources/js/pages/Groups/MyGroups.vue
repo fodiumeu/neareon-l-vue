@@ -1,21 +1,11 @@
 <script setup lang="ts">
-import { Form, Head, Link } from '@inertiajs/vue3';
+import { Head, Link } from '@inertiajs/vue3';
 import CommunityBackLink from '@/components/CommunityBackLink.vue';
 import PageHeader from '@/components/PageHeader.vue';
 import PageSection from '@/components/PageSection.vue';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import {
-    Dialog,
-    DialogClose,
-    DialogContent,
-    DialogDescription,
-    DialogFooter,
-    DialogHeader,
-    DialogTitle,
-    DialogTrigger,
-} from '@/components/ui/dialog';
 
 type GroupSummary = {
     id: number;
@@ -28,9 +18,6 @@ type GroupSummary = {
     visibility: 'public' | 'request' | 'private';
     visibility_label: string;
     member_count: number;
-    can_leave: boolean;
-    leave_label?: string | null;
-    leave_url?: string | null;
     category: {
         id: number;
         slug: string;
@@ -205,83 +192,6 @@ defineOptions({
                             <Button as-child class="w-full">
                                 <Link :href="group.url">Gruppe ansehen</Link>
                             </Button>
-
-                            <Dialog
-                                v-if="group.can_leave && group.leave_url && group.membership?.status === 'active'"
-                            >
-                                <DialogTrigger as-child>
-                                    <Button
-                                        type="button"
-                                        variant="outline"
-                                        class="w-full border-destructive/30 text-destructive hover:border-destructive/45 hover:bg-destructive/10"
-                                    >
-                                        {{ group.leave_label }}
-                                    </Button>
-                                </DialogTrigger>
-                                <DialogContent>
-                                    <Form
-                                        :action="group.leave_url"
-                                        method="delete"
-                                        v-slot="{ processing }"
-                                        class="space-y-6"
-                                    >
-                                        <DialogHeader class="space-y-3">
-                                            <DialogTitle>
-                                                Gruppe verlassen?
-                                            </DialogTitle>
-                                            <DialogDescription>
-                                                Du verlässt diese Gruppe und sie
-                                                wird nicht mehr unter „Meine
-                                                Gruppen“ angezeigt.
-                                            </DialogDescription>
-                                        </DialogHeader>
-
-                                        <DialogFooter class="gap-2">
-                                            <DialogClose as-child>
-                                                <Button
-                                                    type="button"
-                                                    variant="secondary"
-                                                    :disabled="processing"
-                                                >
-                                                    Abbrechen
-                                                </Button>
-                                            </DialogClose>
-                                            <Button
-                                                type="submit"
-                                                variant="outline"
-                                                class="border-destructive/30 text-destructive hover:border-destructive/45 hover:bg-destructive/10"
-                                                :disabled="processing"
-                                            >
-                                                {{
-                                                    processing
-                                                        ? 'Wird verarbeitet...'
-                                                        : 'Gruppe verlassen'
-                                                }}
-                                            </Button>
-                                        </DialogFooter>
-                                    </Form>
-                                </DialogContent>
-                            </Dialog>
-                            <Form
-                                v-else-if="group.can_leave && group.leave_url && group.membership?.status === 'pending'"
-                                :action="group.leave_url"
-                                method="delete"
-                                v-slot="{ processing }"
-                            >
-                                <Button
-                                    type="submit"
-                                    variant="outline"
-                                    class="w-full border-destructive/30 text-destructive hover:border-destructive/45 hover:bg-destructive/10"
-                                    :disabled="processing"
-                                >
-                                    {{
-                                        processing
-                                            ? 'Wird verarbeitet...'
-                                            : (group.leave_label ??
-                                                'Anfrage zurückziehen')
-                                    }}
-                                </Button>
-                            </Form>
                         </div>
                     </CardContent>
                 </Card>

@@ -239,7 +239,7 @@ test('group detail exposes leave action for active and pending members', functio
         );
 });
 
-test('my groups exposes leave action for active and pending memberships', function () {
+test('my groups keeps leave and withdraw actions on the group detail page only', function () {
     $viewer = User::factory()->create();
     createOnboardedProfile($viewer);
     $activeGroup = Group::factory()->create([
@@ -275,15 +275,12 @@ test('my groups exposes leave action for active and pending memberships', functi
             ->component('Groups/MyGroups')
             ->has('groups.data', 2)
             ->where('groups.data.0.id', $pendingGroup->id)
-            ->where('groups.data.0.can_leave', true)
-            ->where('groups.data.0.leave_label', 'Anfrage zurückziehen')
             ->where('groups.data.1.id', $activeGroup->id)
-            ->where('groups.data.1.can_leave', true)
-            ->where('groups.data.1.leave_label', 'Gruppe verlassen'),
+            ->where('groups.data.1.membership.status', GroupMember::STATUS_ACTIVE),
         );
 });
 
-test('leave and withdraw ui uses existing dialog and form patterns', function () {
+test('leave and withdraw ui is only exposed on group detail pages', function () {
     $showPage = file_get_contents(resource_path('js/pages/Groups/Show.vue'));
     $myGroupsPage = file_get_contents(resource_path('js/pages/Groups/MyGroups.vue'));
 
@@ -294,8 +291,9 @@ test('leave and withdraw ui uses existing dialog and form patterns', function ()
         ->toContain('group.leave_url')
         ->toContain('method="delete"')
         ->and($myGroupsPage)
-        ->toContain('Gruppe verlassen?')
-        ->toContain('Anfrage zurückziehen')
-        ->toContain('group.leave_url')
-        ->toContain('method="delete"');
+        ->toContain('Gruppe ansehen')
+        ->not->toContain('Gruppe verlassen?')
+        ->not->toContain('Anfrage zurückziehen')
+        ->not->toContain('group.leave_url')
+        ->not->toContain('method="delete"');
 });

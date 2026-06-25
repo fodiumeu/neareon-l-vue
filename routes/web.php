@@ -55,12 +55,18 @@ Route::middleware(['auth', 'age.gate', 'verified', 'onboarding.complete'])->grou
         ->name('groups.store');
     Route::get('my-groups', [GroupController::class, 'mine'])
         ->name('groups.mine');
+    Route::get('groups/invite/{token}', [GroupController::class, 'showInvite'])
+        ->name('groups.invite.show');
+    Route::post('groups/invite/{token}/join', [GroupController::class, 'joinInvite'])
+        ->name('groups.invite.join');
     Route::get('groups/{group:slug}/edit', [GroupController::class, 'edit'])
         ->name('groups.edit');
     Route::post('groups/{group:slug}/join', [GroupController::class, 'join'])
         ->name('groups.join');
     Route::delete('groups/{group:slug}/membership', [GroupController::class, 'leave'])
         ->name('groups.membership.destroy');
+    Route::post('groups/{group:slug}/invite-token', [GroupController::class, 'storeInviteToken'])
+        ->name('groups.invite-token.store');
     Route::patch('groups/{group:slug}/requests/{member}/accept', [GroupController::class, 'acceptRequest'])
         ->name('groups.requests.accept');
     Route::delete('groups/{group:slug}/requests/{member}/decline', [GroupController::class, 'declineRequest'])

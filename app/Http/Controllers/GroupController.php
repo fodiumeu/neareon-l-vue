@@ -269,6 +269,72 @@ class GroupController extends Controller
 
         abort_unless($this->canViewGroup($group, $viewer), 404);
 
+        return $this->renderShow($request, $group);
+    }
+
+    /**
+     * Show a private group through a valid invitation token.
+     */
+    public function showInvite(Request $request, string $token): Response
+    {
+        $group = $this->groupByInviteToken($token);
+
+        return $this->renderShow($request, $group, $token);
+    }
+
+    /**
+     * Create or rotate the invitation token for a private group.
+     */
+    public function storeInviteToken(Request $request, Group $group): RedirectResponse
+    {
+        $viewer = $request->user();
+
+        abort_unless($this->canManageGroup($group, $viewer), 403);
+        abort_unless($group->visibility === Group::VISIBILITY_PRIVATE, 404);
+
+        $hadToken = $group->hasInviteToken();
+        $group->rotateInviteToken();
+
+        return to_route('groups.show', $this->showRouteParameters($group, self::SOURCE_MY_GROUPS))
+            ->with('success', $hadToken
+                ? 'Einladungslink wurde erneuert.'
+                : 'Einladungslink wurde erstellt.');
+    }
+
+    /**
+     * Join a private group through a valid invitation token.
+     */
+    public function joinInvite(Request $request, string $token): RedirectResponse
+    {
+        $viewer = $request->user();
+        $group = $this->groupByInviteToken($token);
+
+        abort_if($group->owner_id === $viewer->id, 403);
+
+        $membership = GroupMember::query()->firstOrNew([
+            'group_id' => $group->id,
+            'user_id' => $viewer->id,
+        ]);
+
+        if ($membership->exists && $membership->status === GroupMember::STATUS_ACTIVE) {
+            return to_route('groups.show', $this->showRouteParameters($group, self::SOURCE_MY_GROUPS))
+                ->with('success', 'Du bist bereits Mitglied dieser Gruppe.');
+        }
+
+        $membership->forceFill([
+            'role' => $membership->role ?: GroupMember::ROLE_MEMBER,
+            'status' => GroupMember::STATUS_ACTIVE,
+            'joined_at' => $membership->joined_at ?? now(),
+        ])->save();
+
+        return to_route('groups.show', $this->showRouteParameters($group, self::SOURCE_MY_GROUPS))
+            ->with('success', 'Du bist der Gruppe beigetreten.');
+    }
+
+    private function renderShow(Request $request, Group $group, ?string $inviteToken = null): Response
+    {
+        $viewer = $request->user();
+
         $group->load([
             'category',
             'owner.profile',
@@ -287,7 +353,7 @@ class GroupController extends Controller
             : [];
 
         return Inertia::render('Groups/Show', [
-            'group' => array_merge($this->groupSummary($group, $viewer, $this->requestSource($request)), [
+            'group' => array_merge($this->groupSummary($group, $viewer, $this->requestSource($request), $inviteToken), [
                 ...$this->backlinkData($group, $viewer, $this->requestSource($request)),
                 'members' => $group->activeMembers
                     ->map(fn (GroupMember $membership): array => $this->memberData($membership))
@@ -431,7 +497,7 @@ class GroupController extends Controller
     /**
      * @return array<string, mixed>
      */
-    private function groupSummary(Group $group, User $viewer, ?string $source = null): array
+    private function groupSummary(Group $group, User $viewer, ?string $source = null, ?string $inviteToken = null): array
     {
         $membership = $group->members->first();
         $membershipData = $membership !== null
@@ -466,11 +532,9 @@ class GroupController extends Controller
             'owner' => $this->userData($group->owner),
             'membership' => $membershipData,
             'can_edit' => $this->canManageGroup($group, $viewer),
-            'can_join' => $this->canJoinGroup($group, $membershipData, $viewer),
-            'join_label' => $this->joinLabel($group, $membershipData, $viewer),
-            'join_url' => $this->canJoinGroup($group, $membershipData, $viewer)
-                ? route('groups.join', ['group' => $group->slug])
-                : null,
+            'can_join' => $this->canJoinGroup($group, $membershipData, $viewer, $inviteToken),
+            'join_label' => $this->joinLabel($group, $membershipData, $viewer, $inviteToken),
+            'join_url' => $this->joinUrl($group, $membershipData, $viewer, $inviteToken),
             'can_leave' => $this->canLeaveGroup($group, $membershipData, $viewer),
             'leave_label' => $this->leaveLabel($membershipData),
             'leave_url' => $this->canLeaveGroup($group, $membershipData, $viewer)
@@ -481,8 +545,21 @@ class GroupController extends Controller
             'category' => $group->category !== null
                 ? $this->categoryData($group->category)
                 : null,
-            'edit_url' => route('groups.edit', ['group' => $group->slug]),
+            'edit_url' => $this->canManageGroup($group, $viewer)
+                ? route('groups.edit', ['group' => $group->slug])
+                : null,
             'url' => route('groups.show', $this->showRouteParameters($group, $source)),
+            'invite_context' => $this->hasValidInviteContext($group, $inviteToken, $viewer, $membershipData),
+            'can_manage_invite' => $this->canManageInvite($group, $viewer),
+            'invite_token_url' => $this->canManageInvite($group, $viewer)
+                ? route('groups.invite-token.store', ['group' => $group->slug])
+                : null,
+            'invite_url' => $this->canManageInvite($group, $viewer) && $group->hasInviteToken()
+                ? route('groups.invite.show', ['token' => $group->invite_token])
+                : null,
+            'invite_token_created_at' => $this->canManageInvite($group, $viewer)
+                ? $group->invite_token_created_at?->toISOString()
+                : null,
         ];
     }
 
@@ -564,32 +641,84 @@ class GroupController extends Controller
         return $group->owner_id === $viewer->id || $viewer->canAccessAdmin();
     }
 
-    /**
-     * @param  array<string, string>|null  $membershipData
-     */
-    private function canJoinGroup(Group $group, ?array $membershipData, User $viewer): bool
+    private function canManageInvite(Group $group, User $viewer): bool
     {
-        return $membershipData === null
-            && $group->owner_id !== $viewer->id
-            && ! $viewer->canAccessAdmin()
-            && in_array($group->visibility, [
-                Group::VISIBILITY_PUBLIC,
-                Group::VISIBILITY_REQUEST,
-            ], true);
+        return $group->visibility === Group::VISIBILITY_PRIVATE
+            && $this->canManageGroup($group, $viewer);
     }
 
     /**
      * @param  array<string, string>|null  $membershipData
      */
-    private function joinLabel(Group $group, ?array $membershipData, User $viewer): ?string
+    private function canJoinGroup(Group $group, ?array $membershipData, User $viewer, ?string $inviteToken = null): bool
     {
-        if (! $this->canJoinGroup($group, $membershipData, $viewer)) {
+        if ($membershipData !== null || $group->owner_id === $viewer->id || $viewer->canAccessAdmin()) {
+            return false;
+        }
+
+        if ($this->hasValidInviteToken($group, $inviteToken)) {
+            return true;
+        }
+
+        return in_array($group->visibility, [
+            Group::VISIBILITY_PUBLIC,
+            Group::VISIBILITY_REQUEST,
+        ], true);
+    }
+
+    /**
+     * @param  array<string, string>|null  $membershipData
+     */
+    private function joinLabel(Group $group, ?array $membershipData, User $viewer, ?string $inviteToken = null): ?string
+    {
+        if (! $this->canJoinGroup($group, $membershipData, $viewer, $inviteToken)) {
             return null;
         }
 
-        return $group->visibility === Group::VISIBILITY_PUBLIC
-            ? 'Gruppe beitreten'
-            : 'Beitrittsanfrage senden';
+        return $group->visibility === Group::VISIBILITY_REQUEST && ! $this->hasValidInviteToken($group, $inviteToken)
+            ? 'Beitrittsanfrage senden'
+            : 'Gruppe beitreten';
+    }
+
+    /**
+     * @param  array<string, string>|null  $membershipData
+     */
+    private function joinUrl(Group $group, ?array $membershipData, User $viewer, ?string $inviteToken = null): ?string
+    {
+        if (! $this->canJoinGroup($group, $membershipData, $viewer, $inviteToken)) {
+            return null;
+        }
+
+        return $this->hasValidInviteToken($group, $inviteToken)
+            ? route('groups.invite.join', ['token' => $inviteToken])
+            : route('groups.join', ['group' => $group->slug]);
+    }
+
+    /**
+     * @param  array<string, string>|null  $membershipData
+     */
+    private function hasValidInviteContext(Group $group, ?string $inviteToken, User $viewer, ?array $membershipData): bool
+    {
+        return $membershipData === null
+            && $group->owner_id !== $viewer->id
+            && ! $viewer->canAccessAdmin()
+            && $this->hasValidInviteToken($group, $inviteToken);
+    }
+
+    private function hasValidInviteToken(Group $group, ?string $inviteToken): bool
+    {
+        return $group->visibility === Group::VISIBILITY_PRIVATE
+            && filled($inviteToken)
+            && hash_equals((string) $group->invite_token, (string) $inviteToken);
+    }
+
+    private function groupByInviteToken(string $token): Group
+    {
+        return Group::query()
+            ->active()
+            ->where('visibility', Group::VISIBILITY_PRIVATE)
+            ->where('invite_token', $token)
+            ->firstOrFail();
     }
 
     /**

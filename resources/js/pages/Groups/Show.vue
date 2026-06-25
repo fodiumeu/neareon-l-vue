@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { Form, Head, Link } from '@inertiajs/vue3';
+import { useClipboard } from '@vueuse/core';
 import PageHeader from '@/components/PageHeader.vue';
 import PageSection from '@/components/PageSection.vue';
 import ProfileAvatar from '@/components/ProfileAvatar.vue';
@@ -56,12 +57,17 @@ type GroupDetail = {
     can_edit: boolean;
     can_join: boolean;
     can_leave: boolean;
+    can_manage_invite: boolean;
     category: {
         id: number;
         slug: string;
         label: string;
     } | null;
     edit_url: string;
+    invite_context: boolean;
+    invite_token_created_at?: string | null;
+    invite_token_url?: string | null;
+    invite_url?: string | null;
     join_label?: string | null;
     join_url?: string | null;
     leave_label?: string | null;
@@ -83,6 +89,8 @@ type GroupDetail = {
 defineProps<{
     group: GroupDetail;
 }>();
+
+const { copy, copied } = useClipboard();
 
 const visibilityBadgeClass = (visibility: GroupDetail['visibility']) =>
     visibility === 'private'
@@ -144,6 +152,60 @@ defineOptions({
             </Button>
         </div>
 
+        <PageSection v-if="group.can_manage_invite">
+            <Card>
+                <CardContent class="space-y-4 p-5">
+                    <div class="space-y-1">
+                        <h2 class="text-base font-semibold">
+                            Einladungslink
+                        </h2>
+                        <p class="text-sm leading-6 text-muted-foreground">
+                            Teile diesen Link mit Personen, die deiner privaten
+                            Gruppe beitreten sollen.
+                        </p>
+                    </div>
+
+                    <div v-if="group.invite_url" class="grid gap-3">
+                        <div
+                            class="flex flex-col overflow-hidden rounded-lg border border-border bg-background/60 dark:bg-input/20 sm:flex-row"
+                        >
+                            <input
+                                type="text"
+                                readonly
+                                :value="group.invite_url"
+                                class="min-w-0 flex-1 bg-transparent px-3 py-2 text-sm text-foreground outline-none"
+                            />
+                            <Button
+                                type="button"
+                                variant="secondary"
+                                class="rounded-none border-0 border-t sm:border-t-0 sm:border-l"
+                                @click="copy(group.invite_url ?? '')"
+                            >
+                                {{ copied ? 'Kopiert' : 'Link kopieren' }}
+                            </Button>
+                        </div>
+                    </div>
+
+                    <Form
+                        v-if="group.invite_token_url"
+                        :action="group.invite_token_url"
+                        method="post"
+                        v-slot="{ processing }"
+                    >
+                        <Button type="submit" :disabled="processing">
+                            {{
+                                processing
+                                    ? 'Wird verarbeitet...'
+                                    : group.invite_url
+                                      ? 'Link erneuern'
+                                      : 'Einladungslink erstellen'
+                            }}
+                        </Button>
+                    </Form>
+                </CardContent>
+            </Card>
+        </PageSection>
+
         <PageSection
             v-if="group.can_join || group.viewer_membership_status === 'pending' || group.viewer_membership_status === 'active'"
         >
@@ -171,8 +233,11 @@ defineOptions({
                             v-else
                             class="text-sm leading-6 text-muted-foreground"
                         >
-                            Tritt dieser Gruppe bei oder sende eine
-                            Beitrittsanfrage.
+                            {{
+                                group.invite_context
+                                    ? 'Du wurdest über einen Einladungslink eingeladen.'
+                                    : 'Tritt dieser Gruppe bei oder sende eine Beitrittsanfrage.'
+                            }}
                         </p>
                     </div>
 

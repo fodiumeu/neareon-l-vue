@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Str;
 
 #[Fillable([
     'owner_id',
@@ -22,6 +23,8 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
     'category_interest_option_id',
     'visibility',
     'status',
+    'invite_token',
+    'invite_token_created_at',
 ])]
 class Group extends Model
 {
@@ -37,6 +40,18 @@ class Group extends Model
     public const STATUS_ACTIVE = 'active';
 
     public const STATUS_ARCHIVED = 'archived';
+
+    /**
+     * Get the attributes that should be cast.
+     *
+     * @return array<string, string>
+     */
+    protected function casts(): array
+    {
+        return [
+            'invite_token_created_at' => 'datetime',
+        ];
+    }
 
     /**
      * Get the user who owns the group.
@@ -89,5 +104,27 @@ class Group extends Model
     public function scopeActive(Builder $query): Builder
     {
         return $query->where('status', self::STATUS_ACTIVE);
+    }
+
+    public function hasInviteToken(): bool
+    {
+        return filled($this->invite_token);
+    }
+
+    public function rotateInviteToken(): string
+    {
+        do {
+            $token = Str::random(48);
+        } while (self::query()
+            ->where('invite_token', $token)
+            ->whereKeyNot($this->getKey())
+            ->exists());
+
+        $this->forceFill([
+            'invite_token' => $token,
+            'invite_token_created_at' => now(),
+        ])->save();
+
+        return $token;
     }
 }
