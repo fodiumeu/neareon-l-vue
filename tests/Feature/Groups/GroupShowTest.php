@@ -48,6 +48,9 @@ test('public group detail is visible for onboarded members', function () {
             ->where('group.can_edit', false)
             ->where('group.can_join', true)
             ->where('group.join_label', 'Gruppe beitreten')
+            ->where('group.back_url', route('groups.index'))
+            ->where('group.back_label', 'Zurück zu Gruppen entdecken')
+            ->where('group.back_source', 'groups')
             ->where('group.category.label', 'Fitness')
             ->where('group.membership', null),
         );
@@ -69,6 +72,9 @@ test('group detail exposes owner membership for my groups backlink', function ()
             ->where('group.can_edit', true)
             ->where('group.can_join', false)
             ->where('group.edit_url', route('groups.edit', $group->slug))
+            ->where('group.back_url', route('groups.mine'))
+            ->where('group.back_label', 'Zurück zu Meine Gruppen')
+            ->where('group.back_source', 'my-groups')
             ->where('group.membership.role_label', 'Besitzer')
             ->where('group.membership.status', GroupMember::STATUS_ACTIVE),
         );
@@ -115,6 +121,8 @@ test('request group detail shows pending membership state', function () {
             ->component('Groups/Show')
             ->where('group.can_join', false)
             ->where('group.viewer_membership_status', GroupMember::STATUS_PENDING)
+            ->where('group.back_url', route('groups.mine'))
+            ->where('group.back_label', 'Zurück zu Meine Gruppen')
             ->where('group.membership.status_label', 'Anfrage ausstehend'),
         );
 });
@@ -179,17 +187,95 @@ test('private group detail is visible for active members and shows newest member
         );
 });
 
-test('group detail page uses stable membership based backlinks', function () {
+test('group detail page uses controller provided contextual backlinks', function () {
     $page = file_get_contents(resource_path('js/pages/Groups/Show.vue'));
 
     expect($page)
-        ->toContain('backHref')
-        ->toContain("'/my-groups'")
-        ->toContain("'/groups'")
-        ->toContain('← Zurück zu Meine Gruppen')
-        ->toContain('← Zurück zu Gruppen entdecken')
-        ->toContain(':href="backHref"')
+        ->toContain('back_url')
+        ->toContain('back_label')
+        ->toContain('back_source')
+        ->toContain(':href="group.back_url"')
+        ->toContain('← {{ group.back_label }}')
+        ->toContain('name="return_to"')
         ->not->toContain('AppBackButton');
+});
+
+test('group detail honors allowed backlink source from groups index', function () {
+    $viewer = User::factory()->create();
+    createOnboardedProfile($viewer);
+    $group = Group::factory()->create([
+        'slug' => 'from-groups-detail',
+        'visibility' => Group::VISIBILITY_PUBLIC,
+    ]);
+    GroupMember::factory()
+        ->for($group)
+        ->for($viewer)
+        ->create([
+            'status' => GroupMember::STATUS_ACTIVE,
+        ]);
+
+    $this->actingAs($viewer)
+        ->get(route('groups.show', [
+            'group' => $group->slug,
+            'from' => 'groups',
+        ]))
+        ->assertOk()
+        ->assertInertia(fn (Assert $page) => $page
+            ->component('Groups/Show')
+            ->where('group.back_url', route('groups.index'))
+            ->where('group.back_label', 'Zurück zu Gruppen entdecken')
+            ->where('group.back_source', 'groups'),
+        );
+});
+
+test('group detail honors allowed backlink source from my groups', function () {
+    $viewer = User::factory()->create();
+    createOnboardedProfile($viewer);
+    $group = Group::factory()->create([
+        'slug' => 'from-my-groups-detail',
+        'visibility' => Group::VISIBILITY_PUBLIC,
+    ]);
+    GroupMember::factory()
+        ->for($group)
+        ->for($viewer)
+        ->create([
+            'status' => GroupMember::STATUS_ACTIVE,
+        ]);
+
+    $this->actingAs($viewer)
+        ->get(route('groups.show', [
+            'group' => $group->slug,
+            'from' => 'my-groups',
+        ]))
+        ->assertOk()
+        ->assertInertia(fn (Assert $page) => $page
+            ->component('Groups/Show')
+            ->where('group.back_url', route('groups.mine'))
+            ->where('group.back_label', 'Zurück zu Meine Gruppen')
+            ->where('group.back_source', 'my-groups'),
+        );
+});
+
+test('group detail ignores invalid backlink source values', function () {
+    $viewer = User::factory()->create();
+    createOnboardedProfile($viewer);
+    $group = Group::factory()->create([
+        'slug' => 'invalid-from-detail',
+        'visibility' => Group::VISIBILITY_PUBLIC,
+    ]);
+
+    $this->actingAs($viewer)
+        ->get(route('groups.show', [
+            'group' => $group->slug,
+            'from' => 'https://example.com/evil',
+        ]))
+        ->assertOk()
+        ->assertInertia(fn (Assert $page) => $page
+            ->component('Groups/Show')
+            ->where('group.back_url', route('groups.index'))
+            ->where('group.back_label', 'Zurück zu Gruppen entdecken')
+            ->where('group.back_source', 'groups'),
+        );
 });
 
 test('group detail page keeps future actions as informational read only hints', function () {
@@ -199,6 +285,7 @@ test('group detail page keeps future actions as informational read only hints', 
         ->toContain('Standort')
         ->toContain('locationLabel(group)')
         ->toContain('group.postal_code')
+        ->toContain('PLZ {{ group.postal_code }}')
         ->toContain('Kategorie')
         ->toContain('group.category')
         ->toContain('group.category.label')

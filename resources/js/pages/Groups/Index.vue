@@ -164,7 +164,7 @@ defineOptions({
                                 v-if="group.postal_code"
                                 class="rounded-full border border-border bg-background/70 px-3 py-1 text-xs font-medium text-muted-foreground dark:bg-input/30"
                             >
-                                {{ group.postal_code }}
+                                PLZ {{ group.postal_code }}
                             </span>
                             <span
                                 class="rounded-full border border-border bg-background/70 px-3 py-1 text-xs font-medium text-muted-foreground dark:bg-input/30"
@@ -197,6 +197,11 @@ defineOptions({
                                 method="post"
                                 v-slot="{ processing }"
                             >
+                                <input
+                                    type="hidden"
+                                    name="return_to"
+                                    value="groups"
+                                />
                                 <Button
                                     type="submit"
                                     class="w-full"

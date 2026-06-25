@@ -56,10 +56,18 @@ test('groups index shows public and request groups but hides unrelated private g
             ->where('groups.data.0.category.label', 'Kochen')
             ->where('groups.data.0.can_join', true)
             ->where('groups.data.0.join_label', 'Gruppe beitreten')
+            ->where('groups.data.0.url', route('groups.show', [
+                'group' => $publicGroup->slug,
+                'from' => 'groups',
+            ]))
             ->where('groups.data.1.name', $requestGroup->name)
             ->where('groups.data.1.category', null)
             ->where('groups.data.1.can_join', true)
             ->where('groups.data.1.join_label', 'Beitrittsanfrage senden')
+            ->where('groups.data.1.url', route('groups.show', [
+                'group' => $requestGroup->slug,
+                'from' => 'groups',
+            ]))
             ->where('groups.data.1.visibility_label', 'Anfrage'),
         );
 });
@@ -161,6 +169,7 @@ test('groups index page includes empty state card and read only group actions', 
         ->toContain('Entdecke öffentliche und offene Gruppen')
         ->toContain('Noch keine Gruppen zum Entdecken sichtbar.')
         ->toContain('group.postal_code')
+        ->toContain('PLZ {{ group.postal_code }}')
         ->toContain('group.category')
         ->toContain('group.category.label')
         ->toContain('Gruppe ansehen')
@@ -168,6 +177,8 @@ test('groups index page includes empty state card and read only group actions', 
         ->toContain('group.can_join')
         ->toContain('group.join_label')
         ->toContain('group.join_url')
+        ->toContain('name="return_to"')
+        ->toContain('value="groups"')
         ->toContain('visibility_label')
         ->toContain('member_count')
         ->not->toContain('Gruppe erstellen')

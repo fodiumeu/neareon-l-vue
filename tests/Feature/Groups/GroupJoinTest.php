@@ -84,6 +84,84 @@ test('authenticated members can request access to request groups', function () {
         );
 });
 
+test('public join from groups index keeps groups backlink context', function () {
+    $viewer = User::factory()->create();
+    createOnboardedProfile($viewer);
+    $group = Group::factory()->create([
+        'slug' => 'public-context-join',
+        'visibility' => Group::VISIBILITY_PUBLIC,
+    ]);
+
+    $this->actingAs($viewer)
+        ->post(route('groups.join', $group->slug), [
+            'return_to' => 'groups',
+        ])
+        ->assertSessionHas('success', 'Du bist der Gruppe beigetreten.')
+        ->assertRedirect(route('groups.show', [
+            'group' => $group->slug,
+            'from' => 'groups',
+        ]));
+
+    $this->actingAs($viewer)
+        ->get(route('groups.show', [
+            'group' => $group->slug,
+            'from' => 'groups',
+        ]))
+        ->assertOk()
+        ->assertInertia(fn (Assert $page) => $page
+            ->component('Groups/Show')
+            ->where('group.back_url', route('groups.index'))
+            ->where('group.back_label', 'Zurück zu Gruppen entdecken'),
+        );
+});
+
+test('request join from groups index keeps groups backlink context', function () {
+    $viewer = User::factory()->create();
+    createOnboardedProfile($viewer);
+    $group = Group::factory()->create([
+        'slug' => 'request-context-join',
+        'visibility' => Group::VISIBILITY_REQUEST,
+    ]);
+
+    $this->actingAs($viewer)
+        ->post(route('groups.join', $group->slug), [
+            'return_to' => 'groups',
+        ])
+        ->assertSessionHas('success', 'Deine Beitrittsanfrage wurde gesendet.')
+        ->assertRedirect(route('groups.show', [
+            'group' => $group->slug,
+            'from' => 'groups',
+        ]));
+
+    $this->actingAs($viewer)
+        ->get(route('groups.show', [
+            'group' => $group->slug,
+            'from' => 'groups',
+        ]))
+        ->assertOk()
+        ->assertInertia(fn (Assert $page) => $page
+            ->component('Groups/Show')
+            ->where('group.back_url', route('groups.index'))
+            ->where('group.back_label', 'Zurück zu Gruppen entdecken'),
+        );
+});
+
+test('join ignores invalid backlink context values', function () {
+    $viewer = User::factory()->create();
+    createOnboardedProfile($viewer);
+    $group = Group::factory()->create([
+        'slug' => 'invalid-context-join',
+        'visibility' => Group::VISIBILITY_PUBLIC,
+    ]);
+
+    $this->actingAs($viewer)
+        ->post(route('groups.join', $group->slug), [
+            'return_to' => 'https://example.com/evil',
+        ])
+        ->assertSessionHas('success', 'Du bist der Gruppe beigetreten.')
+        ->assertRedirect(route('groups.show', $group->slug));
+});
+
 test('private groups cannot be joined by non members', function () {
     $viewer = User::factory()->create();
     createOnboardedProfile($viewer);

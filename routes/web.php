@@ -59,6 +59,12 @@ Route::middleware(['auth', 'age.gate', 'verified', 'onboarding.complete'])->grou
         ->name('groups.edit');
     Route::post('groups/{group:slug}/join', [GroupController::class, 'join'])
         ->name('groups.join');
+    Route::delete('groups/{group:slug}/membership', [GroupController::class, 'leave'])
+        ->name('groups.membership.destroy');
+    Route::patch('groups/{group:slug}/requests/{member}/accept', [GroupController::class, 'acceptRequest'])
+        ->name('groups.requests.accept');
+    Route::delete('groups/{group:slug}/requests/{member}/decline', [GroupController::class, 'declineRequest'])
+        ->name('groups.requests.decline');
     Route::patch('groups/{group:slug}', [GroupController::class, 'update'])
         ->name('groups.update');
     Route::get('groups/{group:slug}', [GroupController::class, 'show'])

@@ -1,12 +1,21 @@
 <script setup lang="ts">
 import { Form, Head, Link } from '@inertiajs/vue3';
-import { computed } from 'vue';
 import PageHeader from '@/components/PageHeader.vue';
 import PageSection from '@/components/PageSection.vue';
 import ProfileAvatar from '@/components/ProfileAvatar.vue';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+import {
+    Dialog,
+    DialogClose,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+    DialogTrigger,
+} from '@/components/ui/dialog';
 
 type GroupMemberPreview = {
     id: number;
@@ -16,6 +25,19 @@ type GroupMemberPreview = {
         username?: string | null;
         profile_photo_url?: string | null;
     };
+};
+
+type PendingGroupRequest = {
+    id: number;
+    requested_at?: string | null;
+    user: {
+        name: string;
+        username?: string | null;
+        profile_photo_url?: string | null;
+    };
+    accept_url: string;
+    decline_url: string;
+    profile_url?: string | null;
 };
 
 type GroupDetail = {
@@ -28,8 +50,12 @@ type GroupDetail = {
     visibility: 'public' | 'request' | 'private';
     visibility_label: string;
     member_count: number;
+    back_label: string;
+    back_source: 'groups' | 'my-groups';
+    back_url: string;
     can_edit: boolean;
     can_join: boolean;
+    can_leave: boolean;
     category: {
         id: number;
         slug: string;
@@ -38,6 +64,8 @@ type GroupDetail = {
     edit_url: string;
     join_label?: string | null;
     join_url?: string | null;
+    leave_label?: string | null;
+    leave_url?: string | null;
     owner?: {
         name: string;
         username?: string | null;
@@ -47,21 +75,14 @@ type GroupDetail = {
         status_label: string;
     } | null;
     members: GroupMemberPreview[];
+    pending_requests: PendingGroupRequest[];
     viewer_membership_status?: string | null;
     viewer_role?: string | null;
 };
 
-const props = defineProps<{
+defineProps<{
     group: GroupDetail;
 }>();
-
-const backHref = computed(() => (props.group.membership ? '/my-groups' : '/groups'));
-
-const backLabel = computed(() =>
-    props.group.membership
-        ? '← Zurück zu Meine Gruppen'
-        : '← Zurück zu Gruppen entdecken',
-);
 
 const visibilityBadgeClass = (visibility: GroupDetail['visibility']) =>
     visibility === 'private'
@@ -74,6 +95,17 @@ const avatarInitial = (name: string) => name.charAt(0).toUpperCase();
 
 const locationLabel = (group: GroupDetail) =>
     [group.postal_code, group.region].filter(Boolean).join(' ');
+
+const formatRequestTime = (value?: string | null) => {
+    if (!value) {
+        return 'Zeitpunkt unbekannt';
+    }
+
+    return new Intl.DateTimeFormat('de-DE', {
+        dateStyle: 'medium',
+        timeStyle: 'short',
+    }).format(new Date(value));
+};
 
 defineOptions({
     layout: {
@@ -98,7 +130,7 @@ defineOptions({
             variant="secondary"
             class="hidden w-fit md:inline-flex"
         >
-            <Link :href="backHref">{{ backLabel }}</Link>
+            <Link :href="group.back_url">← {{ group.back_label }}</Link>
         </Button>
 
         <PageHeader
@@ -144,38 +176,124 @@ defineOptions({
                         </p>
                     </div>
 
-                    <Form
-                        v-if="group.can_join && group.join_url"
-                        :action="group.join_url"
-                        method="post"
-                        v-slot="{ processing }"
+                    <div
+                        class="flex flex-col gap-2 sm:items-end"
                     >
-                        <Button
-                            type="submit"
-                            class="w-full sm:w-auto"
-                            :disabled="processing"
+                        <Form
+                            v-if="group.can_join && group.join_url"
+                            :action="group.join_url"
+                            method="post"
+                            v-slot="{ processing }"
                         >
-                            {{
-                                processing
-                                    ? 'Wird verarbeitet...'
-                                    : group.join_label
-                            }}
-                        </Button>
-                    </Form>
-                    <Badge
-                        v-else-if="group.viewer_membership_status === 'pending'"
-                        variant="outline"
-                        class="w-fit border-primary/30 bg-primary/10 text-primary"
-                    >
-                        Anfrage gesendet
-                    </Badge>
-                    <Badge
-                        v-else-if="group.viewer_membership_status === 'active'"
-                        variant="outline"
-                        class="w-fit border-primary/30 bg-primary/10 text-primary"
-                    >
-                        {{ group.membership?.role_label ?? 'Mitglied' }}
-                    </Badge>
+                            <input
+                                type="hidden"
+                                name="return_to"
+                                :value="group.back_source"
+                            />
+                            <Button
+                                type="submit"
+                                class="w-full sm:w-auto"
+                                :disabled="processing"
+                            >
+                                {{
+                                    processing
+                                        ? 'Wird verarbeitet...'
+                                        : group.join_label
+                                }}
+                            </Button>
+                        </Form>
+                        <Badge
+                            v-else-if="group.viewer_membership_status === 'pending'"
+                            variant="outline"
+                            class="w-fit border-primary/30 bg-primary/10 text-primary"
+                        >
+                            Anfrage gesendet
+                        </Badge>
+                        <Badge
+                            v-else-if="group.viewer_membership_status === 'active'"
+                            variant="outline"
+                            class="w-fit border-primary/30 bg-primary/10 text-primary"
+                        >
+                            {{ group.membership?.role_label ?? 'Mitglied' }}
+                        </Badge>
+
+                        <Dialog
+                            v-if="group.can_leave && group.leave_url && group.viewer_membership_status === 'active'"
+                        >
+                            <DialogTrigger as-child>
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    class="w-full border-destructive/30 text-destructive hover:border-destructive/45 hover:bg-destructive/10 sm:w-auto"
+                                >
+                                    {{ group.leave_label }}
+                                </Button>
+                            </DialogTrigger>
+                            <DialogContent>
+                                <Form
+                                    :action="group.leave_url"
+                                    method="delete"
+                                    v-slot="{ processing }"
+                                    class="space-y-6"
+                                >
+                                    <DialogHeader class="space-y-3">
+                                        <DialogTitle>
+                                            Gruppe verlassen?
+                                        </DialogTitle>
+                                        <DialogDescription>
+                                            Du verlässt diese Gruppe und sie
+                                            wird nicht mehr unter „Meine
+                                            Gruppen“ angezeigt.
+                                        </DialogDescription>
+                                    </DialogHeader>
+
+                                    <DialogFooter class="gap-2">
+                                        <DialogClose as-child>
+                                            <Button
+                                                type="button"
+                                                variant="secondary"
+                                                :disabled="processing"
+                                            >
+                                                Abbrechen
+                                            </Button>
+                                        </DialogClose>
+                                        <Button
+                                            type="submit"
+                                            variant="outline"
+                                            class="border-destructive/30 text-destructive hover:border-destructive/45 hover:bg-destructive/10"
+                                            :disabled="processing"
+                                        >
+                                            {{
+                                                processing
+                                                    ? 'Wird verarbeitet...'
+                                                    : 'Gruppe verlassen'
+                                            }}
+                                        </Button>
+                                    </DialogFooter>
+                                </Form>
+                            </DialogContent>
+                        </Dialog>
+                        <Form
+                            v-else-if="group.can_leave && group.leave_url && group.viewer_membership_status === 'pending'"
+                            :action="group.leave_url"
+                            method="delete"
+                            v-slot="{ processing }"
+                        >
+                            <Button
+                                type="submit"
+                                variant="outline"
+                                class="w-full border-destructive/30 text-destructive hover:border-destructive/45 hover:bg-destructive/10 sm:w-auto"
+                                :disabled="processing"
+                            >
+                                    {{
+                                        processing
+                                            ? 'Wird verarbeitet...'
+                                            : (group.leave_label ??
+                                                'Anfrage zurückziehen')
+                                    }}
+                                </Button>
+                            </Form>
+                    </div>
                 </CardContent>
             </Card>
         </PageSection>
@@ -201,7 +319,7 @@ defineOptions({
                                     v-if="group.postal_code"
                                     variant="secondary"
                                 >
-                                    {{ group.postal_code }}
+                                    PLZ {{ group.postal_code }}
                                 </Badge>
                                 <Badge
                                     v-if="group.membership"
@@ -319,6 +437,116 @@ defineOptions({
                     <p v-else class="text-sm leading-6 text-muted-foreground">
                         Für diese Gruppe werden aktuell keine Mitglieder
                         angezeigt.
+                    </p>
+                </CardContent>
+            </Card>
+        </PageSection>
+
+        <PageSection v-if="group.can_edit">
+            <Card>
+                <CardContent class="space-y-4 p-5">
+                    <div class="space-y-1">
+                        <h2 class="text-base font-semibold">
+                            Beitrittsanfragen
+                        </h2>
+                        <p class="text-sm leading-6 text-muted-foreground">
+                            Diese Mitglieder möchten deiner Gruppe beitreten.
+                        </p>
+                    </div>
+
+                    <div
+                        v-if="group.pending_requests.length"
+                        class="grid gap-3"
+                    >
+                        <div
+                            v-for="request in group.pending_requests"
+                            :key="request.id"
+                            class="flex flex-col gap-3 rounded-lg border border-border bg-background/60 p-3 dark:bg-input/20 sm:flex-row sm:items-center sm:justify-between"
+                        >
+                            <div class="flex min-w-0 items-center gap-3">
+                                <ProfileAvatar
+                                    :photo-url="request.user.profile_photo_url"
+                                    :alt="request.user.name"
+                                    :fallback="avatarInitial(request.user.name)"
+                                    class="size-11 shrink-0"
+                                />
+                                <div class="min-w-0">
+                                    <p class="truncate text-sm font-medium">
+                                        {{ request.user.name }}
+                                    </p>
+                                    <p
+                                        v-if="request.user.username"
+                                        class="truncate text-xs text-muted-foreground"
+                                    >
+                                        @{{ request.user.username }}
+                                    </p>
+                                    <p class="text-xs text-muted-foreground">
+                                        Angefragt am
+                                        {{
+                                            formatRequestTime(
+                                                request.requested_at,
+                                            )
+                                        }}
+                                    </p>
+                                </div>
+                            </div>
+
+                            <div
+                                class="flex flex-col gap-2 sm:flex-row sm:items-center"
+                            >
+                                <Form
+                                    :action="request.accept_url"
+                                    method="patch"
+                                    v-slot="{ processing }"
+                                >
+                                    <Button
+                                        type="submit"
+                                        size="sm"
+                                        class="w-full sm:w-auto"
+                                        :disabled="processing"
+                                    >
+                                        {{
+                                            processing
+                                                ? 'Wird angenommen...'
+                                                : 'Annehmen'
+                                        }}
+                                    </Button>
+                                </Form>
+                                <Form
+                                    :action="request.decline_url"
+                                    method="delete"
+                                    v-slot="{ processing }"
+                                >
+                                    <Button
+                                        type="submit"
+                                        variant="outline"
+                                        size="sm"
+                                        class="w-full border-destructive/30 text-destructive hover:border-destructive/45 hover:bg-destructive/10 sm:w-auto"
+                                        :disabled="processing"
+                                    >
+                                        {{
+                                            processing
+                                                ? 'Wird abgelehnt...'
+                                                : 'Ablehnen'
+                                        }}
+                                    </Button>
+                                </Form>
+                                <Button
+                                    v-if="request.profile_url"
+                                    as-child
+                                    variant="secondary"
+                                    size="sm"
+                                    class="w-full sm:w-auto"
+                                >
+                                    <Link :href="request.profile_url">
+                                        Profil ansehen
+                                    </Link>
+                                </Button>
+                            </div>
+                        </div>
+                    </div>
+                    <p v-else class="text-sm leading-6 text-muted-foreground">
+                        Aktuell liegen keine Beitrittsanfragen vor.
                     </p>
                 </CardContent>
             </Card>

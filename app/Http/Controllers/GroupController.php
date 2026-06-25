@@ -21,6 +21,10 @@ class GroupController extends Controller
 {
     private const PER_PAGE = 12;
 
+    private const SOURCE_GROUPS = 'groups';
+
+    private const SOURCE_MY_GROUPS = 'my-groups';
+
     /**
      * Show public discoverable groups.
      */
@@ -41,7 +45,7 @@ class GroupController extends Controller
             ->orderBy('name')
             ->paginate(self::PER_PAGE)
             ->withQueryString()
-            ->through(fn (Group $group): array => $this->groupSummary($group, $viewer));
+            ->through(fn (Group $group): array => $this->groupSummary($group, $viewer, self::SOURCE_GROUPS));
 
         return Inertia::render('Groups/Index', [
             'groups' => $groups,
@@ -156,14 +160,77 @@ class GroupController extends Controller
         );
 
         if (! $membership->wasRecentlyCreated) {
-            return to_route('groups.show', ['group' => $group->slug])
+            return to_route('groups.show', $this->showRouteParameters($group, $this->requestSource($request)))
                 ->with('success', $this->existingMembershipMessage($membership));
         }
 
-        return to_route('groups.show', ['group' => $group->slug])
+        return to_route('groups.show', $this->showRouteParameters($group, $this->requestSource($request)))
             ->with('success', $targetStatus === GroupMember::STATUS_ACTIVE
-                ? 'Du bist der Gruppe beigetreten.'
-                : 'Deine Beitrittsanfrage wurde gesendet.');
+            ? 'Du bist der Gruppe beigetreten.'
+            : 'Deine Beitrittsanfrage wurde gesendet.');
+    }
+
+    /**
+     * Leave a group or withdraw the current user's pending membership request.
+     */
+    public function leave(Request $request, Group $group): RedirectResponse
+    {
+        $viewer = $request->user();
+
+        $membership = GroupMember::query()
+            ->where('group_id', $group->id)
+            ->where('user_id', $viewer->id)
+            ->first();
+
+        abort_unless($membership instanceof GroupMember, 404);
+        abort_if($group->owner_id === $viewer->id || $membership->role === GroupMember::ROLE_OWNER, 403);
+        abort_unless(in_array($membership->status, [
+            GroupMember::STATUS_ACTIVE,
+            GroupMember::STATUS_PENDING,
+        ], true), 404);
+
+        $wasPending = $membership->status === GroupMember::STATUS_PENDING;
+
+        $membership->delete();
+
+        return $wasPending
+            ? to_route('groups.index')->with('success', 'Deine Beitrittsanfrage wurde zurückgezogen.')
+            : to_route('groups.mine')->with('success', 'Du hast die Gruppe verlassen.');
+    }
+
+    /**
+     * Accept a pending membership request for a group.
+     */
+    public function acceptRequest(Request $request, Group $group, GroupMember $member): RedirectResponse
+    {
+        $viewer = $request->user();
+
+        abort_unless($this->canManageGroup($group, $viewer), 403);
+        $this->ensurePendingRequestBelongsToGroup($group, $member);
+
+        $member->forceFill([
+            'status' => GroupMember::STATUS_ACTIVE,
+            'joined_at' => now(),
+        ])->save();
+
+        return to_route('groups.show', ['group' => $group->slug])
+            ->with('success', 'Anfrage angenommen.');
+    }
+
+    /**
+     * Decline a pending membership request for a group.
+     */
+    public function declineRequest(Request $request, Group $group, GroupMember $member): RedirectResponse
+    {
+        $viewer = $request->user();
+
+        abort_unless($this->canManageGroup($group, $viewer), 403);
+        $this->ensurePendingRequestBelongsToGroup($group, $member);
+
+        $member->delete();
+
+        return to_route('groups.show', ['group' => $group->slug])
+            ->with('success', 'Anfrage abgelehnt.');
     }
 
     /**
@@ -186,7 +253,7 @@ class GroupController extends Controller
             ->orderBy('name')
             ->paginate(self::PER_PAGE)
             ->withQueryString()
-            ->through(fn (Group $group): array => $this->groupSummary($group, $viewer));
+            ->through(fn (Group $group): array => $this->groupSummary($group, $viewer, self::SOURCE_MY_GROUPS));
 
         return Inertia::render('Groups/MyGroups', [
             'groups' => $groups,
@@ -215,11 +282,17 @@ class GroupController extends Controller
                 ->limit(6),
         ])->loadCount('activeMembers');
 
+        $pendingRequests = $this->canManageGroup($group, $viewer)
+            ? $this->pendingRequestsData($group)
+            : [];
+
         return Inertia::render('Groups/Show', [
-            'group' => array_merge($this->groupSummary($group, $viewer), [
+            'group' => array_merge($this->groupSummary($group, $viewer, $this->requestSource($request)), [
+                ...$this->backlinkData($group, $viewer, $this->requestSource($request)),
                 'members' => $group->activeMembers
                     ->map(fn (GroupMember $membership): array => $this->memberData($membership))
                     ->values(),
+                'pending_requests' => $pendingRequests,
             ]),
         ]);
     }
@@ -282,6 +355,65 @@ class GroupController extends Controller
             ->exists();
     }
 
+    private function requestSource(Request $request): ?string
+    {
+        $source = $request->string('return_to')->toString()
+            ?: $request->string('from')->toString();
+
+        return in_array($source, [
+            self::SOURCE_GROUPS,
+            self::SOURCE_MY_GROUPS,
+        ], true)
+            ? $source
+            : null;
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    private function showRouteParameters(Group $group, ?string $source = null): array
+    {
+        $parameters = ['group' => $group->slug];
+
+        if (in_array($source, [
+            self::SOURCE_GROUPS,
+            self::SOURCE_MY_GROUPS,
+        ], true)) {
+            $parameters['from'] = $source;
+        }
+
+        return $parameters;
+    }
+
+    /**
+     * @return array{back_url: string, back_label: string, back_source: string}
+     */
+    private function backlinkData(Group $group, User $viewer, ?string $source): array
+    {
+        $backSource = $source;
+
+        if ($backSource === null) {
+            $hasMembership = $group->owner_id === $viewer->id
+                || $group->members->isNotEmpty();
+
+            $backSource = $hasMembership
+                ? self::SOURCE_MY_GROUPS
+                : self::SOURCE_GROUPS;
+        }
+
+        return $backSource === self::SOURCE_MY_GROUPS
+            ? [
+                'back_url' => route('groups.mine'),
+                'back_label' => 'Zurück zu Meine Gruppen',
+                'back_source' => self::SOURCE_MY_GROUPS,
+            ]
+            : [
+                'back_url' => route('groups.index'),
+                'back_label' => 'Zurück zu Gruppen entdecken',
+                'back_source' => self::SOURCE_GROUPS,
+            ];
+    }
+
     private function uniqueSlug(string $name): string
     {
         $baseSlug = Str::slug($name) ?: 'gruppe';
@@ -299,7 +431,7 @@ class GroupController extends Controller
     /**
      * @return array<string, mixed>
      */
-    private function groupSummary(Group $group, User $viewer): array
+    private function groupSummary(Group $group, User $viewer, ?string $source = null): array
     {
         $membership = $group->members->first();
         $membershipData = $membership !== null
@@ -339,13 +471,18 @@ class GroupController extends Controller
             'join_url' => $this->canJoinGroup($group, $membershipData, $viewer)
                 ? route('groups.join', ['group' => $group->slug])
                 : null,
+            'can_leave' => $this->canLeaveGroup($group, $membershipData, $viewer),
+            'leave_label' => $this->leaveLabel($membershipData),
+            'leave_url' => $this->canLeaveGroup($group, $membershipData, $viewer)
+                ? route('groups.membership.destroy', ['group' => $group->slug])
+                : null,
             'viewer_membership_status' => $membershipData['status'] ?? null,
             'viewer_role' => $membershipData['role'] ?? null,
             'category' => $group->category !== null
                 ? $this->categoryData($group->category)
                 : null,
             'edit_url' => route('groups.edit', ['group' => $group->slug]),
-            'url' => route('groups.show', ['group' => $group->slug]),
+            'url' => route('groups.show', $this->showRouteParameters($group, $source)),
         ];
     }
 
@@ -455,11 +592,84 @@ class GroupController extends Controller
             : 'Beitrittsanfrage senden';
     }
 
+    /**
+     * @param  array<string, string>|null  $membershipData
+     */
+    private function canLeaveGroup(Group $group, ?array $membershipData, User $viewer): bool
+    {
+        if ($membershipData === null || $group->owner_id === $viewer->id) {
+            return false;
+        }
+
+        if ($membershipData['role'] === GroupMember::ROLE_OWNER) {
+            return false;
+        }
+
+        return in_array($membershipData['status'], [
+            GroupMember::STATUS_ACTIVE,
+            GroupMember::STATUS_PENDING,
+        ], true);
+    }
+
+    /**
+     * @param  array<string, string>|null  $membershipData
+     */
+    private function leaveLabel(?array $membershipData): ?string
+    {
+        if ($membershipData === null || $membershipData['role'] === GroupMember::ROLE_OWNER) {
+            return null;
+        }
+
+        return $membershipData['status'] === GroupMember::STATUS_PENDING
+            ? 'Anfrage zurückziehen'
+            : 'Gruppe verlassen';
+    }
+
     private function existingMembershipMessage(GroupMember $membership): string
     {
         return $membership->status === GroupMember::STATUS_PENDING
             ? 'Deine Beitrittsanfrage wurde bereits gesendet.'
             : 'Du bist bereits Mitglied dieser Gruppe.';
+    }
+
+    private function ensurePendingRequestBelongsToGroup(Group $group, GroupMember $member): void
+    {
+        abort_unless($member->group_id === $group->id, 404);
+        abort_unless($member->status === GroupMember::STATUS_PENDING, 404);
+        abort_unless($member->role === GroupMember::ROLE_MEMBER, 404);
+    }
+
+    /**
+     * @return list<array<string, mixed>>
+     */
+    private function pendingRequestsData(Group $group): array
+    {
+        return GroupMember::query()
+            ->where('group_id', $group->id)
+            ->where('status', GroupMember::STATUS_PENDING)
+            ->where('role', GroupMember::ROLE_MEMBER)
+            ->with(['user.profile'])
+            ->oldest('created_at')
+            ->oldest('id')
+            ->get()
+            ->map(fn (GroupMember $membership): array => [
+                'id' => $membership->id,
+                'requested_at' => $membership->created_at?->toISOString(),
+                'user' => $this->userData($membership->user),
+                'accept_url' => route('groups.requests.accept', [
+                    'group' => $group->slug,
+                    'member' => $membership->id,
+                ]),
+                'decline_url' => route('groups.requests.decline', [
+                    'group' => $group->slug,
+                    'member' => $membership->id,
+                ]),
+                'profile_url' => $membership->user->profile?->username !== null
+                    ? route('public-profile.show', $membership->user->profile->username)
+                    : null,
+            ])
+            ->values()
+            ->all();
     }
 
     /**

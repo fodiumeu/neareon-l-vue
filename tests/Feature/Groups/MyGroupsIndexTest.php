@@ -66,10 +66,22 @@ test('my groups shows owned active and pending memberships', function () {
             ->component('Groups/MyGroups')
             ->has('groups.data', 3)
             ->where('groups.data.0.name', $pendingGroup->name)
+            ->where('groups.data.0.url', route('groups.show', [
+                'group' => $pendingGroup->slug,
+                'from' => 'my-groups',
+            ]))
             ->where('groups.data.0.membership.status_label', 'Anfrage ausstehend')
             ->where('groups.data.1.name', $activeGroup->name)
+            ->where('groups.data.1.url', route('groups.show', [
+                'group' => $activeGroup->slug,
+                'from' => 'my-groups',
+            ]))
             ->where('groups.data.1.membership.role_label', 'Mitglied')
             ->where('groups.data.2.name', $ownedGroup->name)
+            ->where('groups.data.2.url', route('groups.show', [
+                'group' => $ownedGroup->slug,
+                'from' => 'my-groups',
+            ]))
             ->where('groups.data.2.region', 'Berlin')
             ->where('groups.data.2.postal_code', '10115')
             ->where('groups.data.2.country_code', 'DE')
@@ -105,6 +117,7 @@ test('my groups empty state links to group discovery', function () {
         ->toContain('group.category')
         ->toContain('group.category.label')
         ->toContain('group.postal_code')
+        ->toContain('PLZ {{ group.postal_code }}')
         ->not->toContain('Beitreten');
 });
 
