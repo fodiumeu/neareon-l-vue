@@ -99,6 +99,24 @@ test('discover uses the polished privacy placeholder and inline follow context',
         ->toContain('value="discover"');
 });
 
+test('discover empty state offers a clear reset path for active searches and filters', function () {
+    $page = file_get_contents(resource_path('js/pages/Discover.vue'));
+    $normalizedPage = preg_replace('/\s+/', ' ', $page);
+
+    expect($page)
+        ->toContain('const hasActiveFilters = computed')
+        ->toContain('const hasActiveDiscoverQuery = computed')
+        ->toContain(':disabled="!hasActiveFilters"')
+        ->toContain('v-if="hasActiveDiscoverQuery"')
+        ->toContain('v-if="hasActiveFilters"')
+        ->toContain('href="/discover"')
+        ->and($normalizedPage)
+        ->toContain(
+            'Passe deine Suche oder Filter an. Du kannst auch wieder alle sichtbaren Profile anzeigen.',
+        )
+        ->toContain('Alle Profile anzeigen');
+});
+
 test('contact removal is hidden behind the more actions menu', function () {
     $page = file_get_contents(resource_path('js/pages/Contacts/Index.vue'));
 

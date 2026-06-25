@@ -219,6 +219,17 @@ const selectedInterestOption = computed({
     },
 });
 
+const hasActiveFilters = computed(
+    () =>
+        selectedRegion.value !== '' ||
+        selectedLanguage.value !== '' ||
+        selectedInterest.value !== '',
+);
+
+const hasActiveDiscoverQuery = computed(
+    () => searchQuery.value.trim() !== '' || hasActiveFilters.value,
+);
+
 watch(
     () => [props.search, props.filters] as const,
     ([search, filters]) => {
@@ -462,6 +473,7 @@ defineOptions({
                             type="button"
                             variant="secondary"
                             class="w-full"
+                            :disabled="!hasActiveFilters"
                             @click="resetFilters"
                         >
                             Filter zurücksetzen
@@ -473,7 +485,7 @@ defineOptions({
 
         <PageSection v-if="profiles.data.length === 0">
             <Card>
-                <CardContent class="space-y-2 text-center sm:text-left">
+                <CardContent class="space-y-4 text-center sm:text-left">
                     <h2 class="text-base font-medium">
                         {{
                             search ||
@@ -490,10 +502,29 @@ defineOptions({
                             filters.region ||
                             filters.language ||
                             filters.interest
-                                ? 'Versuche einen anderen Suchbegriff.'
+                                ? 'Passe deine Suche oder Filter an. Du kannst auch wieder alle sichtbaren Profile anzeigen.'
                                 : 'Aktuell sind keine weiteren Profile für Discover freigegeben.'
                         }}
                     </p>
+                    <div
+                        v-if="hasActiveDiscoverQuery"
+                        class="flex flex-col gap-2 sm:flex-row"
+                    >
+                        <Button
+                            v-if="hasActiveFilters"
+                            type="button"
+                            variant="secondary"
+                            class="w-full sm:w-auto"
+                            @click="resetFilters"
+                        >
+                            Filter zurücksetzen
+                        </Button>
+                        <Button as-child class="w-full sm:w-auto">
+                            <Link href="/discover">
+                                Alle Profile anzeigen
+                            </Link>
+                        </Button>
+                    </div>
                 </CardContent>
             </Card>
         </PageSection>

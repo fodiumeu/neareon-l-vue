@@ -165,7 +165,9 @@ test('discover page provides debounced live search and immediate clearing', func
         ->toContain('aria-label="Profile suchen"')
         ->toContain('<Search class="size-4"')
         ->toContain('Keine passenden Profile gefunden')
-        ->toContain('Versuche einen anderen Suchbegriff.');
+        ->toContain(
+            'Passe deine Suche oder Filter an. Du kannst auch wieder alle sichtbaren Profile anzeigen.',
+        );
 });
 
 /**
