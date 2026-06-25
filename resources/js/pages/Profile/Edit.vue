@@ -120,7 +120,7 @@ defineOptions({
 
         <PageHeader
             title="Profil bearbeiten"
-            description="Passe deine NEAREON-Profildaten und Sichtbarkeit an."
+            description="Passe deinen öffentlichen Auftritt, deine Interessen und deine Sichtbarkeit in der Community an."
         />
 
         <PageSection padded>
@@ -141,7 +141,9 @@ defineOptions({
                                     Profilbild
                                 </h2>
                                 <p class="text-sm text-muted-foreground">
-                                    JPG, JPEG, PNG oder WEBP bis maximal 5 MB.
+                                    Dein Profilbild erscheint auf deinem Profil,
+                                    in Discover, Kontakten und Nachrichten. JPG,
+                                    JPEG, PNG oder WEBP bis maximal 5 MB.
                                 </p>
                             </div>
 
@@ -203,11 +205,23 @@ defineOptions({
                                 autocomplete="name"
                                 :default-value="profile.display_name"
                             />
+                            <p class="text-sm text-muted-foreground">
+                                Dieser Name ist in der Community sichtbar. Dein
+                                Account-Name in den Einstellungen bleibt davon
+                                getrennt.
+                            </p>
                             <InputError :message="errors.display_name" />
                         </div>
 
                         <div>
-                            <BioEmojiField :initial-value="profile.bio" />
+                            <BioEmojiField
+                                :initial-value="profile.bio"
+                                placeholder="Erzähle kurz, wer du bist oder wonach du suchst."
+                            />
+                            <p class="mt-2 text-sm text-muted-foreground">
+                                Maximal 280 Zeichen. Zeilenumbrüche und Emojis
+                                bleiben auf deinem Profil erhalten.
+                            </p>
                             <InputError :message="errors.bio" />
                         </div>
 
@@ -220,11 +234,19 @@ defineOptions({
                                 maxlength="120"
                                 :default-value="profile.region ?? ''"
                             />
+                            <p class="text-sm text-muted-foreground">
+                                Optional. Die Region hilft anderen Mitgliedern,
+                                passende Profile in Discover zu finden.
+                            </p>
                             <InputError :message="errors.region" />
                         </div>
 
                         <div class="grid gap-2">
                             <Label>Sprachen</Label>
+                            <p class="text-sm text-muted-foreground">
+                                Wähle die Sprachen aus, die andere auf deinem
+                                Profil sehen dürfen.
+                            </p>
                             <div
                                 class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3"
                             >
@@ -256,13 +278,18 @@ defineOptions({
                                 </Label>
                             </div>
                             <p class="text-sm text-muted-foreground">
-                                Wähle maximal 20 Sprachen aus.
+                                Maximal 20 Sprachen. Gewählte inaktive Optionen
+                                bleiben sichtbar, bis du sie entfernst.
                             </p>
                             <InputError :message="errors.languages" />
                         </div>
 
                         <div class="grid gap-2">
                             <Label>Interessen</Label>
+                            <p class="text-sm text-muted-foreground">
+                                Interessen helfen bei gemeinsamen Treffern in
+                                Discover und auf Profilseiten.
+                            </p>
                             <div
                                 class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3"
                             >
@@ -294,7 +321,8 @@ defineOptions({
                                 </Label>
                             </div>
                             <p class="text-sm text-muted-foreground">
-                                Wähle maximal 20 Interessen aus.
+                                Maximal 20 Interessen. Gewählte inaktive
+                                Optionen bleiben sichtbar, bis du sie entfernst.
                             </p>
                             <InputError :message="errors.interests" />
                         </div>
@@ -528,7 +556,11 @@ defineOptions({
                                 data-test="update-neareon-profile-button"
                             >
                                 <Spinner v-if="processing" />
-                                Änderungen speichern
+                                {{
+                                    processing
+                                        ? 'Wird gespeichert...'
+                                        : 'Änderungen speichern'
+                                }}
                             </Button>
                         </div>
                     </Form>

@@ -26,7 +26,7 @@ const passwordInput = useTemplateRef('passwordInput');
         <Heading
             variant="small"
             title="Account löschen"
-            description="Lösche deinen Account und alle zugehörigen Ressourcen"
+            description="Lösche deinen Account dauerhaft. Diese Aktion betrifft auch dein NEAREON-Profil."
         />
         <div
             class="space-y-4 rounded-lg border border-red-100 bg-red-50 p-4 dark:border-red-200/10 dark:bg-red-700/10"
@@ -35,7 +35,9 @@ const passwordInput = useTemplateRef('passwordInput');
                 <p class="font-medium">Warnung</p>
                 <p class="text-sm">
                     Bitte gehe vorsichtig vor. Diese Aktion kann nicht
-                    rückgängig gemacht werden.
+                    rückgängig gemacht werden. Dein Profil, deine
+                    Account-Daten und zugehörige Inhalte werden dauerhaft
+                    entfernt.
                 </p>
             </div>
             <Dialog>

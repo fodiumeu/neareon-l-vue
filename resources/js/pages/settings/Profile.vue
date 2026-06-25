@@ -9,6 +9,7 @@ import PageSection from '@/components/PageSection.vue';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Spinner } from '@/components/ui/spinner';
 import { edit } from '@/routes/profile';
 import { send } from '@/routes/verification';
 
@@ -43,19 +44,24 @@ const user = computed(() => page.props.auth.user);
         <Heading
             variant="small"
             title="Profilinformationen"
-            description="Aktualisiere deinen Account-Namen und deine E-Mail-Adresse"
+            description="Verwalte die Zugangsdaten deines Accounts. Dein Community-Profil bearbeitest du separat."
         />
 
-        <p class="mb-6 text-sm text-muted-foreground">
-            Deinen NEAREON-Anzeigenamen bearbeitest du separat im
-            Community-Profil:
+        <div
+            class="mb-6 rounded-lg border border-border bg-card/70 px-4 py-3 text-sm text-muted-foreground"
+        >
+            <p>
+                Account-Name und E-Mail gehören zur Anmeldung. Deinen
+                sichtbaren NEAREON-Anzeigenamen, Bio, Profilbild, Sprachen und
+                Interessen bearbeitest du im Community-Profil.
+            </p>
             <Link
                 href="/profile/edit"
-                class="text-foreground underline decoration-neutral-300 underline-offset-4 transition-colors duration-300 ease-out hover:decoration-current dark:decoration-neutral-500"
+                class="mt-3 inline-flex text-foreground underline decoration-neutral-300 underline-offset-4 transition-colors duration-300 ease-out hover:decoration-current dark:decoration-neutral-500"
             >
                 NEAREON-Profil bearbeiten
             </Link>
-        </p>
+        </div>
 
         <Form
             v-bind="ProfileController.update.form()"
@@ -73,6 +79,11 @@ const user = computed(() => page.props.auth.user);
                     autocomplete="name"
                     placeholder="Account-Name"
                 />
+                <p class="text-sm text-muted-foreground">
+                    Der Account-Name wird für deine Anmeldung und
+                    Kontoverwaltung genutzt. Auf deinem NEAREON-Profil erscheint
+                    dein Anzeigename.
+                </p>
                 <InputError class="mt-2" :message="errors.name" />
             </div>
 
@@ -88,6 +99,10 @@ const user = computed(() => page.props.auth.user);
                     autocomplete="username"
                     placeholder="E-Mail-Adresse"
                 />
+                <p class="text-sm text-muted-foreground">
+                    Diese Adresse nutzt NEAREON für Anmeldung und
+                    Account-Sicherheit.
+                </p>
                 <InputError class="mt-2" :message="errors.email" />
             </div>
 
@@ -114,9 +129,10 @@ const user = computed(() => page.props.auth.user);
             </div>
 
             <div class="flex items-center gap-4">
-                <Button :disabled="processing" data-test="update-profile-button"
-                    >Speichern</Button
-                >
+                <Button :disabled="processing" data-test="update-profile-button">
+                    <Spinner v-if="processing" />
+                    {{ processing ? 'Wird gespeichert...' : 'Speichern' }}
+                </Button>
             </div>
         </Form>
     </PageSection>
