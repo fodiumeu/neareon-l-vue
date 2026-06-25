@@ -9,6 +9,7 @@ use App\Models\GroupMember;
 use App\Models\InterestOption;
 use App\Models\Profile;
 use App\Models\User;
+use App\Services\InternalNotificationService;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -24,6 +25,10 @@ class GroupController extends Controller
     private const SOURCE_GROUPS = 'groups';
 
     private const SOURCE_MY_GROUPS = 'my-groups';
+
+    public function __construct(
+        private readonly InternalNotificationService $notifications,
+    ) {}
 
     /**
      * Show public discoverable groups.
@@ -164,6 +169,12 @@ class GroupController extends Controller
                 ->with('success', $this->existingMembershipMessage($membership));
         }
 
+        if ($targetStatus === GroupMember::STATUS_PENDING) {
+            $this->notifications->groupJoinRequestReceived($viewer, $group);
+        } else {
+            $this->notifications->groupMemberJoined($viewer, $group);
+        }
+
         return to_route('groups.show', $this->showRouteParameters($group, $this->requestSource($request)))
             ->with('success', $targetStatus === GroupMember::STATUS_ACTIVE
             ? 'Du bist der Gruppe beigetreten.'
@@ -213,6 +224,13 @@ class GroupController extends Controller
             'joined_at' => now(),
         ])->save();
 
+        $member->loadMissing('user');
+        $this->notifications->groupJoinRequestAccepted(
+            $viewer,
+            $member->user,
+            $group,
+        );
+
         return to_route('groups.show', ['group' => $group->slug])
             ->with('success', 'Anfrage angenommen.');
     }
@@ -227,7 +245,15 @@ class GroupController extends Controller
         abort_unless($this->canManageGroup($group, $viewer), 403);
         $this->ensurePendingRequestBelongsToGroup($group, $member);
 
+        $member->loadMissing('user');
+        $requestingUser = $member->user;
         $member->delete();
+
+        $this->notifications->groupJoinRequestDeclined(
+            $viewer,
+            $requestingUser,
+            $group,
+        );
 
         return to_route('groups.show', ['group' => $group->slug])
             ->with('success', 'Anfrage abgelehnt.');
@@ -321,11 +347,18 @@ class GroupController extends Controller
                 ->with('success', 'Du bist bereits Mitglied dieser Gruppe.');
         }
 
+        $wasActive = $membership->exists
+            && $membership->status === GroupMember::STATUS_ACTIVE;
+
         $membership->forceFill([
             'role' => $membership->role ?: GroupMember::ROLE_MEMBER,
             'status' => GroupMember::STATUS_ACTIVE,
             'joined_at' => $membership->joined_at ?? now(),
         ])->save();
+
+        if (! $wasActive) {
+            $this->notifications->groupMemberJoined($viewer, $group);
+        }
 
         return to_route('groups.show', $this->showRouteParameters($group, self::SOURCE_MY_GROUPS))
             ->with('success', 'Du bist der Gruppe beigetreten.');

@@ -6,6 +6,7 @@ use App\Enums\ContactRequestStatus;
 use App\Enums\InternalNotificationType;
 use App\Models\ContactRequest;
 use App\Models\Conversation;
+use App\Models\Group;
 use App\Models\User;
 use App\Notifications\InternalNotification;
 
@@ -113,8 +114,90 @@ class InternalNotificationService
         ])->save();
     }
 
+    public function groupJoinRequestReceived(
+        User $actor,
+        Group $group,
+    ): void {
+        $owner = $group->owner;
+
+        if ($owner === null || $owner->is($actor)) {
+            return;
+        }
+
+        $owner->notify(new InternalNotification(
+            InternalNotificationType::GroupJoinRequestReceived,
+            'Neue Beitrittsanfrage',
+            "{$this->displayName($actor)} möchte deiner Gruppe {$group->name} beitreten.",
+            route('groups.show', $group->slug, absolute: false),
+            $actor->id,
+            extraData: $this->groupData($group),
+        ));
+    }
+
+    public function groupJoinRequestAccepted(
+        User $actor,
+        User $recipient,
+        Group $group,
+    ): void {
+        $recipient->notify(new InternalNotification(
+            InternalNotificationType::GroupJoinRequestAccepted,
+            'Beitrittsanfrage angenommen',
+            "Du bist jetzt Mitglied in {$group->name}.",
+            route('groups.show', $group->slug, absolute: false),
+            $actor->id,
+            extraData: $this->groupData($group),
+        ));
+    }
+
+    public function groupJoinRequestDeclined(
+        User $actor,
+        User $recipient,
+        Group $group,
+    ): void {
+        $recipient->notify(new InternalNotification(
+            InternalNotificationType::GroupJoinRequestDeclined,
+            'Beitrittsanfrage abgelehnt',
+            "Deine Anfrage für {$group->name} wurde nicht angenommen.",
+            route('groups.index', absolute: false),
+            $actor->id,
+            extraData: $this->groupData($group),
+        ));
+    }
+
+    public function groupMemberJoined(
+        User $actor,
+        Group $group,
+    ): void {
+        $owner = $group->owner;
+
+        if ($owner === null || $owner->is($actor)) {
+            return;
+        }
+
+        $owner->notify(new InternalNotification(
+            InternalNotificationType::GroupMemberJoined,
+            'Neues Gruppenmitglied',
+            "{$this->displayName($actor)} ist deiner Gruppe {$group->name} beigetreten.",
+            route('groups.show', $group->slug, absolute: false),
+            $actor->id,
+            extraData: $this->groupData($group),
+        ));
+    }
+
     private function displayName(User $user): string
     {
         return $user->profile?->display_name ?? $user->name;
+    }
+
+    /**
+     * @return array{group_id: int, group_name: string, group_slug: string}
+     */
+    private function groupData(Group $group): array
+    {
+        return [
+            'group_id' => $group->id,
+            'group_name' => $group->name,
+            'group_slug' => $group->slug,
+        ];
     }
 }

@@ -777,6 +777,10 @@ class NotificationController extends Controller
             InternalNotificationType::NewFollower->value => 'Profile ansehen',
             InternalNotificationType::ContactRequestAccepted->value => 'Kontakt ansehen',
             InternalNotificationType::ContactRequestDeclined->value => 'Details ansehen',
+            InternalNotificationType::GroupJoinRequestReceived->value => 'Gruppe öffnen',
+            InternalNotificationType::GroupJoinRequestAccepted->value => 'Gruppe öffnen',
+            InternalNotificationType::GroupJoinRequestDeclined->value => 'Gruppen entdecken',
+            InternalNotificationType::GroupMemberJoined->value => 'Gruppe öffnen',
             default => 'Details ansehen',
         };
     }
