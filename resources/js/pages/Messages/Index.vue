@@ -4,6 +4,7 @@ import PageHeader from '@/components/PageHeader.vue';
 import PageSection from '@/components/PageSection.vue';
 import ProfileAvatar from '@/components/ProfileAvatar.vue';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import {
     formatMessageTimestamp,
@@ -70,7 +71,7 @@ defineOptions({
             <Card
                 class="bg-card/95 shadow-md shadow-black/5 dark:shadow-black/25"
             >
-                <CardContent class="space-y-2 text-center sm:text-left">
+                <CardContent class="space-y-4 text-center sm:text-left">
                     <h2 class="font-medium">
                         Du hast aktuell noch keine Nachrichten.
                     </h2>
@@ -78,6 +79,14 @@ defineOptions({
                         Öffne das Profil eines Kontakts, um eine Unterhaltung zu
                         starten.
                     </p>
+                    <div class="flex flex-col gap-2 sm:flex-row">
+                        <Button as-child>
+                            <Link href="/contacts">Kontakte öffnen</Link>
+                        </Button>
+                        <Button as-child variant="secondary">
+                            <Link href="/community">Community öffnen</Link>
+                        </Button>
+                    </div>
                 </CardContent>
             </Card>
         </PageSection>

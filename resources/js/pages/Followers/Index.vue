@@ -97,10 +97,14 @@ defineOptions({
             <Card
                 class="bg-card/95 shadow-md shadow-black/5 dark:shadow-black/25"
             >
-                <CardContent class="text-center sm:text-left">
+                <CardContent class="space-y-4 text-center sm:text-left">
                     <p class="text-sm leading-6 text-muted-foreground">
-                        Dir folgt derzeit noch niemand.
+                        Dir folgt derzeit noch niemand. Entdecke Profile und
+                        werde in der Community sichtbar.
                     </p>
+                    <Button as-child>
+                        <Link href="/discover">Mitglieder entdecken</Link>
+                    </Button>
                 </CardContent>
             </Card>
         </PageSection>

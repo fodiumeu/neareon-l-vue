@@ -91,11 +91,19 @@ defineOptions({
             <Card
                 class="bg-card/95 shadow-md shadow-black/5 dark:shadow-black/25"
             >
-                <CardContent class="text-center sm:text-left">
+                <CardContent class="space-y-4 text-center sm:text-left">
                     <p class="text-sm leading-6 text-muted-foreground">
                         Du hast derzeit noch keine Kontakte. Ein Kontakt
                         entsteht, wenn ihr euch gegenseitig folgt.
                     </p>
+                    <div class="flex flex-col gap-2 sm:flex-row">
+                        <Button as-child>
+                            <Link href="/discover">Mitglieder entdecken</Link>
+                        </Button>
+                        <Button as-child variant="secondary">
+                            <Link href="/community">Community öffnen</Link>
+                        </Button>
+                    </div>
                 </CardContent>
             </Card>
         </PageSection>

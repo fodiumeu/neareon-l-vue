@@ -67,10 +67,15 @@ defineOptions({
             <Card
                 class="bg-card/95 shadow-md shadow-black/5 dark:shadow-black/25"
             >
-                <CardContent class="text-center sm:text-left">
+                <CardContent class="space-y-4 text-center sm:text-left">
                     <p class="text-sm leading-6 text-muted-foreground">
-                        Du hast derzeit keine offenen Kontaktanfragen.
+                        Du hast derzeit keine offenen Kontaktanfragen. Neue
+                        Anfragen erscheinen hier, sobald Mitglieder Kontakt mit
+                        dir aufnehmen möchten.
                     </p>
+                    <Button as-child variant="secondary">
+                        <Link href="/community">Community öffnen</Link>
+                    </Button>
                 </CardContent>
             </Card>
         </PageSection>
