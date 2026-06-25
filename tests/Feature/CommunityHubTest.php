@@ -25,6 +25,10 @@ test('community hub renders the existing community entry points', function () {
     $page = file_get_contents(resource_path('js/pages/Community/Index.vue'));
 
     expect($page)
+        ->toContain('Meine Gruppen')
+        ->toContain("href: '/my-groups'")
+        ->toContain('Gruppen, denen du angehörst oder zu denen du eingeladen wurdest.')
+        ->toContain('Meine Gruppen öffnen')
         ->toContain('Kontakte')
         ->toContain("href: '/contacts'")
         ->toContain('Follower')
@@ -72,6 +76,10 @@ test('community navigation points to existing routes and keeps the contact reque
     expect($navigation)
         ->toContain("title: 'Übersicht'")
         ->toContain("href: '/community'")
+        ->toContain("title: 'Gruppen entdecken'")
+        ->toContain("href: '/groups'")
+        ->toContain("title: 'Meine Gruppen'")
+        ->toContain("href: '/my-groups'")
         ->toContain("href: '/contacts'")
         ->toContain("href: '/followers'")
         ->toContain("href: '/following'")

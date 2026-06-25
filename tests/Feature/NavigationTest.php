@@ -45,6 +45,10 @@ test('desktop navigation is grouped for community communication profile and admi
         ->toContain("title: 'Admin'")
         ->toContain("title: 'Übersicht'")
         ->toContain("href: '/community'")
+        ->toContain("title: 'Gruppen entdecken'")
+        ->toContain("href: '/groups'")
+        ->toContain("title: 'Meine Gruppen'")
+        ->toContain("href: '/my-groups'")
         ->toContain("title: 'Kontakte'")
         ->toContain("href: '/contacts'")
         ->toContain("title: 'Follower'")
@@ -107,6 +111,7 @@ test('mobile navigation keeps a compact five item structure', function () {
         ->toContain('grid-cols-5')
         ->toContain("path === '/community'")
         ->toContain("'/community'")
+        ->toContain("'/my-groups'")
         ->toContain("'/followers'")
         ->toContain("'/following'")
         ->toContain("'/contact-requests'")
@@ -217,6 +222,8 @@ test('guests remain protected from contact navigation destinations', function (
         ->assertRedirect(route('login'));
 })->with([
     'contacts.index',
+    'groups.index',
+    'groups.mine',
     'followers.index',
     'following.index',
     'contact-requests.index',

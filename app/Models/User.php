@@ -148,6 +148,32 @@ class User extends Authenticatable
     }
 
     /**
+     * Get groups owned by the user.
+     */
+    public function ownedGroups(): HasMany
+    {
+        return $this->hasMany(Group::class, 'owner_id');
+    }
+
+    /**
+     * Get the user's group membership records.
+     */
+    public function groupMemberships(): HasMany
+    {
+        return $this->hasMany(GroupMember::class);
+    }
+
+    /**
+     * Get groups the user belongs to.
+     */
+    public function groups(): BelongsToMany
+    {
+        return $this->belongsToMany(Group::class, 'group_members')
+            ->withPivot(['role', 'status', 'joined_at'])
+            ->withTimestamps();
+    }
+
+    /**
      * Get the user's conversation participant records.
      */
     public function conversationParticipants(): HasMany

@@ -56,6 +56,11 @@ export const getMainNavGroups = ({
                 href: '/discover',
                 icon: Search,
             },
+            {
+                title: 'Gruppen entdecken',
+                href: '/groups',
+                icon: Users,
+            },
         ],
     },
     {
@@ -65,6 +70,11 @@ export const getMainNavGroups = ({
                 title: 'Übersicht',
                 href: '/community',
                 icon: LayoutGrid,
+            },
+            {
+                title: 'Meine Gruppen',
+                href: '/my-groups',
+                icon: Users,
             },
             {
                 title: 'Kontakte',

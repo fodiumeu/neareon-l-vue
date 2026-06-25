@@ -81,7 +81,8 @@ test('natural app entry pages do not render the back button', function (
     'notifications' => 'Notifications/Index.vue',
 ]);
 
-test('groups and events remain ready for later integration without placeholder routes', function () {
-    expect(Route::has('groups.index'))->toBeFalse()
+test('groups foundation exposes real routes while events remain ready for later integration', function () {
+    expect(Route::has('groups.index'))->toBeTrue()
+        ->and(Route::has('groups.show'))->toBeTrue()
         ->and(Route::has('events.index'))->toBeFalse();
 });

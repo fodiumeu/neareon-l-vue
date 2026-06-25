@@ -13,6 +13,7 @@ use App\Http\Controllers\DiscoverController;
 use App\Http\Controllers\FollowController;
 use App\Http\Controllers\FollowerController;
 use App\Http\Controllers\FollowingController;
+use App\Http\Controllers\GroupController;
 use App\Http\Controllers\MessageController;
 use App\Http\Controllers\NavigationBadgeController;
 use App\Http\Controllers\NotificationController;
@@ -46,6 +47,12 @@ Route::middleware(['auth', 'age.gate', 'verified'])->group(function () {
 Route::middleware(['auth', 'age.gate', 'verified', 'onboarding.complete'])->group(function () {
     Route::get('community', CommunityController::class)
         ->name('community.index');
+    Route::get('groups', [GroupController::class, 'index'])
+        ->name('groups.index');
+    Route::get('my-groups', [GroupController::class, 'mine'])
+        ->name('groups.mine');
+    Route::get('groups/{group:slug}', [GroupController::class, 'show'])
+        ->name('groups.show');
     Route::get('contacts', [ContactController::class, 'index'])
         ->name('contacts.index');
     Route::get('followers', [FollowerController::class, 'index'])

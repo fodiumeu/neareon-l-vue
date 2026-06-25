@@ -32,6 +32,14 @@ const props = defineProps<{
 
 const communityCards: CommunityCard[] = [
     {
+        title: 'Meine Gruppen',
+        description:
+            'Gruppen, denen du angehörst oder zu denen du eingeladen wurdest.',
+        href: '/my-groups',
+        actionLabel: 'Meine Gruppen öffnen',
+        icon: Users,
+    },
+    {
         title: 'Kontakte',
         description:
             'Mitglieder, denen du folgst und die dir ebenfalls folgen.',

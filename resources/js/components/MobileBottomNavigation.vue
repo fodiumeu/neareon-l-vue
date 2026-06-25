@@ -23,6 +23,7 @@ const isActiveItem = (href: (typeof mobileBottomNavItems)[number]['href']) => {
     if (path === '/community') {
         return [
             '/community',
+            '/my-groups',
             '/contacts',
             '/followers',
             '/following',
