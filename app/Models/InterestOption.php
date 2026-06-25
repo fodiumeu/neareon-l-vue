@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 #[Fillable([
     'slug',
@@ -34,5 +35,13 @@ class InterestOption extends Model
     {
         return $this->belongsToMany(Profile::class, 'profile_interests')
             ->withTimestamps();
+    }
+
+    /**
+     * Get the groups that use this interest option as their main category.
+     */
+    public function groups(): HasMany
+    {
+        return $this->hasMany(Group::class, 'category_interest_option_id');
     }
 }

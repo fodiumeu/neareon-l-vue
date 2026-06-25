@@ -2,6 +2,7 @@
 
 use App\Models\Group;
 use App\Models\GroupMember;
+use App\Models\InterestOption;
 use App\Models\User;
 use Inertia\Testing\AssertableInertia as Assert;
 
@@ -22,6 +23,14 @@ test('groups index shows public and request groups but hides unrelated private g
         'country_code' => 'DE',
         'visibility' => Group::VISIBILITY_PUBLIC,
     ]);
+    $category = InterestOption::query()->create([
+        'slug' => 'group-index-category',
+        'label' => 'Kochen',
+        'is_active' => true,
+    ]);
+    $publicGroup->forceFill([
+        'category_interest_option_id' => $category->id,
+    ])->save();
     $requestGroup = Group::factory()->create([
         'name' => 'Request Community',
         'slug' => 'request-community',
@@ -44,7 +53,9 @@ test('groups index shows public and request groups but hides unrelated private g
             ->where('groups.data.0.postal_code', '20095')
             ->where('groups.data.0.country_code', 'DE')
             ->where('groups.data.0.visibility_label', 'Öffentlich')
+            ->where('groups.data.0.category.label', 'Kochen')
             ->where('groups.data.1.name', $requestGroup->name)
+            ->where('groups.data.1.category', null)
             ->where('groups.data.1.visibility_label', 'Anfrage'),
         );
 });
@@ -100,6 +111,8 @@ test('groups index page includes empty state card and read only group actions', 
         ->toContain('Entdecke öffentliche und offene Gruppen')
         ->toContain('Noch keine Gruppen zum Entdecken sichtbar.')
         ->toContain('group.postal_code')
+        ->toContain('group.category')
+        ->toContain('group.category.label')
         ->toContain('Gruppe ansehen')
         ->toContain('visibility_label')
         ->toContain('member_count')

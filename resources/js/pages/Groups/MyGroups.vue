@@ -18,6 +18,11 @@ type GroupSummary = {
     visibility: 'public' | 'request' | 'private';
     visibility_label: string;
     member_count: number;
+    category: {
+        id: number;
+        slug: string;
+        label: string;
+    } | null;
     membership?: {
         role_label: string;
         status: string;
@@ -95,12 +100,10 @@ defineOptions({
                             Du bist noch in keiner Gruppe.
                         </h2>
                         <p class="text-sm leading-6 text-muted-foreground">
-                            Entdecke Gruppen und finde passende Communities.
+                            Sobald du Gruppen erstellst oder Gruppen
+                            beitrittst, findest du sie hier.
                         </p>
                     </div>
-                    <Button as-child>
-                        <Link href="/groups">Gruppen entdecken</Link>
-                    </Button>
                 </CardContent>
             </Card>
         </PageSection>
@@ -145,6 +148,12 @@ defineOptions({
                         </p>
 
                         <div class="flex flex-wrap gap-2">
+                            <span
+                                v-if="group.category"
+                                class="rounded-full border border-primary/30 bg-primary/10 px-3 py-1 text-xs font-medium text-primary"
+                            >
+                                {{ group.category.label }}
+                            </span>
                             <span
                                 v-if="group.region"
                                 class="rounded-full border border-border bg-background/70 px-3 py-1 text-xs font-medium text-muted-foreground dark:bg-input/30"
@@ -213,6 +222,37 @@ defineOptions({
                     <span v-else>Nächste →</span>
                 </Button>
             </nav>
+        </PageSection>
+
+        <PageSection>
+            <Card>
+                <CardContent class="space-y-4 text-center sm:text-left">
+                    <div class="space-y-2">
+                        <h2 class="text-base font-medium">
+                            {{
+                                groups.data.length === 0
+                                    ? 'Starte deine Community'
+                                    : 'Weitere Gruppen'
+                            }}
+                        </h2>
+                        <p class="text-sm leading-6 text-muted-foreground">
+                            {{
+                                groups.data.length === 0
+                                    ? 'Erstelle eine eigene Gruppe oder entdecke passende Gruppen aus der NEAREON-Community.'
+                                    : 'Erstelle eine weitere Gruppe oder entdecke neue Communities.'
+                            }}
+                        </p>
+                    </div>
+                    <div class="flex flex-col gap-2 sm:flex-row">
+                        <Button as-child>
+                            <Link href="/groups/create">Gruppe erstellen</Link>
+                        </Button>
+                        <Button as-child variant="secondary">
+                            <Link href="/groups">Gruppen entdecken</Link>
+                        </Button>
+                    </div>
+                </CardContent>
+            </Card>
         </PageSection>
     </div>
 </template>

@@ -2,6 +2,7 @@
 
 use App\Models\Group;
 use App\Models\GroupMember;
+use App\Models\InterestOption;
 use App\Models\User;
 use Inertia\Testing\AssertableInertia as Assert;
 
@@ -22,6 +23,14 @@ test('public group detail is visible for onboarded members', function () {
         'country_code' => 'DE',
         'visibility' => Group::VISIBILITY_PUBLIC,
     ]);
+    $category = InterestOption::query()->create([
+        'slug' => 'group-show-category',
+        'label' => 'Fitness',
+        'is_active' => true,
+    ]);
+    $group->forceFill([
+        'category_interest_option_id' => $category->id,
+    ])->save();
 
     $this->actingAs($viewer)
         ->get(route('groups.show', $group->slug))
@@ -35,7 +44,27 @@ test('public group detail is visible for onboarded members', function () {
             ->where('group.country_code', 'DE')
             ->where('group.visibility_label', 'Öffentlich')
             ->where('group.owner.name', 'Owner Profile')
-            ->where('group.member_count', 0),
+            ->where('group.member_count', 0)
+            ->where('group.category.label', 'Fitness')
+            ->where('group.membership', null),
+        );
+});
+
+test('group detail exposes owner membership for my groups backlink', function () {
+    $owner = User::factory()->create();
+    createOnboardedProfile($owner);
+    $group = Group::factory()->for($owner, 'owner')->create([
+        'slug' => 'owned-public-group',
+        'visibility' => Group::VISIBILITY_PUBLIC,
+    ]);
+
+    $this->actingAs($owner)
+        ->get(route('groups.show', $group->slug))
+        ->assertOk()
+        ->assertInertia(fn (Assert $page) => $page
+            ->component('Groups/Show')
+            ->where('group.membership.role_label', 'Besitzer')
+            ->where('group.membership.status', GroupMember::STATUS_ACTIVE),
         );
 });
 
@@ -109,20 +138,36 @@ test('private group detail is visible for active members and shows newest member
             ->where('group.visibility_label', 'Privat')
             ->where('group.member_count', 2)
             ->where('group.membership.role_label', 'Mitglied')
+            ->where('group.membership.status', GroupMember::STATUS_ACTIVE)
             ->has('group.members', 2)
             ->where('group.members.0.user.name', 'Other Member')
             ->where('group.members.0.role_label', 'Moderator'),
         );
 });
 
+test('group detail page uses stable membership based backlinks', function () {
+    $page = file_get_contents(resource_path('js/pages/Groups/Show.vue'));
+
+    expect($page)
+        ->toContain('backHref')
+        ->toContain("'/my-groups'")
+        ->toContain("'/groups'")
+        ->toContain('← Zurück zu Meine Gruppen')
+        ->toContain('← Zurück zu Gruppen entdecken')
+        ->toContain(':href="backHref"')
+        ->not->toContain('AppBackButton');
+});
+
 test('group detail page keeps future actions as informational read only hints', function () {
     $page = file_get_contents(resource_path('js/pages/Groups/Show.vue'));
 
     expect($page)
-        ->toContain('Zurück zu Gruppen')
         ->toContain('Standort')
         ->toContain('locationLabel(group)')
         ->toContain('group.postal_code')
+        ->toContain('Kategorie')
+        ->toContain('group.category')
+        ->toContain('group.category.label')
         ->toContain('Weitere Gruppenfunktionen wie Beitritt, Chat und Events')
         ->toContain('Neueste Mitglieder')
         ->not->toContain('Gruppe bearbeiten')

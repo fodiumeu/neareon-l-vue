@@ -2,12 +2,17 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\StoreGroupRequest;
 use App\Models\Group;
 use App\Models\GroupMember;
+use App\Models\InterestOption;
 use App\Models\Profile;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -24,6 +29,7 @@ class GroupController extends Controller
 
         $groups = $this->discoverGroupsQuery()
             ->with([
+                'category',
                 'owner.profile',
                 'members' => fn ($query) => $query
                     ->where('user_id', $viewer->id)
@@ -42,6 +48,64 @@ class GroupController extends Controller
     }
 
     /**
+     * Show the group creation form.
+     */
+    public function create(): Response
+    {
+        return Inertia::render('Groups/Create', [
+            'categoryOptions' => $this->categoryOptions(),
+            'visibilityOptions' => [
+                [
+                    'value' => Group::VISIBILITY_PUBLIC,
+                    'label' => 'Öffentlich',
+                    'description' => 'Alle Mitglieder können die Gruppe finden und ansehen.',
+                ],
+                [
+                    'value' => Group::VISIBILITY_REQUEST,
+                    'label' => 'Anfrage',
+                    'description' => 'Mitglieder können die Gruppe finden; Beitritt erfolgt später per Anfrage.',
+                ],
+                [
+                    'value' => Group::VISIBILITY_PRIVATE,
+                    'label' => 'Privat',
+                    'description' => 'Nur Mitglieder können die Gruppe sehen.',
+                ],
+            ],
+        ]);
+    }
+
+    /**
+     * Store a newly created group.
+     */
+    public function store(StoreGroupRequest $request): RedirectResponse
+    {
+        $viewer = $request->user();
+        $attributes = $request->validated();
+
+        $group = DB::transaction(function () use ($attributes, $viewer): Group {
+            $group = Group::query()->create([
+                ...$attributes,
+                'owner_id' => $viewer->id,
+                'slug' => $this->uniqueSlug($attributes['name']),
+                'status' => Group::STATUS_ACTIVE,
+            ]);
+
+            GroupMember::query()->create([
+                'group_id' => $group->id,
+                'user_id' => $viewer->id,
+                'role' => GroupMember::ROLE_OWNER,
+                'status' => GroupMember::STATUS_ACTIVE,
+                'joined_at' => now(),
+            ]);
+
+            return $group;
+        });
+
+        return to_route('groups.show', ['group' => $group->slug])
+            ->with('success', 'Gruppe wurde erstellt.');
+    }
+
+    /**
      * Show groups owned by or attached to the current user.
      */
     public function mine(Request $request): Response
@@ -50,6 +114,7 @@ class GroupController extends Controller
 
         $groups = $this->myGroupsQuery($viewer)
             ->with([
+                'category',
                 'owner.profile',
                 'members' => fn ($query) => $query
                     ->where('user_id', $viewer->id)
@@ -77,6 +142,7 @@ class GroupController extends Controller
         abort_unless($this->canViewGroup($group, $viewer), 404);
 
         $group->load([
+            'category',
             'owner.profile',
             'members' => fn ($query) => $query
                 ->where('user_id', $viewer->id)
@@ -155,6 +221,20 @@ class GroupController extends Controller
             ->exists();
     }
 
+    private function uniqueSlug(string $name): string
+    {
+        $baseSlug = Str::slug($name) ?: 'gruppe';
+        $slug = $baseSlug;
+        $suffix = 2;
+
+        while (Group::query()->where('slug', $slug)->exists()) {
+            $slug = "{$baseSlug}-{$suffix}";
+            $suffix++;
+        }
+
+        return $slug;
+    }
+
     /**
      * @return array<string, mixed>
      */
@@ -192,7 +272,37 @@ class GroupController extends Controller
             'member_count' => $group->active_members_count ?? 0,
             'owner' => $this->userData($group->owner),
             'membership' => $membershipData,
+            'category' => $group->category !== null
+                ? $this->categoryData($group->category)
+                : null,
             'url' => route('groups.show', ['group' => $group->slug]),
+        ];
+    }
+
+    /**
+     * @return list<array{id: int, slug: string, label: string}>
+     */
+    private function categoryOptions(): array
+    {
+        return InterestOption::query()
+            ->where('is_active', true)
+            ->orderBy('sort_order')
+            ->orderBy('label')
+            ->get(['id', 'slug', 'label'])
+            ->map(fn (InterestOption $option): array => $this->categoryData($option))
+            ->values()
+            ->all();
+    }
+
+    /**
+     * @return array{id: int, slug: string, label: string}
+     */
+    private function categoryData(InterestOption $option): array
+    {
+        return [
+            'id' => $option->id,
+            'slug' => $option->slug,
+            'label' => $option->label,
         ];
     }
 

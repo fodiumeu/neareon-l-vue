@@ -19,6 +19,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
     'region',
     'postal_code',
     'country_code',
+    'category_interest_option_id',
     'visibility',
     'status',
 ])]
@@ -69,6 +70,14 @@ class Group extends Model
         return $this->belongsToMany(User::class, 'group_members')
             ->withPivot(['role', 'status', 'joined_at'])
             ->withTimestamps();
+    }
+
+    /**
+     * Get the managed interest option used as this group's main category.
+     */
+    public function category(): BelongsTo
+    {
+        return $this->belongsTo(InterestOption::class, 'category_interest_option_id');
     }
 
     /**

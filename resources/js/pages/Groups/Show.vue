@@ -1,10 +1,11 @@
 <script setup lang="ts">
-import { Head } from '@inertiajs/vue3';
-import AppBackButton from '@/components/AppBackButton.vue';
+import { Head, Link } from '@inertiajs/vue3';
+import { computed } from 'vue';
 import PageHeader from '@/components/PageHeader.vue';
 import PageSection from '@/components/PageSection.vue';
 import ProfileAvatar from '@/components/ProfileAvatar.vue';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 
 type GroupMemberPreview = {
@@ -27,6 +28,11 @@ type GroupDetail = {
     visibility: 'public' | 'request' | 'private';
     visibility_label: string;
     member_count: number;
+    category: {
+        id: number;
+        slug: string;
+        label: string;
+    } | null;
     owner?: {
         name: string;
         username?: string | null;
@@ -38,9 +44,17 @@ type GroupDetail = {
     members: GroupMemberPreview[];
 };
 
-defineProps<{
+const props = defineProps<{
     group: GroupDetail;
 }>();
+
+const backHref = computed(() => (props.group.membership ? '/my-groups' : '/groups'));
+
+const backLabel = computed(() =>
+    props.group.membership
+        ? '← Zurück zu Meine Gruppen'
+        : '← Zurück zu Gruppen entdecken',
+);
 
 const visibilityBadgeClass = (visibility: GroupDetail['visibility']) =>
     visibility === 'private'
@@ -72,11 +86,13 @@ defineOptions({
     <div
         class="mx-auto flex h-full w-full max-w-6xl flex-1 flex-col gap-6 overflow-x-hidden p-4 sm:p-6"
     >
-        <AppBackButton
-            fallback="/groups"
-            label="Zurück zu Gruppen"
-            class="hidden md:inline-flex"
-        />
+        <Button
+            as-child
+            variant="secondary"
+            class="hidden w-fit md:inline-flex"
+        >
+            <Link :href="backHref">{{ backLabel }}</Link>
+        </Button>
 
         <PageHeader
             :title="group.name"
@@ -127,6 +143,24 @@ defineOptions({
                             >
                                 Diese Gruppe hat noch keine Beschreibung.
                             </p>
+
+                            <div
+                                v-if="group.category"
+                                class="space-y-2"
+                            >
+                                <p
+                                    class="text-xs font-semibold tracking-wide text-muted-foreground uppercase"
+                                >
+                                    Kategorie
+                                </p>
+                                <div class="flex flex-wrap gap-2">
+                                    <span
+                                        class="rounded-full border border-primary/30 bg-primary/10 px-3 py-1 text-xs font-medium text-primary"
+                                    >
+                                        {{ group.category.label }}
+                                    </span>
+                                </div>
+                            </div>
                         </div>
 
                         <div

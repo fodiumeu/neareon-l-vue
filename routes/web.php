@@ -49,6 +49,10 @@ Route::middleware(['auth', 'age.gate', 'verified', 'onboarding.complete'])->grou
         ->name('community.index');
     Route::get('groups', [GroupController::class, 'index'])
         ->name('groups.index');
+    Route::get('groups/create', [GroupController::class, 'create'])
+        ->name('groups.create');
+    Route::post('groups', [GroupController::class, 'store'])
+        ->name('groups.store');
     Route::get('my-groups', [GroupController::class, 'mine'])
         ->name('groups.mine');
     Route::get('groups/{group:slug}', [GroupController::class, 'show'])

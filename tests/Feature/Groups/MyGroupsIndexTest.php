@@ -2,6 +2,7 @@
 
 use App\Models\Group;
 use App\Models\GroupMember;
+use App\Models\InterestOption;
 use App\Models\User;
 use Inertia\Testing\AssertableInertia as Assert;
 
@@ -22,6 +23,14 @@ test('my groups shows owned active and pending memberships', function () {
         'visibility' => Group::VISIBILITY_PRIVATE,
         'created_at' => now()->subMinutes(2),
     ]);
+    $category = InterestOption::query()->create([
+        'slug' => 'my-groups-category',
+        'label' => 'Reisen',
+        'is_active' => true,
+    ]);
+    $ownedGroup->forceFill([
+        'category_interest_option_id' => $category->id,
+    ])->save();
     $activeGroup = Group::factory()->create([
         'name' => 'Active Member Group',
         'slug' => 'active-member-group',
@@ -64,6 +73,7 @@ test('my groups shows owned active and pending memberships', function () {
             ->where('groups.data.2.region', 'Berlin')
             ->where('groups.data.2.postal_code', '10115')
             ->where('groups.data.2.country_code', 'DE')
+            ->where('groups.data.2.category.label', 'Reisen')
             ->where('groups.data.2.membership.role_label', 'Besitzer'),
         );
 });
@@ -84,10 +94,52 @@ test('my groups empty state links to group discovery', function () {
 
     expect($page)
         ->toContain('Du bist noch in keiner Gruppe.')
-        ->toContain('Entdecke Gruppen und finde passende Communities.')
+        ->toContain('Sobald du Gruppen erstellst oder Gruppen')
+        ->toContain('beitrittst, findest du sie hier.')
+        ->toContain('Starte deine Community')
+        ->toContain('Erstelle eine eigene Gruppe oder entdecke passende Gruppen aus der NEAREON-Community.')
+        ->toContain('href="/groups/create"')
+        ->toContain('Gruppe erstellen')
         ->toContain('href="/groups"')
         ->toContain('Gruppen entdecken')
+        ->toContain('group.category')
+        ->toContain('group.category.label')
         ->toContain('group.postal_code')
-        ->not->toContain('Gruppe erstellen')
         ->not->toContain('Beitreten');
+});
+
+test('my groups shows the action card below existing groups', function () {
+    $viewer = User::factory()->create();
+    createOnboardedProfile($viewer);
+    Group::factory()->for($viewer, 'owner')->create([
+        'name' => 'Existing Group',
+        'slug' => 'existing-group',
+    ]);
+
+    $this->actingAs($viewer)
+        ->get(route('groups.mine'))
+        ->assertOk()
+        ->assertInertia(fn (Assert $page) => $page
+            ->component('Groups/MyGroups')
+            ->has('groups.data', 1)
+            ->where('groups.data.0.name', 'Existing Group'),
+        );
+
+    $page = file_get_contents(resource_path('js/pages/Groups/MyGroups.vue'));
+    $gridPosition = strpos($page, 'v-for="group in groups.data"');
+    $actionCardPosition = strpos($page, 'Weitere Gruppen');
+    $createLinkPosition = strpos($page, 'href="/groups/create"');
+    $discoverLinkPosition = strpos($page, 'href="/groups"');
+
+    expect($createLinkPosition)
+        ->not->toBeFalse()
+        ->and($discoverLinkPosition)
+        ->not->toBeFalse()
+        ->and($actionCardPosition)
+        ->not->toBeFalse()
+        ->toBeGreaterThan($gridPosition)
+        ->and($page)
+        ->toContain('Weitere Gruppen')
+        ->toContain('Erstelle eine weitere Gruppe oder entdecke neue Communities.')
+        ->toContain('Starte deine Community');
 });

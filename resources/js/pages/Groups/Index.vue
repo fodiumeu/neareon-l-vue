@@ -17,6 +17,11 @@ type GroupSummary = {
     visibility: 'public' | 'request' | 'private';
     visibility_label: string;
     member_count: number;
+    category: {
+        id: number;
+        slug: string;
+        label: string;
+    } | null;
     url: string;
 };
 
@@ -133,6 +138,12 @@ defineOptions({
                         </p>
 
                         <div class="flex flex-wrap gap-2">
+                            <span
+                                v-if="group.category"
+                                class="rounded-full border border-primary/30 bg-primary/10 px-3 py-1 text-xs font-medium text-primary"
+                            >
+                                {{ group.category.label }}
+                            </span>
                             <span
                                 v-if="group.region"
                                 class="rounded-full border border-border bg-background/70 px-3 py-1 text-xs font-medium text-muted-foreground dark:bg-input/30"
