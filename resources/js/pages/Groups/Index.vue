@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Head, Link } from '@inertiajs/vue3';
+import { Form, Head, Link } from '@inertiajs/vue3';
 import PageHeader from '@/components/PageHeader.vue';
 import PageSection from '@/components/PageSection.vue';
 import { Badge } from '@/components/ui/badge';
@@ -17,12 +17,22 @@ type GroupSummary = {
     visibility: 'public' | 'request' | 'private';
     visibility_label: string;
     member_count: number;
+    can_join: boolean;
     category: {
         id: number;
         slug: string;
         label: string;
     } | null;
+    join_label?: string | null;
+    join_url?: string | null;
+    membership?: {
+        role_label: string;
+        status: string;
+        status_label: string;
+    } | null;
     url: string;
+    viewer_membership_status?: string | null;
+    viewer_role?: string | null;
 };
 
 type PaginationLink = {
@@ -163,14 +173,53 @@ defineOptions({
                                 {{
                                     group.member_count === 1
                                         ? 'Mitglied'
-                                        : 'Mitglieder'
+                                    : 'Mitglieder'
                                 }}
+                            </span>
+                            <span
+                                v-if="group.viewer_membership_status === 'pending'"
+                                class="rounded-full border border-primary/30 bg-primary/10 px-3 py-1 text-xs font-medium text-primary"
+                            >
+                                Anfrage gesendet
+                            </span>
+                            <span
+                                v-else-if="group.viewer_membership_status === 'active' && group.viewer_role"
+                                class="rounded-full border border-primary/30 bg-primary/10 px-3 py-1 text-xs font-medium text-primary"
+                            >
+                                {{ group.membership?.role_label ?? 'Mitglied' }}
                             </span>
                         </div>
 
-                        <Button as-child class="mt-auto w-full">
-                            <Link :href="group.url">Gruppe ansehen</Link>
-                        </Button>
+                        <div class="mt-auto grid gap-2">
+                            <Form
+                                v-if="group.can_join && group.join_url"
+                                :action="group.join_url"
+                                method="post"
+                                v-slot="{ processing }"
+                            >
+                                <Button
+                                    type="submit"
+                                    class="w-full"
+                                    :disabled="processing"
+                                >
+                                    {{
+                                        processing
+                                            ? 'Wird verarbeitet...'
+                                            : group.join_label
+                                    }}
+                                </Button>
+                            </Form>
+                            <p
+                                v-else-if="group.viewer_membership_status === 'pending'"
+                                class="rounded-md border border-primary/20 bg-primary/10 px-3 py-2 text-sm text-primary"
+                            >
+                                Deine Beitrittsanfrage wartet auf Bestätigung.
+                            </p>
+
+                            <Button as-child variant="secondary" class="w-full">
+                                <Link :href="group.url">Gruppe ansehen</Link>
+                            </Button>
+                        </div>
                     </CardContent>
                 </Card>
             </div>

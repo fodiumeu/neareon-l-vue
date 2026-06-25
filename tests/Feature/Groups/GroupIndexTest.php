@@ -54,9 +54,59 @@ test('groups index shows public and request groups but hides unrelated private g
             ->where('groups.data.0.country_code', 'DE')
             ->where('groups.data.0.visibility_label', 'Öffentlich')
             ->where('groups.data.0.category.label', 'Kochen')
+            ->where('groups.data.0.can_join', true)
+            ->where('groups.data.0.join_label', 'Gruppe beitreten')
             ->where('groups.data.1.name', $requestGroup->name)
             ->where('groups.data.1.category', null)
+            ->where('groups.data.1.can_join', true)
+            ->where('groups.data.1.join_label', 'Beitrittsanfrage senden')
             ->where('groups.data.1.visibility_label', 'Anfrage'),
+        );
+});
+
+test('groups index exposes pending and active viewer membership status', function () {
+    $viewer = User::factory()->create();
+    createOnboardedProfile($viewer);
+    $activeGroup = Group::factory()->create([
+        'name' => 'Active Public Group',
+        'slug' => 'active-public-group',
+        'visibility' => Group::VISIBILITY_PUBLIC,
+        'created_at' => now()->subMinute(),
+    ]);
+    $pendingGroup = Group::factory()->create([
+        'name' => 'Pending Request Group',
+        'slug' => 'pending-request-group',
+        'visibility' => Group::VISIBILITY_REQUEST,
+        'created_at' => now(),
+    ]);
+    GroupMember::factory()
+        ->for($activeGroup)
+        ->for($viewer)
+        ->create([
+            'status' => GroupMember::STATUS_ACTIVE,
+        ]);
+    GroupMember::factory()
+        ->for($pendingGroup)
+        ->for($viewer)
+        ->create([
+            'status' => GroupMember::STATUS_PENDING,
+            'joined_at' => null,
+        ]);
+
+    $this->actingAs($viewer)
+        ->get(route('groups.index'))
+        ->assertOk()
+        ->assertInertia(fn (Assert $page) => $page
+            ->component('Groups/Index')
+            ->has('groups.data', 2)
+            ->where('groups.data.0.name', 'Pending Request Group')
+            ->where('groups.data.0.can_join', false)
+            ->where('groups.data.0.viewer_membership_status', GroupMember::STATUS_PENDING)
+            ->where('groups.data.0.membership.status_label', 'Anfrage ausstehend')
+            ->where('groups.data.1.name', 'Active Public Group')
+            ->where('groups.data.1.can_join', false)
+            ->where('groups.data.1.viewer_membership_status', GroupMember::STATUS_ACTIVE)
+            ->where('groups.data.1.membership.role_label', 'Mitglied'),
         );
 });
 
@@ -114,9 +164,13 @@ test('groups index page includes empty state card and read only group actions', 
         ->toContain('group.category')
         ->toContain('group.category.label')
         ->toContain('Gruppe ansehen')
+        ->toContain('Anfrage gesendet')
+        ->toContain('group.can_join')
+        ->toContain('group.join_label')
+        ->toContain('group.join_url')
         ->toContain('visibility_label')
         ->toContain('member_count')
-        ->not->toContain('membership.role_label')
         ->not->toContain('Gruppe erstellen')
-        ->not->toContain('Beitreten');
+        ->not->toContain('Gruppe bearbeiten')
+        ->not->toContain('Gruppe verlassen');
 });

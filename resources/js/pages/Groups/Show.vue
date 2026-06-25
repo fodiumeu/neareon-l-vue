@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Head, Link } from '@inertiajs/vue3';
+import { Form, Head, Link } from '@inertiajs/vue3';
 import { computed } from 'vue';
 import PageHeader from '@/components/PageHeader.vue';
 import PageSection from '@/components/PageSection.vue';
@@ -29,12 +29,15 @@ type GroupDetail = {
     visibility_label: string;
     member_count: number;
     can_edit: boolean;
+    can_join: boolean;
     category: {
         id: number;
         slug: string;
         label: string;
     } | null;
     edit_url: string;
+    join_label?: string | null;
+    join_url?: string | null;
     owner?: {
         name: string;
         username?: string | null;
@@ -44,6 +47,8 @@ type GroupDetail = {
         status_label: string;
     } | null;
     members: GroupMemberPreview[];
+    viewer_membership_status?: string | null;
+    viewer_role?: string | null;
 };
 
 const props = defineProps<{
@@ -106,6 +111,74 @@ defineOptions({
                 <Link :href="group.edit_url">Gruppe bearbeiten</Link>
             </Button>
         </div>
+
+        <PageSection
+            v-if="group.can_join || group.viewer_membership_status === 'pending' || group.viewer_membership_status === 'active'"
+        >
+            <Card>
+                <CardContent
+                    class="flex flex-col gap-3 p-5 sm:flex-row sm:items-center sm:justify-between"
+                >
+                    <div class="space-y-1">
+                        <h2 class="text-base font-semibold">
+                            Gruppenstatus
+                        </h2>
+                        <p
+                            v-if="group.viewer_membership_status === 'pending'"
+                            class="text-sm leading-6 text-muted-foreground"
+                        >
+                            Deine Beitrittsanfrage wartet auf Bestätigung.
+                        </p>
+                        <p
+                            v-else-if="group.viewer_membership_status === 'active'"
+                            class="text-sm leading-6 text-muted-foreground"
+                        >
+                            Du bist Mitglied dieser Gruppe.
+                        </p>
+                        <p
+                            v-else
+                            class="text-sm leading-6 text-muted-foreground"
+                        >
+                            Tritt dieser Gruppe bei oder sende eine
+                            Beitrittsanfrage.
+                        </p>
+                    </div>
+
+                    <Form
+                        v-if="group.can_join && group.join_url"
+                        :action="group.join_url"
+                        method="post"
+                        v-slot="{ processing }"
+                    >
+                        <Button
+                            type="submit"
+                            class="w-full sm:w-auto"
+                            :disabled="processing"
+                        >
+                            {{
+                                processing
+                                    ? 'Wird verarbeitet...'
+                                    : group.join_label
+                            }}
+                        </Button>
+                    </Form>
+                    <Badge
+                        v-else-if="group.viewer_membership_status === 'pending'"
+                        variant="outline"
+                        class="w-fit border-primary/30 bg-primary/10 text-primary"
+                    >
+                        Anfrage gesendet
+                    </Badge>
+                    <Badge
+                        v-else-if="group.viewer_membership_status === 'active'"
+                        variant="outline"
+                        class="w-fit border-primary/30 bg-primary/10 text-primary"
+                    >
+                        {{ group.membership?.role_label ?? 'Mitglied' }}
+                    </Badge>
+                </CardContent>
+            </Card>
+        </PageSection>
 
         <PageSection>
             <Card

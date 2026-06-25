@@ -124,6 +124,49 @@ class GroupController extends Controller
     }
 
     /**
+     * Join a public group or request access to a request-based group.
+     */
+    public function join(Request $request, Group $group): RedirectResponse
+    {
+        $viewer = $request->user();
+
+        abort_unless($group->status === Group::STATUS_ACTIVE, 404);
+        abort_if($group->owner_id === $viewer->id, 403);
+        abort_unless(in_array($group->visibility, [
+            Group::VISIBILITY_PUBLIC,
+            Group::VISIBILITY_REQUEST,
+        ], true), 404);
+
+        $targetStatus = $group->visibility === Group::VISIBILITY_PUBLIC
+            ? GroupMember::STATUS_ACTIVE
+            : GroupMember::STATUS_PENDING;
+
+        $membership = GroupMember::query()->firstOrCreate(
+            [
+                'group_id' => $group->id,
+                'user_id' => $viewer->id,
+            ],
+            [
+                'role' => GroupMember::ROLE_MEMBER,
+                'status' => $targetStatus,
+                'joined_at' => $targetStatus === GroupMember::STATUS_ACTIVE
+                    ? now()
+                    : null,
+            ],
+        );
+
+        if (! $membership->wasRecentlyCreated) {
+            return to_route('groups.show', ['group' => $group->slug])
+                ->with('success', $this->existingMembershipMessage($membership));
+        }
+
+        return to_route('groups.show', ['group' => $group->slug])
+            ->with('success', $targetStatus === GroupMember::STATUS_ACTIVE
+                ? 'Du bist der Gruppe beigetreten.'
+                : 'Deine Beitrittsanfrage wurde gesendet.');
+    }
+
+    /**
      * Show groups owned by or attached to the current user.
      */
     public function mine(Request $request): Response
@@ -291,6 +334,13 @@ class GroupController extends Controller
             'owner' => $this->userData($group->owner),
             'membership' => $membershipData,
             'can_edit' => $this->canManageGroup($group, $viewer),
+            'can_join' => $this->canJoinGroup($group, $membershipData, $viewer),
+            'join_label' => $this->joinLabel($group, $membershipData, $viewer),
+            'join_url' => $this->canJoinGroup($group, $membershipData, $viewer)
+                ? route('groups.join', ['group' => $group->slug])
+                : null,
+            'viewer_membership_status' => $membershipData['status'] ?? null,
+            'viewer_role' => $membershipData['role'] ?? null,
             'category' => $group->category !== null
                 ? $this->categoryData($group->category)
                 : null,
@@ -378,6 +428,41 @@ class GroupController extends Controller
     }
 
     /**
+     * @param  array<string, string>|null  $membershipData
+     */
+    private function canJoinGroup(Group $group, ?array $membershipData, User $viewer): bool
+    {
+        return $membershipData === null
+            && $group->owner_id !== $viewer->id
+            && ! $viewer->canAccessAdmin()
+            && in_array($group->visibility, [
+                Group::VISIBILITY_PUBLIC,
+                Group::VISIBILITY_REQUEST,
+            ], true);
+    }
+
+    /**
+     * @param  array<string, string>|null  $membershipData
+     */
+    private function joinLabel(Group $group, ?array $membershipData, User $viewer): ?string
+    {
+        if (! $this->canJoinGroup($group, $membershipData, $viewer)) {
+            return null;
+        }
+
+        return $group->visibility === Group::VISIBILITY_PUBLIC
+            ? 'Gruppe beitreten'
+            : 'Beitrittsanfrage senden';
+    }
+
+    private function existingMembershipMessage(GroupMember $membership): string
+    {
+        return $membership->status === GroupMember::STATUS_PENDING
+            ? 'Deine Beitrittsanfrage wurde bereits gesendet.'
+            : 'Du bist bereits Mitglied dieser Gruppe.';
+    }
+
+    /**
      * @return array<string, mixed>
      */
     private function memberData(GroupMember $membership): array
@@ -428,7 +513,7 @@ class GroupController extends Controller
     private function membershipStatusLabel(string $status): string
     {
         return match ($status) {
-            GroupMember::STATUS_PENDING => 'Ausstehend',
+            GroupMember::STATUS_PENDING => 'Anfrage ausstehend',
             default => 'Mitglied',
         };
     }

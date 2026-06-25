@@ -57,6 +57,8 @@ Route::middleware(['auth', 'age.gate', 'verified', 'onboarding.complete'])->grou
         ->name('groups.mine');
     Route::get('groups/{group:slug}/edit', [GroupController::class, 'edit'])
         ->name('groups.edit');
+    Route::post('groups/{group:slug}/join', [GroupController::class, 'join'])
+        ->name('groups.join');
     Route::patch('groups/{group:slug}', [GroupController::class, 'update'])
         ->name('groups.update');
     Route::get('groups/{group:slug}', [GroupController::class, 'show'])

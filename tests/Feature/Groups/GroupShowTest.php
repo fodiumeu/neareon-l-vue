@@ -46,6 +46,8 @@ test('public group detail is visible for onboarded members', function () {
             ->where('group.owner.name', 'Owner Profile')
             ->where('group.member_count', 0)
             ->where('group.can_edit', false)
+            ->where('group.can_join', true)
+            ->where('group.join_label', 'Gruppe beitreten')
             ->where('group.category.label', 'Fitness')
             ->where('group.membership', null),
         );
@@ -65,6 +67,7 @@ test('group detail exposes owner membership for my groups backlink', function ()
         ->assertInertia(fn (Assert $page) => $page
             ->component('Groups/Show')
             ->where('group.can_edit', true)
+            ->where('group.can_join', false)
             ->where('group.edit_url', route('groups.edit', $group->slug))
             ->where('group.membership.role_label', 'Besitzer')
             ->where('group.membership.status', GroupMember::STATUS_ACTIVE),
@@ -84,7 +87,35 @@ test('request group detail is visible', function () {
         ->assertOk()
         ->assertInertia(fn (Assert $page) => $page
             ->component('Groups/Show')
-            ->where('group.visibility_label', 'Anfrage'),
+            ->where('group.visibility_label', 'Anfrage')
+            ->where('group.can_join', true)
+            ->where('group.join_label', 'Beitrittsanfrage senden'),
+        );
+});
+
+test('request group detail shows pending membership state', function () {
+    $viewer = User::factory()->create();
+    createOnboardedProfile($viewer);
+    $group = Group::factory()->create([
+        'slug' => 'request-pending-visible',
+        'visibility' => Group::VISIBILITY_REQUEST,
+    ]);
+    GroupMember::factory()
+        ->for($group)
+        ->for($viewer)
+        ->create([
+            'status' => GroupMember::STATUS_PENDING,
+            'joined_at' => null,
+        ]);
+
+    $this->actingAs($viewer)
+        ->get(route('groups.show', $group->slug))
+        ->assertOk()
+        ->assertInertia(fn (Assert $page) => $page
+            ->component('Groups/Show')
+            ->where('group.can_join', false)
+            ->where('group.viewer_membership_status', GroupMember::STATUS_PENDING)
+            ->where('group.membership.status_label', 'Anfrage ausstehend'),
         );
 });
 
@@ -174,7 +205,10 @@ test('group detail page keeps future actions as informational read only hints', 
         ->toContain('Weitere Gruppenfunktionen wie Beitritt, Chat und Events')
         ->toContain('Neueste Mitglieder')
         ->toContain('Gruppe bearbeiten')
+        ->toContain('Anfrage gesendet')
         ->toContain('group.can_edit')
+        ->toContain('group.can_join')
         ->toContain('group.edit_url')
-        ->not->toContain('Beitreten');
+        ->toContain('group.join_label')
+        ->toContain('group.join_url');
 });

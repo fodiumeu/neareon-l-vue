@@ -66,7 +66,7 @@ test('my groups shows owned active and pending memberships', function () {
             ->component('Groups/MyGroups')
             ->has('groups.data', 3)
             ->where('groups.data.0.name', $pendingGroup->name)
-            ->where('groups.data.0.membership.status_label', 'Ausstehend')
+            ->where('groups.data.0.membership.status_label', 'Anfrage ausstehend')
             ->where('groups.data.1.name', $activeGroup->name)
             ->where('groups.data.1.membership.role_label', 'Mitglied')
             ->where('groups.data.2.name', $ownedGroup->name)
