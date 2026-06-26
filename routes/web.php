@@ -65,6 +65,8 @@ Route::middleware(['auth', 'age.gate', 'verified', 'onboarding.complete'])->grou
         ->name('groups.members.index');
     Route::delete('groups/{group:slug}/members/{member}', [GroupController::class, 'destroyMember'])
         ->name('groups.members.destroy');
+    Route::patch('groups/{group:slug}/members/{member}/role', [GroupController::class, 'updateMemberRole'])
+        ->name('groups.members.role.update');
     Route::post('groups/{group:slug}/join', [GroupController::class, 'join'])
         ->name('groups.join');
     Route::delete('groups/{group:slug}/membership', [GroupController::class, 'leave'])

@@ -23,6 +23,7 @@ type GroupContext = {
     slug: string;
     url: string;
     can_manage_members: boolean;
+    can_manage_roles: boolean;
 };
 
 type GroupMember = {
@@ -30,9 +31,12 @@ type GroupMember = {
     role: 'owner' | 'moderator' | 'member';
     role_label: string;
     status: string;
+    can_demote: boolean;
+    can_promote: boolean;
     can_remove: boolean;
     joined_at?: string | null;
     remove_url?: string | null;
+    role_update_url?: string | null;
     user: {
         id: number;
         name: string;
@@ -80,6 +84,9 @@ const joinedAtLabel = (value?: string | null) => {
         dateStyle: 'medium',
     }).format(new Date(value));
 };
+
+const promotedRole = 'moderator';
+const demotedRole = 'member';
 
 defineOptions({
     layout: {
@@ -256,6 +263,130 @@ defineOptions({
                                                     processing
                                                         ? 'Wird entfernt...'
                                                         : 'Mitglied entfernen'
+                                                }}
+                                            </Button>
+                                        </DialogFooter>
+                                    </Form>
+                                </DialogContent>
+                            </Dialog>
+
+                            <Dialog
+                                v-if="
+                                    member.can_promote &&
+                                    member.role_update_url
+                                "
+                            >
+                                <DialogTrigger as-child>
+                                    <Button type="button" class="w-full sm:w-auto">
+                                        Zum Moderator machen
+                                    </Button>
+                                </DialogTrigger>
+                                <DialogContent>
+                                    <Form
+                                        :action="member.role_update_url"
+                                        method="patch"
+                                        class="space-y-6"
+                                        v-slot="{ processing }"
+                                    >
+                                        <input
+                                            type="hidden"
+                                            name="role"
+                                            :value="promotedRole"
+                                        />
+                                        <DialogHeader class="space-y-3">
+                                            <DialogTitle>
+                                                Moderator ernennen?
+                                            </DialogTitle>
+                                            <DialogDescription>
+                                                Dieses Mitglied kann später
+                                                Gruppeninhalte moderieren,
+                                                sobald Moderationsfunktionen
+                                                verfügbar sind.
+                                            </DialogDescription>
+                                        </DialogHeader>
+
+                                        <DialogFooter class="gap-2">
+                                            <DialogClose as-child>
+                                                <Button
+                                                    type="button"
+                                                    variant="secondary"
+                                                    :disabled="processing"
+                                                >
+                                                    Abbrechen
+                                                </Button>
+                                            </DialogClose>
+                                            <Button
+                                                type="submit"
+                                                :disabled="processing"
+                                            >
+                                                {{
+                                                    processing
+                                                        ? 'Wird aktualisiert...'
+                                                        : 'Zum Moderator machen'
+                                                }}
+                                            </Button>
+                                        </DialogFooter>
+                                    </Form>
+                                </DialogContent>
+                            </Dialog>
+
+                            <Dialog
+                                v-if="
+                                    member.can_demote &&
+                                    member.role_update_url
+                                "
+                            >
+                                <DialogTrigger as-child>
+                                    <Button
+                                        type="button"
+                                        variant="secondary"
+                                        class="w-full sm:w-auto"
+                                    >
+                                        Zum Mitglied machen
+                                    </Button>
+                                </DialogTrigger>
+                                <DialogContent>
+                                    <Form
+                                        :action="member.role_update_url"
+                                        method="patch"
+                                        class="space-y-6"
+                                        v-slot="{ processing }"
+                                    >
+                                        <input
+                                            type="hidden"
+                                            name="role"
+                                            :value="demotedRole"
+                                        />
+                                        <DialogHeader class="space-y-3">
+                                            <DialogTitle>
+                                                Moderator zurückstufen?
+                                            </DialogTitle>
+                                            <DialogDescription>
+                                                Dieses Mitglied verliert die
+                                                Moderator-Rolle und bleibt
+                                                normales Gruppenmitglied.
+                                            </DialogDescription>
+                                        </DialogHeader>
+
+                                        <DialogFooter class="gap-2">
+                                            <DialogClose as-child>
+                                                <Button
+                                                    type="button"
+                                                    variant="secondary"
+                                                    :disabled="processing"
+                                                >
+                                                    Abbrechen
+                                                </Button>
+                                            </DialogClose>
+                                            <Button
+                                                type="submit"
+                                                variant="outline"
+                                                :disabled="processing"
+                                            >
+                                                {{
+                                                    processing
+                                                        ? 'Wird aktualisiert...'
+                                                        : 'Zum Mitglied machen'
                                                 }}
                                             </Button>
                                         </DialogFooter>

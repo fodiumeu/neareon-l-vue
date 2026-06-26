@@ -343,6 +343,7 @@ class GroupController extends Controller
                 'slug' => $group->slug,
                 'url' => route('groups.show', $this->showRouteParameters($group, self::SOURCE_MY_GROUPS)),
                 'can_manage_members' => $this->canManageGroup($group, $viewer),
+                'can_manage_roles' => $this->canManageGroup($group, $viewer),
             ],
             'members' => $members,
         ]);
@@ -363,6 +364,32 @@ class GroupController extends Controller
 
         return to_route('groups.members.index', ['group' => $group->slug])
             ->with('success', 'Mitglied wurde aus der Gruppe entfernt.');
+    }
+
+    /**
+     * Promote or demote a regular active group member.
+     */
+    public function updateMemberRole(Request $request, Group $group, GroupMember $member): RedirectResponse
+    {
+        $viewer = $request->user();
+        $attributes = $request->validate([
+            'role' => ['required', 'string', 'in:'.GroupMember::ROLE_MEMBER.','.GroupMember::ROLE_MODERATOR],
+        ]);
+
+        abort_unless($this->canViewGroup($group, $viewer), 404);
+        abort_unless($this->canManageGroup($group, $viewer), 403);
+        $this->ensureRoleManageableMemberBelongsToGroup($group, $member, $viewer);
+
+        $targetRole = $attributes['role'];
+
+        $member->forceFill([
+            'role' => $targetRole,
+        ])->save();
+
+        return to_route('groups.members.index', ['group' => $group->slug])
+            ->with('success', $targetRole === GroupMember::ROLE_MODERATOR
+                ? 'Mitglied wurde zum Moderator gemacht.'
+                : 'Moderator wurde zum Mitglied zurückgestuft.');
     }
 
     /**
@@ -1012,6 +1039,17 @@ class GroupController extends Controller
         abort_if($member->user_id === $viewer->id, 403);
     }
 
+    private function ensureRoleManageableMemberBelongsToGroup(Group $group, GroupMember $member, User $viewer): void
+    {
+        abort_unless($member->group_id === $group->id, 404);
+        abort_unless($member->status === GroupMember::STATUS_ACTIVE, 404);
+        abort_unless(in_array($member->role, [
+            GroupMember::ROLE_MEMBER,
+            GroupMember::ROLE_MODERATOR,
+        ], true), 404);
+        abort_if($member->user_id === $viewer->id, 403);
+    }
+
     /**
      * @return list<array<string, mixed>>
      */
@@ -1065,13 +1103,24 @@ class GroupController extends Controller
     private function memberListData(GroupMember $membership, Group $group, User $viewer): array
     {
         $canRemove = $this->canRemoveGroupMember($group, $membership, $viewer);
+        $canPromote = $this->canPromoteGroupMember($group, $membership, $viewer);
+        $canDemote = $this->canDemoteGroupMember($group, $membership, $viewer);
+        $canUpdateRole = $canPromote || $canDemote;
 
         return [
             ...$this->memberData($membership),
             'status' => $membership->status,
             'can_remove' => $canRemove,
+            'can_promote' => $canPromote,
+            'can_demote' => $canDemote,
             'remove_url' => $canRemove
                 ? route('groups.members.destroy', [
+                    'group' => $group->slug,
+                    'member' => $membership->id,
+                ])
+                : null,
+            'role_update_url' => $canUpdateRole
+                ? route('groups.members.role.update', [
                     'group' => $group->slug,
                     'member' => $membership->id,
                 ])
@@ -1091,6 +1140,24 @@ class GroupController extends Controller
             && $membership->group_id === $group->id
             && $membership->status === GroupMember::STATUS_ACTIVE
             && $membership->role === GroupMember::ROLE_MEMBER
+            && $membership->user_id !== $viewer->id;
+    }
+
+    private function canPromoteGroupMember(Group $group, GroupMember $membership, User $viewer): bool
+    {
+        return $this->canManageGroup($group, $viewer)
+            && $membership->group_id === $group->id
+            && $membership->status === GroupMember::STATUS_ACTIVE
+            && $membership->role === GroupMember::ROLE_MEMBER
+            && $membership->user_id !== $viewer->id;
+    }
+
+    private function canDemoteGroupMember(Group $group, GroupMember $membership, User $viewer): bool
+    {
+        return $this->canManageGroup($group, $viewer)
+            && $membership->group_id === $group->id
+            && $membership->status === GroupMember::STATUS_ACTIVE
+            && $membership->role === GroupMember::ROLE_MODERATOR
             && $membership->user_id !== $viewer->id;
     }
 

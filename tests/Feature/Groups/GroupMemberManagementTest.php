@@ -45,18 +45,226 @@ test('owner receives remove capability only for regular active members', functio
             ->where('group.can_manage_members', true)
             ->has('members.data', 3)
             ->where('members.data.0.id', $ownerMembership->id)
+            ->where('members.data.0.can_promote', false)
+            ->where('members.data.0.can_demote', false)
             ->where('members.data.0.can_remove', false)
+            ->where('members.data.0.role_update_url', null)
             ->where('members.data.0.remove_url', null)
             ->where('members.data.1.id', $moderatorMembership->id)
+            ->where('members.data.1.can_promote', false)
+            ->where('members.data.1.can_demote', true)
             ->where('members.data.1.can_remove', false)
+            ->where('members.data.1.role_update_url', route('groups.members.role.update', [
+                'group' => $group->slug,
+                'member' => $moderatorMembership->id,
+            ]))
             ->where('members.data.1.remove_url', null)
             ->where('members.data.2.id', $memberMembership->id)
+            ->where('members.data.2.can_promote', true)
+            ->where('members.data.2.can_demote', false)
             ->where('members.data.2.can_remove', true)
+            ->where('members.data.2.role_update_url', route('groups.members.role.update', [
+                'group' => $group->slug,
+                'member' => $memberMembership->id,
+            ]))
             ->where('members.data.2.remove_url', route('groups.members.destroy', [
                 'group' => $group->slug,
                 'member' => $memberMembership->id,
             ])),
         );
+});
+
+test('owner can promote a regular active member to moderator', function () {
+    $owner = User::factory()->create();
+    createOnboardedProfile($owner);
+    $member = User::factory()->create();
+    createOnboardedProfile($member);
+    $group = Group::factory()->for($owner, 'owner')->create();
+    GroupMember::factory()
+        ->for($group)
+        ->for($owner)
+        ->create(['role' => GroupMember::ROLE_OWNER]);
+    $membership = GroupMember::factory()
+        ->for($group)
+        ->for($member)
+        ->create(['role' => GroupMember::ROLE_MEMBER]);
+
+    $this->actingAs($owner)
+        ->patch(route('groups.members.role.update', [
+            'group' => $group->slug,
+            'member' => $membership->id,
+        ]), [
+            'role' => GroupMember::ROLE_MODERATOR,
+        ])
+        ->assertRedirect(route('groups.members.index', $group->slug))
+        ->assertSessionHas('success', 'Mitglied wurde zum Moderator gemacht.');
+
+    expect($membership->refresh()->role)->toBe(GroupMember::ROLE_MODERATOR);
+});
+
+test('owner can demote a moderator back to member', function () {
+    $owner = User::factory()->create();
+    createOnboardedProfile($owner);
+    $moderator = User::factory()->create();
+    createOnboardedProfile($moderator);
+    $group = Group::factory()->for($owner, 'owner')->create();
+    GroupMember::factory()
+        ->for($group)
+        ->for($owner)
+        ->create(['role' => GroupMember::ROLE_OWNER]);
+    $membership = GroupMember::factory()
+        ->for($group)
+        ->for($moderator)
+        ->create(['role' => GroupMember::ROLE_MODERATOR]);
+
+    $this->actingAs($owner)
+        ->patch(route('groups.members.role.update', [
+            'group' => $group->slug,
+            'member' => $membership->id,
+        ]), [
+            'role' => GroupMember::ROLE_MEMBER,
+        ])
+        ->assertRedirect(route('groups.members.index', $group->slug))
+        ->assertSessionHas('success', 'Moderator wurde zum Mitglied zurückgestuft.');
+
+    expect($membership->refresh()->role)->toBe(GroupMember::ROLE_MEMBER);
+});
+
+test('platform admin can change member roles', function () {
+    $admin = User::factory()->create(['role' => UserRole::Admin]);
+    createOnboardedProfile($admin);
+    $member = User::factory()->create();
+    createOnboardedProfile($member);
+    $group = Group::factory()->create();
+    $membership = GroupMember::factory()
+        ->for($group)
+        ->for($member)
+        ->create(['role' => GroupMember::ROLE_MEMBER]);
+
+    $this->actingAs($admin)
+        ->patch(route('groups.members.role.update', [
+            'group' => $group->slug,
+            'member' => $membership->id,
+        ]), [
+            'role' => GroupMember::ROLE_MODERATOR,
+        ])
+        ->assertRedirect(route('groups.members.index', $group->slug));
+
+    expect($membership->refresh()->role)->toBe(GroupMember::ROLE_MODERATOR);
+});
+
+test('regular members moderators and non members cannot change roles', function () {
+    $regular = User::factory()->create();
+    createOnboardedProfile($regular);
+    $moderator = User::factory()->create();
+    createOnboardedProfile($moderator);
+    $nonMember = User::factory()->create();
+    createOnboardedProfile($nonMember);
+    $target = User::factory()->create();
+    createOnboardedProfile($target);
+    $group = Group::factory()->create();
+    GroupMember::factory()
+        ->for($group)
+        ->for($regular)
+        ->create(['role' => GroupMember::ROLE_MEMBER]);
+    GroupMember::factory()
+        ->for($group)
+        ->for($moderator)
+        ->create(['role' => GroupMember::ROLE_MODERATOR]);
+    $targetMembership = GroupMember::factory()
+        ->for($group)
+        ->for($target)
+        ->create(['role' => GroupMember::ROLE_MEMBER]);
+
+    foreach ([$regular, $moderator, $nonMember] as $viewer) {
+        $this->actingAs($viewer)
+            ->patch(route('groups.members.role.update', [
+                'group' => $group->slug,
+                'member' => $targetMembership->id,
+            ]), [
+                'role' => GroupMember::ROLE_MODERATOR,
+            ])
+            ->assertForbidden();
+    }
+
+    expect($targetMembership->refresh()->role)->toBe(GroupMember::ROLE_MEMBER);
+});
+
+test('owner cannot change pending owner self or wrong group memberships', function () {
+    $owner = User::factory()->create();
+    createOnboardedProfile($owner);
+    $pending = User::factory()->create();
+    createOnboardedProfile($pending);
+    $targetOwner = User::factory()->create();
+    createOnboardedProfile($targetOwner);
+    $otherMember = User::factory()->create();
+    createOnboardedProfile($otherMember);
+    $group = Group::factory()->for($owner, 'owner')->create();
+    $otherGroup = Group::factory()->create();
+    $selfMembership = GroupMember::factory()
+        ->for($group)
+        ->for($owner)
+        ->create(['role' => GroupMember::ROLE_OWNER]);
+    $ownerMembership = GroupMember::factory()
+        ->for($group)
+        ->for($targetOwner)
+        ->create(['role' => GroupMember::ROLE_OWNER]);
+    $pendingMembership = GroupMember::factory()
+        ->for($group)
+        ->for($pending)
+        ->create([
+            'status' => GroupMember::STATUS_PENDING,
+            'joined_at' => null,
+        ]);
+    $wrongGroupMembership = GroupMember::factory()
+        ->for($otherGroup)
+        ->for($otherMember)
+        ->create();
+
+    foreach ([$ownerMembership, $pendingMembership, $wrongGroupMembership] as $membership) {
+        $this->actingAs($owner)
+            ->patch(route('groups.members.role.update', [
+                'group' => $group->slug,
+                'member' => $membership->id,
+            ]), [
+                'role' => GroupMember::ROLE_MODERATOR,
+            ])
+            ->assertNotFound();
+    }
+
+    $this->actingAs($owner)
+        ->patch(route('groups.members.role.update', [
+            'group' => $group->slug,
+            'member' => $selfMembership->id,
+        ]), [
+            'role' => GroupMember::ROLE_MEMBER,
+        ])
+        ->assertNotFound();
+});
+
+test('invalid member role update values are rejected', function () {
+    $owner = User::factory()->create();
+    createOnboardedProfile($owner);
+    $member = User::factory()->create();
+    createOnboardedProfile($member);
+    $group = Group::factory()->for($owner, 'owner')->create();
+    $membership = GroupMember::factory()
+        ->for($group)
+        ->for($member)
+        ->create(['role' => GroupMember::ROLE_MEMBER]);
+
+    foreach ([GroupMember::ROLE_OWNER, 'unknown', ''] as $role) {
+        $this->actingAs($owner)
+            ->patch(route('groups.members.role.update', [
+                'group' => $group->slug,
+                'member' => $membership->id,
+            ]), [
+                'role' => $role,
+            ])
+            ->assertSessionHasErrors('role');
+    }
+
+    expect($membership->refresh()->role)->toBe(GroupMember::ROLE_MEMBER);
 });
 
 test('owner can remove a regular active member', function () {
@@ -252,9 +460,16 @@ test('non managers do not receive remove urls in members props', function () {
         ->assertInertia(fn (Assert $page) => $page
             ->component('Groups/Members')
             ->where('group.can_manage_members', false)
+            ->where('group.can_manage_roles', false)
+            ->where('members.data.0.can_promote', false)
+            ->where('members.data.0.can_demote', false)
             ->where('members.data.0.can_remove', false)
+            ->where('members.data.0.role_update_url', null)
             ->where('members.data.0.remove_url', null)
+            ->where('members.data.1.can_promote', false)
+            ->where('members.data.1.can_demote', false)
             ->where('members.data.1.can_remove', false)
+            ->where('members.data.1.role_update_url', null)
             ->where('members.data.1.remove_url', null),
         );
 });
@@ -270,5 +485,14 @@ test('members page renders remove confirmation only from removable props', funct
         ->toContain('Dieses Mitglied wird aus der')
         ->toContain('Gruppe entfernt und sieht die')
         ->toContain('Wird entfernt...')
-        ->toContain('method="delete"');
+        ->toContain('method="delete"')
+        ->toContain('member.can_promote')
+        ->toContain('member.can_demote')
+        ->toContain('member.role_update_url')
+        ->toContain('Moderator ernennen?')
+        ->toContain('Moderator zurückstufen?')
+        ->toContain('Zum Moderator machen')
+        ->toContain('Zum Mitglied machen')
+        ->toContain('Wird aktualisiert...')
+        ->toContain('method="patch"');
 });
