@@ -1,17 +1,28 @@
 <script setup lang="ts">
-import { Head, Link } from '@inertiajs/vue3';
+import { Form, Head, Link } from '@inertiajs/vue3';
 import PageHeader from '@/components/PageHeader.vue';
 import PageSection from '@/components/PageSection.vue';
 import ProfileAvatar from '@/components/ProfileAvatar.vue';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+import {
+    Dialog,
+    DialogClose,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+    DialogTrigger,
+} from '@/components/ui/dialog';
 
 type GroupContext = {
     id: number;
     name: string;
     slug: string;
     url: string;
+    can_manage_members: boolean;
 };
 
 type GroupMember = {
@@ -19,7 +30,9 @@ type GroupMember = {
     role: 'owner' | 'moderator' | 'member';
     role_label: string;
     status: string;
+    can_remove: boolean;
     joined_at?: string | null;
+    remove_url?: string | null;
     user: {
         id: number;
         name: string;
@@ -180,16 +193,76 @@ defineOptions({
                             </div>
                         </div>
 
-                        <Button
-                            v-if="member.user.profile_url"
-                            as-child
-                            variant="secondary"
-                            class="w-full sm:w-auto"
-                        >
-                            <Link :href="member.user.profile_url">
-                                Profil ansehen
-                            </Link>
-                        </Button>
+                        <div class="flex w-full flex-col gap-2 sm:w-auto">
+                            <Button
+                                v-if="member.user.profile_url"
+                                as-child
+                                variant="secondary"
+                                class="w-full sm:w-auto"
+                            >
+                                <Link :href="member.user.profile_url">
+                                    Profil ansehen
+                                </Link>
+                            </Button>
+
+                            <Dialog
+                                v-if="member.can_remove && member.remove_url"
+                            >
+                                <DialogTrigger as-child>
+                                    <Button
+                                        type="button"
+                                        variant="outline"
+                                        class="w-full border-destructive/30 text-destructive hover:border-destructive/45 hover:bg-destructive/10 sm:w-auto"
+                                    >
+                                        Aus Gruppe entfernen
+                                    </Button>
+                                </DialogTrigger>
+                                <DialogContent>
+                                    <Form
+                                        :action="member.remove_url"
+                                        method="delete"
+                                        class="space-y-6"
+                                        v-slot="{ processing }"
+                                    >
+                                        <DialogHeader class="space-y-3">
+                                            <DialogTitle>
+                                                Mitglied entfernen?
+                                            </DialogTitle>
+                                            <DialogDescription>
+                                                Dieses Mitglied wird aus der
+                                                Gruppe entfernt und sieht die
+                                                Gruppe danach nicht mehr unter
+                                                „Meine Gruppen“.
+                                            </DialogDescription>
+                                        </DialogHeader>
+
+                                        <DialogFooter class="gap-2">
+                                            <DialogClose as-child>
+                                                <Button
+                                                    type="button"
+                                                    variant="secondary"
+                                                    :disabled="processing"
+                                                >
+                                                    Abbrechen
+                                                </Button>
+                                            </DialogClose>
+                                            <Button
+                                                type="submit"
+                                                variant="outline"
+                                                class="border-destructive/30 text-destructive hover:border-destructive/45 hover:bg-destructive/10"
+                                                :disabled="processing"
+                                            >
+                                                {{
+                                                    processing
+                                                        ? 'Wird entfernt...'
+                                                        : 'Mitglied entfernen'
+                                                }}
+                                            </Button>
+                                        </DialogFooter>
+                                    </Form>
+                                </DialogContent>
+                            </Dialog>
+                        </div>
                     </CardContent>
                 </Card>
             </div>

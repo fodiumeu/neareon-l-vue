@@ -334,7 +334,7 @@ class GroupController extends Controller
             ->orderBy('id')
             ->paginate(self::MEMBERS_PER_PAGE)
             ->withQueryString()
-            ->through(fn (GroupMember $membership): array => $this->memberListData($membership));
+            ->through(fn (GroupMember $membership): array => $this->memberListData($membership, $group, $viewer));
 
         return Inertia::render('Groups/Members', [
             'group' => [
@@ -342,9 +342,27 @@ class GroupController extends Controller
                 'name' => $group->name,
                 'slug' => $group->slug,
                 'url' => route('groups.show', $this->showRouteParameters($group, self::SOURCE_MY_GROUPS)),
+                'can_manage_members' => $this->canManageGroup($group, $viewer),
             ],
             'members' => $members,
         ]);
+    }
+
+    /**
+     * Remove a regular active member from a group.
+     */
+    public function destroyMember(Request $request, Group $group, GroupMember $member): RedirectResponse
+    {
+        $viewer = $request->user();
+
+        abort_unless($this->canViewGroup($group, $viewer), 404);
+        abort_unless($this->canManageGroup($group, $viewer), 403);
+        $this->ensureRemovableMemberBelongsToGroup($group, $member, $viewer);
+
+        $member->delete();
+
+        return to_route('groups.members.index', ['group' => $group->slug])
+            ->with('success', 'Mitglied wurde aus der Gruppe entfernt.');
     }
 
     /**
@@ -986,6 +1004,14 @@ class GroupController extends Controller
         abort_unless($member->role === GroupMember::ROLE_MEMBER, 404);
     }
 
+    private function ensureRemovableMemberBelongsToGroup(Group $group, GroupMember $member, User $viewer): void
+    {
+        abort_unless($member->group_id === $group->id, 404);
+        abort_unless($member->status === GroupMember::STATUS_ACTIVE, 404);
+        abort_unless($member->role === GroupMember::ROLE_MEMBER, 404);
+        abort_if($member->user_id === $viewer->id, 403);
+    }
+
     /**
      * @return list<array<string, mixed>>
      */
@@ -1036,11 +1062,20 @@ class GroupController extends Controller
     /**
      * @return array<string, mixed>
      */
-    private function memberListData(GroupMember $membership): array
+    private function memberListData(GroupMember $membership, Group $group, User $viewer): array
     {
+        $canRemove = $this->canRemoveGroupMember($group, $membership, $viewer);
+
         return [
             ...$this->memberData($membership),
             'status' => $membership->status,
+            'can_remove' => $canRemove,
+            'remove_url' => $canRemove
+                ? route('groups.members.destroy', [
+                    'group' => $group->slug,
+                    'member' => $membership->id,
+                ])
+                : null,
             'user' => [
                 ...$this->userData($membership->user),
                 'profile_url' => $membership->user->profile?->username !== null
@@ -1048,6 +1083,15 @@ class GroupController extends Controller
                     : null,
             ],
         ];
+    }
+
+    private function canRemoveGroupMember(Group $group, GroupMember $membership, User $viewer): bool
+    {
+        return $this->canManageGroup($group, $viewer)
+            && $membership->group_id === $group->id
+            && $membership->status === GroupMember::STATUS_ACTIVE
+            && $membership->role === GroupMember::ROLE_MEMBER
+            && $membership->user_id !== $viewer->id;
     }
 
     /**

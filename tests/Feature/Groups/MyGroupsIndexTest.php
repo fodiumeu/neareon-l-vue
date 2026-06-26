@@ -118,6 +118,8 @@ test('my groups empty state links to group discovery', function () {
         ->toContain('group.category.label')
         ->toContain('group.postal_code')
         ->toContain('PLZ {{ group.postal_code }}')
+        ->toContain('grid min-w-0 grid-cols-1 gap-4')
+        ->toContain('max-w-full min-w-0 w-full')
         ->not->toContain('Beitreten');
 });
 
