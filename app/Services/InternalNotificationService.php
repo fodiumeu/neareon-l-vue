@@ -184,6 +184,63 @@ class InternalNotificationService
         ));
     }
 
+    public function groupMemberRemoved(
+        User $actor,
+        User $recipient,
+        Group $group,
+    ): void {
+        if ($recipient->is($actor)) {
+            return;
+        }
+
+        $recipient->notify(new InternalNotification(
+            InternalNotificationType::GroupMemberRemoved,
+            'Aus Gruppe entfernt',
+            "Du wurdest aus der Gruppe {$group->name} entfernt.",
+            route('groups.index', absolute: false),
+            $actor->id,
+            extraData: $this->groupData($group),
+        ));
+    }
+
+    public function groupModeratorPromoted(
+        User $actor,
+        User $recipient,
+        Group $group,
+    ): void {
+        if ($recipient->is($actor)) {
+            return;
+        }
+
+        $recipient->notify(new InternalNotification(
+            InternalNotificationType::GroupModeratorPromoted,
+            'Moderatorrolle erhalten',
+            "Du wurdest in der Gruppe {$group->name} zum Moderator gemacht.",
+            route('groups.show', $group->slug, absolute: false),
+            $actor->id,
+            extraData: $this->groupData($group),
+        ));
+    }
+
+    public function groupModeratorDemoted(
+        User $actor,
+        User $recipient,
+        Group $group,
+    ): void {
+        if ($recipient->is($actor)) {
+            return;
+        }
+
+        $recipient->notify(new InternalNotification(
+            InternalNotificationType::GroupModeratorDemoted,
+            'Moderatorrolle entfernt',
+            "Du bist in der Gruppe {$group->name} wieder Mitglied.",
+            route('groups.show', $group->slug, absolute: false),
+            $actor->id,
+            extraData: $this->groupData($group),
+        ));
+    }
+
     private function displayName(User $user): string
     {
         return $user->profile?->display_name ?? $user->name;

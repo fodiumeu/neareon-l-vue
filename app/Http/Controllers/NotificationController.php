@@ -781,6 +781,9 @@ class NotificationController extends Controller
             InternalNotificationType::GroupJoinRequestAccepted->value => 'Gruppe öffnen',
             InternalNotificationType::GroupJoinRequestDeclined->value => 'Gruppen entdecken',
             InternalNotificationType::GroupMemberJoined->value => 'Gruppe öffnen',
+            InternalNotificationType::GroupMemberRemoved->value => 'Gruppen entdecken',
+            InternalNotificationType::GroupModeratorPromoted->value => 'Gruppe öffnen',
+            InternalNotificationType::GroupModeratorDemoted->value => 'Gruppe öffnen',
             default => 'Details ansehen',
         };
     }

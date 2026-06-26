@@ -360,7 +360,12 @@ class GroupController extends Controller
         abort_unless($this->canManageGroup($group, $viewer), 403);
         $this->ensureRemovableMemberBelongsToGroup($group, $member, $viewer);
 
+        $member->loadMissing('user');
+        $removedUser = $member->user;
+
         $member->delete();
+
+        $this->notifications->groupMemberRemoved($viewer, $removedUser, $group);
 
         return to_route('groups.members.index', ['group' => $group->slug])
             ->with('success', 'Mitglied wurde aus der Gruppe entfernt.');
@@ -381,10 +386,21 @@ class GroupController extends Controller
         $this->ensureRoleManageableMemberBelongsToGroup($group, $member, $viewer);
 
         $targetRole = $attributes['role'];
+        $previousRole = $member->role;
 
         $member->forceFill([
             'role' => $targetRole,
         ])->save();
+
+        if ($previousRole !== $targetRole) {
+            $member->loadMissing('user');
+
+            if ($targetRole === GroupMember::ROLE_MODERATOR) {
+                $this->notifications->groupModeratorPromoted($viewer, $member->user, $group);
+            } elseif ($targetRole === GroupMember::ROLE_MEMBER) {
+                $this->notifications->groupModeratorDemoted($viewer, $member->user, $group);
+            }
+        }
 
         return to_route('groups.members.index', ['group' => $group->slug])
             ->with('success', $targetRole === GroupMember::ROLE_MODERATOR

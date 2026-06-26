@@ -11,6 +11,9 @@ enum InternalNotificationType: string
     case GroupJoinRequestAccepted = 'group_join_request_accepted';
     case GroupJoinRequestDeclined = 'group_join_request_declined';
     case GroupMemberJoined = 'group_member_joined';
+    case GroupMemberRemoved = 'group_member_removed';
+    case GroupModeratorPromoted = 'group_moderator_promoted';
+    case GroupModeratorDemoted = 'group_moderator_demoted';
     case NewFollower = 'new_follower';
     case NewMessage = 'new_message';
 }

@@ -181,6 +181,188 @@ test('private invite join creates group member joined notification for owner', f
         ->group_id->toBe($group->id);
 });
 
+test('removing a group member notifies the removed user with a safe discovery target', function () {
+    $owner = User::factory()->create();
+    createOnboardedProfile($owner);
+    $member = User::factory()->create();
+    createOnboardedProfile($member);
+    $group = Group::factory()->for($owner, 'owner')->create([
+        'name' => 'Removal Notify Group',
+        'slug' => 'removal-notify-group',
+        'visibility' => Group::VISIBILITY_PRIVATE,
+    ]);
+    GroupMember::factory()
+        ->for($group)
+        ->for($owner)
+        ->create(['role' => GroupMember::ROLE_OWNER]);
+    $membership = GroupMember::factory()
+        ->for($group)
+        ->for($member)
+        ->create(['role' => GroupMember::ROLE_MEMBER]);
+
+    $this->actingAs($owner)
+        ->delete(route('groups.members.destroy', [
+            'group' => $group->slug,
+            'member' => $membership->id,
+        ]))
+        ->assertSessionHas('success', 'Mitglied wurde aus der Gruppe entfernt.');
+
+    $notification = $member->notifications()->sole();
+
+    expect($owner->notifications()->count())
+        ->toBe(0)
+        ->and($notification->data)
+        ->type->toBe(InternalNotificationType::GroupMemberRemoved->value)
+        ->title->toBe('Aus Gruppe entfernt')
+        ->message->toBe('Du wurdest aus der Gruppe Removal Notify Group entfernt.')
+        ->target_url->toBe(route('groups.index', absolute: false))
+        ->actor_id->toBe($owner->id)
+        ->group_id->toBe($group->id)
+        ->group_name->toBe('Removal Notify Group')
+        ->group_slug->toBe('removal-notify-group');
+});
+
+test('leaving a group does not create a management removal notification', function () {
+    $owner = User::factory()->create();
+    createOnboardedProfile($owner);
+    $member = User::factory()->create();
+    createOnboardedProfile($member);
+    $group = Group::factory()->for($owner, 'owner')->create([
+        'slug' => 'self-leave-notify-group',
+    ]);
+    GroupMember::factory()
+        ->for($group)
+        ->for($owner)
+        ->create(['role' => GroupMember::ROLE_OWNER]);
+    GroupMember::factory()
+        ->for($group)
+        ->for($member)
+        ->create(['role' => GroupMember::ROLE_MEMBER]);
+
+    $this->actingAs($member)
+        ->delete(route('groups.membership.destroy', $group->slug))
+        ->assertSessionHas('success', 'Du hast die Gruppe verlassen.');
+
+    expect($member->notifications()->count())->toBe(0)
+        ->and($owner->notifications()->count())->toBe(0);
+});
+
+test('promoting a member to moderator notifies the affected user', function () {
+    $owner = User::factory()->create();
+    createOnboardedProfile($owner);
+    $member = User::factory()->create();
+    createOnboardedProfile($member);
+    $group = Group::factory()->for($owner, 'owner')->create([
+        'name' => 'Promote Notify Group',
+        'slug' => 'promote-notify-group',
+    ]);
+    GroupMember::factory()
+        ->for($group)
+        ->for($owner)
+        ->create(['role' => GroupMember::ROLE_OWNER]);
+    $membership = GroupMember::factory()
+        ->for($group)
+        ->for($member)
+        ->create(['role' => GroupMember::ROLE_MEMBER]);
+
+    $this->actingAs($owner)
+        ->patch(route('groups.members.role.update', [
+            'group' => $group->slug,
+            'member' => $membership->id,
+        ]), [
+            'role' => GroupMember::ROLE_MODERATOR,
+        ])
+        ->assertSessionHas('success', 'Mitglied wurde zum Moderator gemacht.');
+
+    $notification = $member->notifications()->sole();
+
+    expect($membership->refresh()->role)
+        ->toBe(GroupMember::ROLE_MODERATOR)
+        ->and($notification->data)
+        ->type->toBe(InternalNotificationType::GroupModeratorPromoted->value)
+        ->title->toBe('Moderatorrolle erhalten')
+        ->message->toBe('Du wurdest in der Gruppe Promote Notify Group zum Moderator gemacht.')
+        ->target_url->toBe(route('groups.show', $group->slug, absolute: false))
+        ->actor_id->toBe($owner->id)
+        ->group_id->toBe($group->id);
+});
+
+test('demoting a moderator to member notifies the affected user', function () {
+    $owner = User::factory()->create();
+    createOnboardedProfile($owner);
+    $moderator = User::factory()->create();
+    createOnboardedProfile($moderator);
+    $group = Group::factory()->for($owner, 'owner')->create([
+        'name' => 'Demote Notify Group',
+        'slug' => 'demote-notify-group',
+    ]);
+    GroupMember::factory()
+        ->for($group)
+        ->for($owner)
+        ->create(['role' => GroupMember::ROLE_OWNER]);
+    $membership = GroupMember::factory()
+        ->for($group)
+        ->for($moderator)
+        ->create(['role' => GroupMember::ROLE_MODERATOR]);
+
+    $this->actingAs($owner)
+        ->patch(route('groups.members.role.update', [
+            'group' => $group->slug,
+            'member' => $membership->id,
+        ]), [
+            'role' => GroupMember::ROLE_MEMBER,
+        ])
+        ->assertSessionHas('success', 'Moderator wurde zum Mitglied zurückgestuft.');
+
+    $notification = $moderator->notifications()->sole();
+
+    expect($membership->refresh()->role)
+        ->toBe(GroupMember::ROLE_MEMBER)
+        ->and($notification->data)
+        ->type->toBe(InternalNotificationType::GroupModeratorDemoted->value)
+        ->title->toBe('Moderatorrolle entfernt')
+        ->message->toBe('Du bist in der Gruppe Demote Notify Group wieder Mitglied.')
+        ->target_url->toBe(route('groups.show', $group->slug, absolute: false))
+        ->actor_id->toBe($owner->id)
+        ->group_id->toBe($group->id);
+});
+
+test('failed group member management actions do not create notifications', function () {
+    $regular = User::factory()->create();
+    createOnboardedProfile($regular);
+    $target = User::factory()->create();
+    createOnboardedProfile($target);
+    $group = Group::factory()->create([
+        'visibility' => Group::VISIBILITY_PUBLIC,
+    ]);
+    GroupMember::factory()
+        ->for($group)
+        ->for($regular)
+        ->create(['role' => GroupMember::ROLE_MEMBER]);
+    $targetMembership = GroupMember::factory()
+        ->for($group)
+        ->for($target)
+        ->create(['role' => GroupMember::ROLE_MEMBER]);
+
+    $this->actingAs($regular)
+        ->delete(route('groups.members.destroy', [
+            'group' => $group->slug,
+            'member' => $targetMembership->id,
+        ]))
+        ->assertForbidden();
+
+    $this->actingAs($regular)
+        ->patch(route('groups.members.role.update', [
+            'group' => $group->slug,
+            'member' => $targetMembership->id,
+        ]), [
+            'role' => GroupMember::ROLE_MODERATOR,
+        ])
+        ->assertForbidden();
+
+    expect($target->notifications()->count())->toBe(0);
+});
+
 test('notifications page renders group notifications and marks them read', function () {
     $owner = User::factory()->create();
     createOnboardedProfile($owner);
@@ -248,6 +430,67 @@ test('declined group notification renders groups discovery cta', function () {
             ->component('Notifications/Index')
             ->where('notificationItems.0.type', InternalNotificationType::GroupJoinRequestDeclined->value)
             ->where('notificationItems.0.title', 'Beitrittsanfrage abgelehnt')
+            ->where('notificationItems.0.cta_label', 'Gruppen entdecken')
+            ->where('notificationItems.0.target_url', route('groups.index', absolute: false)),
+        );
+});
+
+test('member management notifications render contextual ctas', function () {
+    $owner = User::factory()->create();
+    createOnboardedProfile($owner);
+    $member = User::factory()->create();
+    createOnboardedProfile($member);
+    $removedMember = User::factory()->create();
+    createOnboardedProfile($removedMember);
+    $group = Group::factory()->for($owner, 'owner')->create([
+        'name' => 'Rendered Member Management Group',
+        'slug' => 'rendered-member-management-group',
+    ]);
+    GroupMember::factory()
+        ->for($group)
+        ->for($owner)
+        ->create(['role' => GroupMember::ROLE_OWNER]);
+    $membership = GroupMember::factory()
+        ->for($group)
+        ->for($member)
+        ->create(['role' => GroupMember::ROLE_MEMBER]);
+    $removedMembership = GroupMember::factory()
+        ->for($group)
+        ->for($removedMember)
+        ->create(['role' => GroupMember::ROLE_MEMBER]);
+
+    $this->actingAs($owner)
+        ->patch(route('groups.members.role.update', [
+            'group' => $group->slug,
+            'member' => $membership->id,
+        ]), [
+            'role' => GroupMember::ROLE_MODERATOR,
+        ]);
+
+    $this->actingAs($member)
+        ->get(route('notifications.index'))
+        ->assertOk()
+        ->assertInertia(fn (Assert $page) => $page
+            ->component('Notifications/Index')
+            ->where('notificationItems.0.type', InternalNotificationType::GroupModeratorPromoted->value)
+            ->where('notificationItems.0.title', 'Moderatorrolle erhalten')
+            ->where('notificationItems.0.cta_label', 'Gruppe öffnen')
+            ->where('notificationItems.0.target_url', route('groups.show', $group->slug, absolute: false)),
+        );
+
+    $this->actingAs($owner)
+        ->delete(route('groups.members.destroy', [
+            'group' => $group->slug,
+            'member' => $removedMembership->id,
+        ]));
+
+    $this->actingAs($removedMember)
+        ->get(route('notifications.index'))
+        ->assertOk()
+        ->assertInertia(fn (Assert $page) => $page
+            ->component('Notifications/Index')
+            ->where('notificationItems.0.type', InternalNotificationType::GroupMemberRemoved->value)
+            ->where('notificationItems.0.title', 'Aus Gruppe entfernt')
             ->where('notificationItems.0.cta_label', 'Gruppen entdecken')
             ->where('notificationItems.0.target_url', route('groups.index', absolute: false)),
         );
