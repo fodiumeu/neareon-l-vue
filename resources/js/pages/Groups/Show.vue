@@ -115,6 +115,44 @@ const formatRequestTime = (value?: string | null) => {
     }).format(new Date(value));
 };
 
+const statusDescription = (group: GroupDetail) => {
+    if (group.invite_context) {
+        return 'Du wurdest über einen Einladungslink eingeladen.';
+    }
+
+    if (group.viewer_role === 'owner') {
+        return 'Du bist Besitzer dieser Gruppe.';
+    }
+
+    if (group.viewer_membership_status === 'pending') {
+        return 'Deine Beitrittsanfrage wartet auf Bestätigung.';
+    }
+
+    if (group.viewer_membership_status === 'active') {
+        return 'Du bist Mitglied dieser Gruppe.';
+    }
+
+    return group.visibility === 'request'
+        ? 'Sende eine Beitrittsanfrage, um dieser Gruppe beizutreten.'
+        : 'Du kannst dieser Gruppe direkt beitreten.';
+};
+
+const statusBadgeLabel = (group: GroupDetail) => {
+    if (group.viewer_role === 'owner') {
+        return 'Besitzer';
+    }
+
+    if (group.viewer_membership_status === 'pending') {
+        return 'Anfrage gesendet';
+    }
+
+    if (group.viewer_membership_status === 'active') {
+        return group.membership?.role_label ?? 'Mitglied';
+    }
+
+    return null;
+};
+
 defineOptions({
     layout: {
         breadcrumbs: [
@@ -154,102 +192,28 @@ defineOptions({
             </Button>
         </div>
 
-        <PageSection v-if="group.can_manage_invite">
-            <Card>
-                <CardContent class="space-y-4 p-5">
-                    <div class="space-y-1">
-                        <h2 class="text-base font-semibold">
-                            Einladungslink
-                        </h2>
-                        <p class="text-sm leading-6 text-muted-foreground">
-                            Teile diesen Link mit Personen, die deiner privaten
-                            Gruppe beitreten sollen.
-                        </p>
-                    </div>
-
-                    <div v-if="group.invite_url" class="grid gap-3">
-                        <div
-                            class="flex flex-col overflow-hidden rounded-lg border border-border bg-background/60 dark:bg-input/20 sm:flex-row"
-                        >
-                            <input
-                                type="text"
-                                readonly
-                                :value="group.invite_url"
-                                class="min-w-0 flex-1 bg-transparent px-3 py-2 text-sm text-foreground outline-none"
-                            />
-                            <Button
-                                type="button"
-                                variant="secondary"
-                                class="rounded-none border-0 border-t sm:border-t-0 sm:border-l"
-                                @click="copy(group.invite_url ?? '')"
-                            >
-                                {{ copied ? 'Kopiert' : 'Link kopieren' }}
-                            </Button>
-                        </div>
-                    </div>
-
-                    <Form
-                        v-if="group.invite_token_url"
-                        :action="group.invite_token_url"
-                        method="post"
-                        v-slot="{ processing }"
-                    >
-                        <Button type="submit" :disabled="processing">
-                            {{
-                                processing
-                                    ? 'Wird verarbeitet...'
-                                    : group.invite_url
-                                      ? 'Link erneuern'
-                                      : 'Einladungslink erstellen'
-                            }}
-                        </Button>
-                    </Form>
-                </CardContent>
-            </Card>
-        </PageSection>
-
         <PageSection
             v-if="group.can_join || group.viewer_membership_status === 'pending' || group.viewer_membership_status === 'active'"
         >
             <Card>
                 <CardContent
-                    class="flex flex-col gap-3 p-5 sm:flex-row sm:items-center sm:justify-between"
+                    class="flex min-w-0 flex-col gap-4 p-5 sm:flex-row sm:items-center sm:justify-between"
                 >
-                    <div class="space-y-1">
+                    <div class="min-w-0 space-y-1">
                         <h2 class="text-base font-semibold">
                             Gruppenstatus
                         </h2>
-                        <p
-                            v-if="group.viewer_membership_status === 'pending'"
-                            class="text-sm leading-6 text-muted-foreground"
-                        >
-                            Deine Beitrittsanfrage wartet auf Bestätigung.
-                        </p>
-                        <p
-                            v-else-if="group.viewer_membership_status === 'active'"
-                            class="text-sm leading-6 text-muted-foreground"
-                        >
-                            Du bist Mitglied dieser Gruppe.
-                        </p>
-                        <p
-                            v-else
-                            class="text-sm leading-6 text-muted-foreground"
-                        >
-                            {{
-                                group.invite_context
-                                    ? 'Du wurdest über einen Einladungslink eingeladen.'
-                                    : 'Tritt dieser Gruppe bei oder sende eine Beitrittsanfrage.'
-                            }}
+                        <p class="text-sm leading-6 text-muted-foreground">
+                            {{ statusDescription(group) }}
                         </p>
                     </div>
 
-                    <div
-                        class="flex flex-col gap-2 sm:items-end"
-                    >
+                    <div class="flex min-w-0 flex-col gap-2 sm:items-end">
                         <Form
                             v-if="group.can_join && group.join_url"
                             :action="group.join_url"
                             method="post"
+                            class="w-full sm:w-auto"
                             v-slot="{ processing }"
                         >
                             <input
@@ -270,18 +234,11 @@ defineOptions({
                             </Button>
                         </Form>
                         <Badge
-                            v-else-if="group.viewer_membership_status === 'pending'"
+                            v-else-if="statusBadgeLabel(group)"
                             variant="outline"
                             class="w-fit border-primary/30 bg-primary/10 text-primary"
                         >
-                            Anfrage gesendet
-                        </Badge>
-                        <Badge
-                            v-else-if="group.viewer_membership_status === 'active'"
-                            variant="outline"
-                            class="w-fit border-primary/30 bg-primary/10 text-primary"
-                        >
-                            {{ group.membership?.role_label ?? 'Mitglied' }}
+                            {{ statusBadgeLabel(group) }}
                         </Badge>
 
                         <Dialog
@@ -344,6 +301,7 @@ defineOptions({
                             v-else-if="group.can_leave && group.leave_url && group.viewer_membership_status === 'pending'"
                             :action="group.leave_url"
                             method="delete"
+                            class="w-full sm:w-auto"
                             v-slot="{ processing }"
                         >
                             <Button
@@ -352,14 +310,14 @@ defineOptions({
                                 class="w-full border-destructive/30 text-destructive hover:border-destructive/45 hover:bg-destructive/10 sm:w-auto"
                                 :disabled="processing"
                             >
-                                    {{
-                                        processing
-                                            ? 'Wird verarbeitet...'
-                                            : (group.leave_label ??
-                                                'Anfrage zurückziehen')
-                                    }}
-                                </Button>
-                            </Form>
+                                {{
+                                    processing
+                                        ? 'Wird verarbeitet...'
+                                        : (group.leave_label ??
+                                            'Anfrage zurückziehen')
+                                }}
+                            </Button>
+                        </Form>
                     </div>
                 </CardContent>
             </Card>
@@ -370,8 +328,20 @@ defineOptions({
                 class="overflow-hidden bg-card/95 shadow-lg shadow-black/10 dark:shadow-black/30"
             >
                 <CardContent class="space-y-5 p-5">
-                    <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-                        <div class="min-w-0 space-y-3">
+                    <div class="space-y-1">
+                        <h2 class="text-base font-semibold">
+                            Gruppeninformationen
+                        </h2>
+                        <p class="text-sm leading-6 text-muted-foreground">
+                            Die wichtigsten Angaben zu dieser Gruppe auf einen
+                            Blick.
+                        </p>
+                    </div>
+
+                    <div
+                        class="flex min-w-0 flex-col gap-5 lg:flex-row lg:items-start lg:justify-between"
+                    >
+                        <div class="min-w-0 flex-1 space-y-4">
                             <div class="flex flex-wrap gap-2">
                                 <Badge
                                     variant="outline"
@@ -399,7 +369,7 @@ defineOptions({
 
                             <p
                                 v-if="group.description"
-                                class="max-w-3xl text-sm leading-6 whitespace-pre-wrap text-muted-foreground sm:text-base"
+                                class="max-w-3xl text-sm leading-6 break-words whitespace-pre-wrap text-muted-foreground sm:text-base"
                             >
                                 {{ group.description }}
                             </p>
@@ -410,10 +380,7 @@ defineOptions({
                                 Diese Gruppe hat noch keine Beschreibung.
                             </p>
 
-                            <div
-                                v-if="group.category"
-                                class="space-y-2"
-                            >
+                            <div v-if="group.category" class="space-y-2">
                                 <p
                                     class="text-xs font-semibold tracking-wide text-muted-foreground uppercase"
                                 >
@@ -421,7 +388,7 @@ defineOptions({
                                 </p>
                                 <div class="flex flex-wrap gap-2">
                                     <span
-                                        class="rounded-full border border-primary/30 bg-primary/10 px-3 py-1 text-xs font-medium text-primary"
+                                        class="max-w-full rounded-full border border-primary/30 bg-primary/10 px-3 py-1 text-xs font-medium break-words text-primary"
                                     >
                                         {{ group.category.label }}
                                     </span>
@@ -430,17 +397,28 @@ defineOptions({
                         </div>
 
                         <div
-                            class="grid gap-3 rounded-lg border border-border bg-background/60 p-4 text-sm dark:bg-input/20 lg:w-64"
+                            class="grid min-w-0 gap-3 rounded-lg border border-border bg-background/60 p-4 text-sm dark:bg-input/20 lg:w-72"
                         >
-                            <div>
+                            <div class="min-w-0">
+                                <p class="text-muted-foreground">
+                                    Sichtbarkeit
+                                </p>
+                                <p class="font-medium">
+                                    {{ group.visibility_label }}
+                                </p>
+                            </div>
+                            <div class="min-w-0">
                                 <p class="text-muted-foreground">Mitglieder</p>
                                 <p class="text-lg font-semibold">
                                     {{ group.member_count }}
                                 </p>
                             </div>
-                            <div v-if="group.region || group.postal_code">
+                            <div
+                                v-if="group.region || group.postal_code"
+                                class="min-w-0"
+                            >
                                 <p class="text-muted-foreground">Standort</p>
-                                <p class="font-medium">
+                                <p class="break-words font-medium">
                                     {{ locationLabel(group) }}
                                 </p>
                                 <p
@@ -450,9 +428,11 @@ defineOptions({
                                     {{ group.country_code }}
                                 </p>
                             </div>
-                            <div v-if="group.owner">
+                            <div v-if="group.owner" class="min-w-0">
                                 <p class="text-muted-foreground">Owner</p>
-                                <p class="font-medium">{{ group.owner.name }}</p>
+                                <p class="break-words font-medium">
+                                    {{ group.owner.name }}
+                                </p>
                             </div>
                         </div>
                     </div>
@@ -473,11 +453,14 @@ defineOptions({
                         </p>
                     </div>
 
-                    <div v-if="group.members.length" class="grid gap-3 md:grid-cols-2">
+                    <div
+                        v-if="group.members.length"
+                        class="grid min-w-0 gap-3 md:grid-cols-2"
+                    >
                         <div
                             v-for="member in group.members"
                             :key="member.id"
-                            class="flex items-center gap-3 rounded-lg border border-border bg-background/60 px-3 py-2 dark:bg-input/20"
+                            class="flex min-w-0 items-center gap-3 rounded-lg border border-border bg-background/60 px-3 py-2 dark:bg-input/20"
                         >
                             <ProfileAvatar
                                 :photo-url="member.user.profile_photo_url"
@@ -496,7 +479,7 @@ defineOptions({
                                     @{{ member.user.username }}
                                 </p>
                             </div>
-                            <Badge variant="secondary">
+                            <Badge variant="secondary" class="shrink-0">
                                 {{ member.role_label }}
                             </Badge>
                         </div>
@@ -528,7 +511,7 @@ defineOptions({
                         <div
                             v-for="request in group.pending_requests"
                             :key="request.id"
-                            class="flex flex-col gap-3 rounded-lg border border-border bg-background/60 p-3 dark:bg-input/20 sm:flex-row sm:items-center sm:justify-between"
+                            class="flex min-w-0 flex-col gap-3 rounded-lg border border-border bg-background/60 p-3 dark:bg-input/20 sm:flex-row sm:items-center sm:justify-between"
                         >
                             <div class="flex min-w-0 items-center gap-3">
                                 <ProfileAvatar
@@ -559,11 +542,12 @@ defineOptions({
                             </div>
 
                             <div
-                                class="flex flex-col gap-2 sm:flex-row sm:items-center"
+                                class="flex min-w-0 flex-col gap-2 sm:flex-row sm:items-center"
                             >
                                 <Form
                                     :action="request.accept_url"
                                     method="patch"
+                                    class="w-full sm:w-auto"
                                     v-slot="{ processing }"
                                 >
                                     <Button
@@ -582,6 +566,7 @@ defineOptions({
                                 <Form
                                     :action="request.decline_url"
                                     method="delete"
+                                    class="w-full sm:w-auto"
                                     v-slot="{ processing }"
                                 >
                                     <Button
@@ -619,13 +604,61 @@ defineOptions({
             </Card>
         </PageSection>
 
-        <PageSection>
+        <PageSection v-if="group.can_manage_invite">
             <Card>
-                <CardContent class="p-5">
-                    <p class="text-sm leading-6 text-muted-foreground">
-                        Weitere Gruppenfunktionen wie Beitritt, Chat und Events
-                        folgen in späteren Modulen.
-                    </p>
+                <CardContent class="space-y-4 p-5">
+                    <div class="space-y-1">
+                        <h2 class="text-base font-semibold">
+                            Einladungslink
+                        </h2>
+                        <p class="text-sm leading-6 text-muted-foreground">
+                            Teile diesen Link mit Personen, die deiner privaten
+                            Gruppe beitreten sollen.
+                        </p>
+                    </div>
+
+                    <div v-if="group.invite_url" class="grid min-w-0 gap-3">
+                        <div
+                            class="flex min-w-0 flex-col overflow-hidden rounded-lg border border-border bg-background/60 dark:bg-input/20 sm:flex-row"
+                        >
+                            <input
+                                type="text"
+                                readonly
+                                :value="group.invite_url"
+                                class="min-w-0 flex-1 bg-transparent px-3 py-2 text-sm text-foreground outline-none"
+                            />
+                            <Button
+                                type="button"
+                                variant="secondary"
+                                class="w-full rounded-none border-0 border-t sm:w-auto sm:border-t-0 sm:border-l"
+                                @click="copy(group.invite_url ?? '')"
+                            >
+                                {{ copied ? 'Kopiert' : 'Link kopieren' }}
+                            </Button>
+                        </div>
+                    </div>
+
+                    <Form
+                        v-if="group.invite_token_url"
+                        :action="group.invite_token_url"
+                        method="post"
+                        class="w-full sm:w-auto"
+                        v-slot="{ processing }"
+                    >
+                        <Button
+                            type="submit"
+                            class="w-full sm:w-auto"
+                            :disabled="processing"
+                        >
+                            {{
+                                processing
+                                    ? 'Wird verarbeitet...'
+                                    : group.invite_url
+                                      ? 'Link erneuern'
+                                      : 'Einladungslink erstellen'
+                            }}
+                        </Button>
+                    </Form>
                 </CardContent>
             </Card>
         </PageSection>

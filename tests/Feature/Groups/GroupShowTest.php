@@ -281,10 +281,11 @@ test('group detail ignores invalid backlink source values', function () {
         );
 });
 
-test('group detail page keeps future actions as informational read only hints', function () {
+test('group detail page presents polished group information and actions', function () {
     $page = file_get_contents(resource_path('js/pages/Groups/Show.vue'));
 
     expect($page)
+        ->toContain('Gruppeninformationen')
         ->toContain('Standort')
         ->toContain('locationLabel(group)')
         ->toContain('group.postal_code')
@@ -292,7 +293,6 @@ test('group detail page keeps future actions as informational read only hints', 
         ->toContain('Kategorie')
         ->toContain('group.category')
         ->toContain('group.category.label')
-        ->toContain('Weitere Gruppenfunktionen wie Beitritt, Chat und Events')
         ->toContain('Neueste Mitglieder')
         ->toContain('Gruppe bearbeiten')
         ->toContain('Anfrage gesendet')
@@ -301,4 +301,18 @@ test('group detail page keeps future actions as informational read only hints', 
         ->toContain('group.edit_url')
         ->toContain('group.join_label')
         ->toContain('group.join_url');
+});
+
+test('group detail page uses clear status copy for membership states', function () {
+    $page = file_get_contents(resource_path('js/pages/Groups/Show.vue'));
+
+    expect($page)
+        ->toContain('Du bist Besitzer dieser Gruppe.')
+        ->toContain('Du bist Mitglied dieser Gruppe.')
+        ->toContain('Deine Beitrittsanfrage wartet auf Bestätigung.')
+        ->toContain('Du kannst dieser Gruppe direkt beitreten.')
+        ->toContain('Sende eine Beitrittsanfrage, um dieser Gruppe beizutreten.')
+        ->toContain('Du wurdest über einen Einladungslink eingeladen.')
+        ->toContain('Anfrage zurückziehen')
+        ->toContain('Gruppe verlassen');
 });
