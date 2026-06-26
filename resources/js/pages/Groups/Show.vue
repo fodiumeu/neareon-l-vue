@@ -58,6 +58,7 @@ type GroupDetail = {
     can_join: boolean;
     can_leave: boolean;
     can_manage_invite: boolean;
+    can_view_members: boolean;
     category: {
         id: number;
         slug: string;
@@ -81,6 +82,7 @@ type GroupDetail = {
         status_label: string;
     } | null;
     members: GroupMemberPreview[];
+    members_url?: string | null;
     pending_requests: PendingGroupRequest[];
     viewer_membership_status?: string | null;
     viewer_role?: string | null;
@@ -444,13 +446,32 @@ defineOptions({
             <Card>
                 <CardContent class="space-y-4 p-5">
                     <div class="space-y-1">
-                        <h2 class="text-base font-semibold">
-                            Neueste Mitglieder
-                        </h2>
-                        <p class="text-sm leading-6 text-muted-foreground">
-                            Ein kleiner Ausblick auf die aktiven Mitglieder
-                            dieser Gruppe.
-                        </p>
+                        <div
+                            class="flex min-w-0 flex-col gap-3 sm:flex-row sm:items-start sm:justify-between"
+                        >
+                            <div class="min-w-0 space-y-1">
+                                <h2 class="text-base font-semibold">
+                                    Neueste Mitglieder
+                                </h2>
+                                <p
+                                    class="text-sm leading-6 text-muted-foreground"
+                                >
+                                    Ein kleiner Ausblick auf die aktiven
+                                    Mitglieder dieser Gruppe.
+                                </p>
+                            </div>
+
+                            <Button
+                                v-if="group.can_view_members && group.members_url"
+                                as-child
+                                variant="secondary"
+                                class="w-full sm:w-auto"
+                            >
+                                <Link :href="group.members_url">
+                                    Alle Mitglieder ansehen
+                                </Link>
+                            </Button>
+                        </div>
                     </div>
 
                     <div

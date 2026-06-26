@@ -22,6 +22,8 @@ class GroupController extends Controller
 {
     private const PER_PAGE = 12;
 
+    private const MEMBERS_PER_PAGE = 24;
+
     private const SOURCE_GROUPS = 'groups';
 
     private const SOURCE_MY_GROUPS = 'my-groups';
@@ -309,6 +311,43 @@ class GroupController extends Controller
     }
 
     /**
+     * Show active group members.
+     */
+    public function members(Request $request, Group $group): Response
+    {
+        $viewer = $request->user();
+
+        abort_unless($this->canViewGroup($group, $viewer), 404);
+        abort_unless($this->canViewGroupMembers($group, $viewer), 403);
+
+        $members = GroupMember::query()
+            ->where('group_id', $group->id)
+            ->where('status', GroupMember::STATUS_ACTIVE)
+            ->whereIn('role', [
+                GroupMember::ROLE_OWNER,
+                GroupMember::ROLE_MODERATOR,
+                GroupMember::ROLE_MEMBER,
+            ])
+            ->with(['user.profile'])
+            ->orderByRaw("case role when 'owner' then 0 when 'moderator' then 1 else 2 end")
+            ->orderByRaw('coalesce(joined_at, created_at) asc')
+            ->orderBy('id')
+            ->paginate(self::MEMBERS_PER_PAGE)
+            ->withQueryString()
+            ->through(fn (GroupMember $membership): array => $this->memberListData($membership));
+
+        return Inertia::render('Groups/Members', [
+            'group' => [
+                'id' => $group->id,
+                'name' => $group->name,
+                'slug' => $group->slug,
+                'url' => route('groups.show', $this->showRouteParameters($group, self::SOURCE_MY_GROUPS)),
+            ],
+            'members' => $members,
+        ]);
+    }
+
+    /**
      * Show a private group through a valid invitation token.
      */
     public function showInvite(Request $request, string $token): Response
@@ -585,6 +624,17 @@ class GroupController extends Controller
             ->exists();
     }
 
+    private function canViewGroupMembers(Group $group, User $viewer): bool
+    {
+        if ($group->owner_id === $viewer->id || $viewer->canAccessAdmin()) {
+            return true;
+        }
+
+        return $group->activeMembers()
+            ->where('user_id', $viewer->id)
+            ->exists();
+    }
+
     private function requestSource(Request $request): ?string
     {
         $source = $request->string('return_to')->toString()
@@ -715,6 +765,10 @@ class GroupController extends Controller
             'url' => route('groups.show', $this->showRouteParameters($group, $source)),
             'invite_context' => $this->hasValidInviteContext($group, $inviteToken, $viewer, $membershipData),
             'can_manage_invite' => $this->canManageInvite($group, $viewer),
+            'can_view_members' => $this->canViewGroupMembers($group, $viewer),
+            'members_url' => $this->canViewGroupMembers($group, $viewer)
+                ? route('groups.members.index', ['group' => $group->slug])
+                : null,
             'invite_token_url' => $this->canManageInvite($group, $viewer)
                 ? route('groups.invite-token.store', ['group' => $group->slug])
                 : null,
@@ -976,6 +1030,23 @@ class GroupController extends Controller
             'role_label' => $this->roleLabel($membership->role),
             'joined_at' => $membership->joined_at?->toISOString(),
             'user' => $this->userData($membership->user),
+        ];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function memberListData(GroupMember $membership): array
+    {
+        return [
+            ...$this->memberData($membership),
+            'status' => $membership->status,
+            'user' => [
+                ...$this->userData($membership->user),
+                'profile_url' => $membership->user->profile?->username !== null
+                    ? route('public-profile.show', $membership->user->profile->username)
+                    : null,
+            ],
         ];
     }
 

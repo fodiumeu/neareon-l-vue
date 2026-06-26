@@ -61,6 +61,8 @@ Route::middleware(['auth', 'age.gate', 'verified', 'onboarding.complete'])->grou
         ->name('groups.invite.join');
     Route::get('groups/{group:slug}/edit', [GroupController::class, 'edit'])
         ->name('groups.edit');
+    Route::get('groups/{group:slug}/members', [GroupController::class, 'members'])
+        ->name('groups.members.index');
     Route::post('groups/{group:slug}/join', [GroupController::class, 'join'])
         ->name('groups.join');
     Route::delete('groups/{group:slug}/membership', [GroupController::class, 'leave'])
