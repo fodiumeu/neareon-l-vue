@@ -196,7 +196,10 @@ test('group detail page uses controller provided contextual backlinks', function
         ->toContain('back_source')
         ->toContain(':href="group.back_url"')
         ->toContain('← {{ group.back_label }}')
+        ->toContain('class="max-w-full min-w-0 w-fit"')
+        ->toContain('class="min-w-0 truncate"')
         ->toContain('name="return_to"')
+        ->not->toContain('hidden w-fit md:inline-flex')
         ->not->toContain('AppBackButton');
 });
 

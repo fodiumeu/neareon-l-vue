@@ -136,9 +136,11 @@ defineOptions({
         <Button
             as-child
             variant="secondary"
-            class="hidden w-fit md:inline-flex"
+            class="max-w-full min-w-0 w-fit"
         >
-            <Link :href="group.back_url">← {{ group.back_label }}</Link>
+            <Link :href="group.back_url" class="min-w-0 truncate">
+                ← {{ group.back_label }}
+            </Link>
         </Button>
 
         <PageHeader

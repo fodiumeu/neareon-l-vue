@@ -36,8 +36,12 @@ class GroupController extends Controller
     public function index(Request $request): Response
     {
         $viewer = $request->user();
+        $filters = $this->groupDiscoverFilters($request);
 
-        $groups = $this->discoverGroupsQuery()
+        $groups = $this->applyGroupDiscoverFilters(
+            $this->discoverGroupsQuery(),
+            $filters,
+        )
             ->with([
                 'category',
                 'owner.profile',
@@ -54,6 +58,12 @@ class GroupController extends Controller
 
         return Inertia::render('Groups/Index', [
             'groups' => $groups,
+            'filters' => $filters,
+            'filterOptions' => [
+                'regions' => $this->groupDiscoverRegionOptions(),
+                'categories' => $this->groupDiscoverCategoryOptions(),
+                'visibilities' => $this->groupDiscoverVisibilityOptions(),
+            ],
         ]);
     }
 
@@ -407,6 +417,127 @@ class GroupController extends Controller
                 Group::VISIBILITY_PUBLIC,
                 Group::VISIBILITY_REQUEST,
             ]);
+    }
+
+    /**
+     * @return array{q: string, region: string, category: string, visibility: string}
+     */
+    private function groupDiscoverFilters(Request $request): array
+    {
+        $visibility = trim($request->string('visibility')->toString());
+
+        if (! in_array($visibility, [
+            Group::VISIBILITY_PUBLIC,
+            Group::VISIBILITY_REQUEST,
+        ], true)) {
+            $visibility = '';
+        }
+
+        return [
+            'q' => trim($request->string('q')->toString()),
+            'region' => trim($request->string('region')->toString()),
+            'category' => trim($request->string('category')->toString()),
+            'visibility' => $visibility,
+        ];
+    }
+
+    /**
+     * @param  Builder<Group>  $query
+     * @param  array{q: string, region: string, category: string, visibility: string}  $filters
+     * @return Builder<Group>
+     */
+    private function applyGroupDiscoverFilters(Builder $query, array $filters): Builder
+    {
+        if ($filters['q'] !== '') {
+            $like = $this->databaseLikeTerm($filters['q']);
+
+            $query->where(function (Builder $searchQuery) use ($like): void {
+                $searchQuery
+                    ->where('name', 'like', $like)
+                    ->orWhere('description', 'like', $like)
+                    ->orWhere('region', 'like', $like)
+                    ->orWhere('postal_code', 'like', $like)
+                    ->orWhereHas('category', function (Builder $categoryQuery) use ($like): void {
+                        $categoryQuery
+                            ->where('label', 'like', $like)
+                            ->orWhere('slug', 'like', $like);
+                    });
+            });
+        }
+
+        if ($filters['region'] !== '') {
+            $query->where('region', $filters['region']);
+        }
+
+        if ($filters['category'] !== '') {
+            $query->whereHas('category', fn (Builder $categoryQuery) => $categoryQuery
+                ->where('is_active', true)
+                ->where('slug', $filters['category']));
+        }
+
+        if ($filters['visibility'] !== '') {
+            $query->where('visibility', $filters['visibility']);
+        }
+
+        return $query;
+    }
+
+    private function databaseLikeTerm(string $value): string
+    {
+        return '%'.addcslashes($value, '\\%_').'%';
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function groupDiscoverRegionOptions(): array
+    {
+        return $this->discoverGroupsQuery()
+            ->whereNotNull('region')
+            ->where('region', '!=', '')
+            ->distinct()
+            ->orderBy('region')
+            ->pluck('region')
+            ->values()
+            ->all();
+    }
+
+    /**
+     * @return list<array{id: int, slug: string, label: string}>
+     */
+    private function groupDiscoverCategoryOptions(): array
+    {
+        return InterestOption::query()
+            ->where('is_active', true)
+            ->whereHas('groups', fn (Builder $groupQuery) => $groupQuery
+                ->active()
+                ->whereIn('visibility', [
+                    Group::VISIBILITY_PUBLIC,
+                    Group::VISIBILITY_REQUEST,
+                ]))
+            ->orderBy('sort_order')
+            ->orderBy('label')
+            ->get(['id', 'slug', 'label'])
+            ->map(fn (InterestOption $option): array => $this->categoryData($option))
+            ->values()
+            ->all();
+    }
+
+    /**
+     * @return list<array{value: string, label: string}>
+     */
+    private function groupDiscoverVisibilityOptions(): array
+    {
+        return [
+            [
+                'value' => Group::VISIBILITY_PUBLIC,
+                'label' => 'Öffentlich',
+            ],
+            [
+                'value' => Group::VISIBILITY_REQUEST,
+                'label' => 'Anfrage',
+            ],
+        ];
     }
 
     /**
