@@ -39,8 +39,20 @@ type PublicProfile = {
     interests?: string[] | null;
 };
 
+type ProfileBackLink = {
+    url: string;
+    label: string;
+};
+
+type ProfileBackContext = {
+    from: 'group-members';
+    group: string;
+};
+
 const props = defineProps<{
     profile: PublicProfile;
+    backContext?: ProfileBackContext | null;
+    backLink?: ProfileBackLink | null;
     editProfileHref?: string | null;
 }>();
 
@@ -76,8 +88,21 @@ defineOptions({
     <div
         class="mx-auto flex h-full w-full max-w-6xl flex-1 flex-col gap-4 overflow-x-auto p-4 sm:p-6"
     >
+        <Button
+            v-if="props.backLink"
+            as-child
+            variant="ghost"
+            size="sm"
+            class="w-fit px-2 text-muted-foreground hover:text-foreground"
+            data-test="profile-direct-back-link"
+        >
+            <Link :href="props.backLink.url">
+                ← {{ props.backLink.label }}
+            </Link>
+        </Button>
+
         <AppBackButton
-            v-if="!props.profile.isOwnProfile"
+            v-else-if="!props.profile.isOwnProfile"
             fallback="/discover"
             label="Zurück zur Übersicht"
             class="hidden md:inline-flex"
@@ -290,6 +315,7 @@ defineOptions({
                                 :status="props.profile.contact_status"
                                 :user-id="props.profile.contact_user_id"
                                 :username="props.profile.username"
+                                :back-context="props.backContext"
                             />
 
                             <ProfileMoreActions

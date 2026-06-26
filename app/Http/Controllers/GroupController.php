@@ -1128,7 +1128,11 @@ class GroupController extends Controller
             'user' => [
                 ...$this->userData($membership->user),
                 'profile_url' => $membership->user->profile?->username !== null
-                    ? route('public-profile.show', $membership->user->profile->username)
+                    ? route('public-profile.show', [
+                        'username' => $membership->user->profile->username,
+                        'from' => 'group-members',
+                        'group' => $group->slug,
+                    ])
                     : null,
             ],
         ];

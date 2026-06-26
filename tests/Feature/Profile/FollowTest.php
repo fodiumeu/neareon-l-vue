@@ -4,6 +4,8 @@ use App\Enums\ContactRequestStatus;
 use App\Enums\ProfileVisibility;
 use App\Models\ContactRequest;
 use App\Models\Follow;
+use App\Models\Group;
+use App\Models\GroupMember;
 use App\Models\Profile;
 use App\Models\User;
 use Inertia\Testing\AssertableInertia as Assert;
@@ -67,6 +69,90 @@ test('users can unfollow another profile', function () {
 
     expect($viewer->isFollowing($target))->toBeFalse()
         ->and(Follow::query()->count())->toBe(0);
+});
+
+test('following from group members keeps the profile backlink context', function () {
+    $viewer = User::factory()->create();
+    createOnboardedProfile($viewer);
+    $target = User::factory()->create();
+    $targetProfile = Profile::factory()->for($target)->create([
+        'username' => 'group_context_follow_target',
+    ]);
+    $group = Group::factory()->for($viewer, 'owner')->create([
+        'slug' => 'follow-context-group',
+    ]);
+    GroupMember::factory()
+        ->for($group)
+        ->for($viewer)
+        ->create([
+            'role' => GroupMember::ROLE_OWNER,
+        ]);
+
+    $this->actingAs($viewer)
+        ->post(route('public-profile.follow', $targetProfile->username), [
+            'from' => 'group-members',
+            'group' => $group->slug,
+        ])
+        ->assertRedirect(route('public-profile.show', [
+            'username' => $targetProfile->username,
+            'from' => 'group-members',
+            'group' => $group->slug,
+        ]));
+
+    expect($viewer->isFollowing($target))->toBeTrue();
+});
+
+test('unfollowing from group members keeps the profile backlink context', function () {
+    $viewer = User::factory()->create();
+    createOnboardedProfile($viewer);
+    $target = User::factory()->create();
+    $targetProfile = Profile::factory()->for($target)->create([
+        'username' => 'group_context_unfollow_target',
+    ]);
+    $group = Group::factory()->for($viewer, 'owner')->create([
+        'slug' => 'unfollow-context-group',
+    ]);
+    GroupMember::factory()
+        ->for($group)
+        ->for($viewer)
+        ->create([
+            'role' => GroupMember::ROLE_OWNER,
+        ]);
+    Follow::query()->create([
+        'follower_id' => $viewer->id,
+        'followed_id' => $target->id,
+    ]);
+
+    $this->actingAs($viewer)
+        ->delete(route('public-profile.unfollow', $targetProfile->username), [
+            'from' => 'group-members',
+            'group' => $group->slug,
+        ])
+        ->assertRedirect(route('public-profile.show', [
+            'username' => $targetProfile->username,
+            'from' => 'group-members',
+            'group' => $group->slug,
+        ]));
+
+    expect($viewer->isFollowing($target))->toBeFalse();
+});
+
+test('follow actions ignore invalid backlink context values', function () {
+    $viewer = User::factory()->create();
+    createOnboardedProfile($viewer);
+    $target = User::factory()->create();
+    $targetProfile = Profile::factory()->for($target)->create([
+        'username' => 'invalid_group_context_follow_target',
+    ]);
+
+    $this->actingAs($viewer)
+        ->post(route('public-profile.follow', $targetProfile->username), [
+            'from' => 'https://example.com/evil',
+            'group' => 'missing-group',
+        ])
+        ->assertRedirect(route('public-profile.show', $targetProfile->username));
+
+    expect($viewer->isFollowing($target))->toBeTrue();
 });
 
 test('unfollowing closes an accepted contact request', function () {

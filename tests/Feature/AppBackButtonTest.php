@@ -26,7 +26,10 @@ test('foreign profiles use discover as fallback while the own profile has no bac
     );
 
     expect($profilePage)
-        ->toContain('v-if="!props.profile.isOwnProfile"')
+        ->toContain('v-if="props.backLink"')
+        ->toContain('data-test="profile-direct-back-link"')
+        ->toContain(':href="props.backLink.url"')
+        ->toContain('v-else-if="!props.profile.isOwnProfile"')
         ->toContain('fallback="/discover"')
         ->toContain('label="Zurück zur Übersicht"');
 });

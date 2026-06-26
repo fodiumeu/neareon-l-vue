@@ -65,5 +65,9 @@ test('message and unfollow visual priorities remain in contact actions', functio
     expect($contactActions)
         ->toContain('contactMessageAction(userId)')
         ->toContain(":variant=\"isFollowing ? 'secondary' : 'default'\"")
-        ->toContain('followAction(username, isFollowing).label');
+        ->toContain('followAction(username, isFollowing).label')
+        ->toContain('name="from"')
+        ->toContain(':value="backContext.from"')
+        ->toContain('name="group"')
+        ->toContain(':value="backContext.group"');
 });

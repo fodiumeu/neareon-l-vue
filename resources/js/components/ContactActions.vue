@@ -13,6 +13,10 @@ import {
 import type { ContactStatus } from '@/types';
 
 defineProps<{
+    backContext?: {
+        from: 'group-members';
+        group: string;
+    } | null;
     canFollow: boolean;
     canSendContactRequest: boolean;
     contactRequestId?: number | null;
@@ -88,6 +92,10 @@ defineProps<{
                 name="context"
                 value="discover"
             />
+            <template v-if="backContext">
+                <input type="hidden" name="from" :value="backContext.from" />
+                <input type="hidden" name="group" :value="backContext.group" />
+            </template>
             <Button
                 type="submit"
                 :variant="isFollowing ? 'secondary' : 'default'"

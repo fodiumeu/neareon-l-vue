@@ -61,7 +61,11 @@ test('owner can view the active group members overview', function () {
             ->where('members.data.0.role_label', 'Besitzer')
             ->where('members.data.0.user.name', 'Owner Profile')
             ->where('members.data.0.user.username', 'owner_profile')
-            ->where('members.data.0.user.profile_url', route('public-profile.show', 'owner_profile'))
+            ->where('members.data.0.user.profile_url', route('public-profile.show', [
+                'username' => 'owner_profile',
+                'from' => 'group-members',
+                'group' => $group->slug,
+            ]))
             ->where('members.data.1.role_label', 'Mitglied')
             ->where('members.data.1.user.name', 'Member Profile'),
         );

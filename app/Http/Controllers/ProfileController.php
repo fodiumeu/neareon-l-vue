@@ -5,9 +5,11 @@ namespace App\Http\Controllers;
 use App\Enums\ContactRequestStatus;
 use App\Enums\ProfileVisibility;
 use App\Http\Requests\UpdateProfileRequest;
+use App\Models\Group;
 use App\Models\InterestOption;
 use App\Models\LanguageOption;
 use App\Models\Profile;
+use App\Models\User;
 use App\Services\PrivacyService;
 use App\Services\ProfileOptionSyncService;
 use App\Services\ProfileVisibilityService;
@@ -44,6 +46,8 @@ class ProfileController extends Controller
         $profile->loadMissing(['user', 'languageOptions', 'interestOptions']);
         $this->loadSocialCounts($profile);
 
+        $backContext = $this->profileBackContextData($request, $user);
+
         return Inertia::render('Profile/Show', [
             'profile' => $this->profileVisibility->visibleProfileData(
                 $profile,
@@ -52,6 +56,8 @@ class ProfileController extends Controller
                 includeProfileMetadata: true,
             ),
             'editProfileHref' => '/profile/edit',
+            'backContext' => $this->profileBackContext($backContext),
+            'backLink' => $this->profileBacklinkData($backContext),
         ]);
     }
 
@@ -266,6 +272,8 @@ class ProfileController extends Controller
 
         $this->loadSocialCounts($profile);
 
+        $backContext = $this->profileBackContextData($request, $viewer);
+
         return Inertia::render('Profile/Show', [
             'profile' => $this->profileVisibility->visibleProfileData(
                 $profile,
@@ -273,7 +281,82 @@ class ProfileController extends Controller
                 includeSocialCounts: true,
                 includeProfileMetadata: true,
             ),
+            'backContext' => $this->profileBackContext($backContext),
+            'backLink' => $this->profileBacklinkData($backContext),
         ]);
+    }
+
+    /**
+     * @return array{group: Group}|null
+     */
+    private function profileBackContextData(Request $request, User $viewer): ?array
+    {
+        if ($request->string('from')->toString() !== 'group-members') {
+            return null;
+        }
+
+        $groupSlug = $request->string('group')->toString();
+
+        if ($groupSlug === '') {
+            return null;
+        }
+
+        $group = Group::query()
+            ->where('slug', $groupSlug)
+            ->first();
+
+        if ($group === null || ! $this->canViewGroupMembers($group, $viewer)) {
+            return null;
+        }
+
+        return ['group' => $group];
+    }
+
+    /**
+     * @param  array{group: Group}|null  $backContext
+     * @return array{from: string, group: string}|null
+     */
+    private function profileBackContext(?array $backContext): ?array
+    {
+        if ($backContext === null) {
+            return null;
+        }
+
+        return [
+            'from' => 'group-members',
+            'group' => $backContext['group']->slug,
+        ];
+    }
+
+    /**
+     * @param  array{group: Group}|null  $backContext
+     * @return array{url: string, label: string}|null
+     */
+    private function profileBacklinkData(?array $backContext): ?array
+    {
+        if ($backContext === null) {
+            return null;
+        }
+
+        return [
+            'url' => route('groups.members.index', $backContext['group']->slug),
+            'label' => 'Zurück zu Gruppenmitgliedern',
+        ];
+    }
+
+    private function canViewGroupMembers(Group $group, User $viewer): bool
+    {
+        if ($group->status !== Group::STATUS_ACTIVE) {
+            return false;
+        }
+
+        if ($group->owner_id === $viewer->id || $viewer->canAccessAdmin()) {
+            return true;
+        }
+
+        return $group->activeMembers()
+            ->where('user_id', $viewer->id)
+            ->exists();
     }
 
     /**

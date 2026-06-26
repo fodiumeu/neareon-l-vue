@@ -2,7 +2,9 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Group;
 use App\Models\Profile;
+use App\Models\User;
 use App\Services\ContactRequestLifecycleService;
 use App\Services\InternalNotificationService;
 use App\Services\PrivacyService;
@@ -60,7 +62,7 @@ class FollowController extends Controller
             return back();
         }
 
-        return to_route('public-profile.show', $profile->username);
+        return to_route('public-profile.show', $this->profileRouteParameters($request, $profile));
     }
 
     /**
@@ -98,6 +100,53 @@ class FollowController extends Controller
             return back();
         }
 
-        return to_route('public-profile.show', $profile->username);
+        return to_route('public-profile.show', $this->profileRouteParameters($request, $profile));
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    private function profileRouteParameters(Request $request, Profile $profile): array
+    {
+        $parameters = ['username' => $profile->username];
+
+        if ($request->string('from')->toString() !== 'group-members') {
+            return $parameters;
+        }
+
+        $groupSlug = $request->string('group')->toString();
+
+        if ($groupSlug === '') {
+            return $parameters;
+        }
+
+        $group = Group::query()
+            ->where('slug', $groupSlug)
+            ->first();
+
+        if ($group === null || ! $this->canViewGroupMembers($group, $request->user())) {
+            return $parameters;
+        }
+
+        return [
+            ...$parameters,
+            'from' => 'group-members',
+            'group' => $group->slug,
+        ];
+    }
+
+    private function canViewGroupMembers(Group $group, User $viewer): bool
+    {
+        if ($group->status !== Group::STATUS_ACTIVE) {
+            return false;
+        }
+
+        if ($group->owner_id === $viewer->id || $viewer->canAccessAdmin()) {
+            return true;
+        }
+
+        return $group->activeMembers()
+            ->where('user_id', $viewer->id)
+            ->exists();
     }
 }

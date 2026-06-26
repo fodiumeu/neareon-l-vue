@@ -1,6 +1,8 @@
 <?php
 
 use App\Enums\ProfileVisibility;
+use App\Models\Group;
+use App\Models\GroupMember;
 use App\Models\Profile;
 use App\Models\User;
 use Inertia\Testing\AssertableInertia as Assert;
@@ -41,7 +43,98 @@ test('onboarded users can open their own profile page', function () {
             ->component('Profile/Show')
             ->where('profile.username', 'own_route_profile')
             ->where('profile.display_name', 'Own Route Profile')
-            ->where('profile.isOwnProfile', true),
+            ->where('profile.isOwnProfile', true)
+            ->where('backContext', null)
+            ->where('backLink', null),
+        );
+});
+
+test('own profile opened from group members exposes a contextual backlink', function () {
+    $user = User::factory()->create();
+    $profile = createOnboardedProfile($user, [
+        'username' => 'own_group_member_profile',
+        'display_name' => 'Own Group Member Profile',
+    ]);
+    $group = Group::factory()->for($user, 'owner')->create([
+        'slug' => 'own-profile-context-group',
+    ]);
+    GroupMember::factory()
+        ->for($group)
+        ->for($user)
+        ->create([
+            'role' => GroupMember::ROLE_OWNER,
+        ]);
+
+    $this->actingAs($user)
+        ->get(route('public-profile.show', [
+            'username' => $profile->username,
+            'from' => 'group-members',
+            'group' => $group->slug,
+        ]))
+        ->assertOk()
+        ->assertInertia(fn (Assert $page) => $page
+            ->component('Profile/Show')
+            ->where('profile.isOwnProfile', true)
+            ->where('backContext.from', 'group-members')
+            ->where('backContext.group', $group->slug)
+            ->where('backLink.url', route('groups.members.index', $group->slug))
+            ->where('backLink.label', 'Zurück zu Gruppenmitgliedern'),
+        );
+});
+
+test('foreign profile opened from group members exposes a contextual backlink', function () {
+    $owner = User::factory()->create();
+    createOnboardedProfile($owner, ['username' => 'foreign_context_owner']);
+    $member = User::factory()->create();
+    $memberProfile = createOnboardedProfile($member, [
+        'username' => 'foreign_group_member_profile',
+        'display_name' => 'Foreign Group Member Profile',
+    ]);
+    $group = Group::factory()->for($owner, 'owner')->create([
+        'slug' => 'foreign-profile-context-group',
+    ]);
+    GroupMember::factory()
+        ->for($group)
+        ->for($owner)
+        ->create([
+            'role' => GroupMember::ROLE_OWNER,
+        ]);
+
+    $this->actingAs($owner)
+        ->get(route('public-profile.show', [
+            'username' => $memberProfile->username,
+            'from' => 'group-members',
+            'group' => $group->slug,
+        ]))
+        ->assertOk()
+        ->assertInertia(fn (Assert $page) => $page
+            ->component('Profile/Show')
+            ->where('profile.isOwnProfile', false)
+            ->where('backContext.from', 'group-members')
+            ->where('backContext.group', $group->slug)
+            ->where('backLink.url', route('groups.members.index', $group->slug))
+            ->where('backLink.label', 'Zurück zu Gruppenmitgliedern'),
+        );
+});
+
+test('invalid profile backlink context is ignored', function () {
+    $user = User::factory()->create();
+    $profile = createOnboardedProfile($user, [
+        'username' => 'ignored_backlink_context',
+    ]);
+
+    $this->actingAs($user)
+        ->get(route('public-profile.show', [
+            'username' => $profile->username,
+            'from' => 'https://example.com/evil',
+            'group' => 'missing-group',
+        ]))
+        ->assertOk()
+        ->assertInertia(fn (Assert $page) => $page
+            ->component('Profile/Show')
+            ->where('profile.isOwnProfile', true)
+            ->where('backContext', null)
+            ->where('backLink', null),
         );
 });
 
