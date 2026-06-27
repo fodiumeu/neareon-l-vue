@@ -328,6 +328,42 @@ test('active moderator can decline a pending membership request', function () {
     expect(GroupMember::query()->whereKey($membership->id)->exists())->toBeFalse();
 });
 
+test('membership requests for archived groups are not processed', function () {
+    $owner = User::factory()->create();
+    createOnboardedProfile($owner);
+    $requestingUser = User::factory()->create();
+    createOnboardedProfile($requestingUser);
+    $group = Group::factory()->for($owner, 'owner')->create([
+        'slug' => 'archived-request-not-processed',
+        'status' => Group::STATUS_ARCHIVED,
+        'visibility' => Group::VISIBILITY_REQUEST,
+    ]);
+    $membership = GroupMember::factory()
+        ->for($group)
+        ->for($requestingUser)
+        ->create([
+            'role' => GroupMember::ROLE_MEMBER,
+            'status' => GroupMember::STATUS_PENDING,
+            'joined_at' => null,
+        ]);
+
+    $this->actingAs($owner)
+        ->patch(route('groups.requests.accept', [
+            'group' => $group->slug,
+            'member' => $membership->id,
+        ]))
+        ->assertNotFound();
+
+    $this->actingAs($owner)
+        ->delete(route('groups.requests.decline', [
+            'group' => $group->slug,
+            'member' => $membership->id,
+        ]))
+        ->assertNotFound();
+
+    expect($membership->refresh()->status)->toBe(GroupMember::STATUS_PENDING);
+});
+
 test('non owners cannot accept or decline membership requests', function () {
     $owner = User::factory()->create();
     createOnboardedProfile($owner);

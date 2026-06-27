@@ -228,6 +228,7 @@ class GroupController extends Controller
     {
         $viewer = $request->user();
 
+        abort_unless($this->canViewGroup($group, $viewer), 404);
         abort_unless($this->canModerateGroup($group, $viewer), 403);
         $this->ensurePendingRequestBelongsToGroup($group, $member);
 
@@ -254,6 +255,7 @@ class GroupController extends Controller
     {
         $viewer = $request->user();
 
+        abort_unless($this->canViewGroup($group, $viewer), 404);
         abort_unless($this->canModerateGroup($group, $viewer), 403);
         $this->ensurePendingRequestBelongsToGroup($group, $member);
 

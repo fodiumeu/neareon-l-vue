@@ -155,6 +155,7 @@ test('invite visitor receives no owner or request management capabilities', func
             ->where('group.invite_context', true)
             ->where('group.can_edit', false)
             ->where('group.edit_url', null)
+            ->where('group.can_manage_requests', false)
             ->where('group.can_manage_invite', false)
             ->where('group.invite_url', null)
             ->where('group.invite_token_url', null)

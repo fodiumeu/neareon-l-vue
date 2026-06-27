@@ -65,7 +65,7 @@ type GroupDetail = {
         slug: string;
         label: string;
     } | null;
-    edit_url: string;
+    edit_url?: string | null;
     invite_context: boolean;
     invite_token_created_at?: string | null;
     invite_token_url?: string | null;
@@ -189,7 +189,10 @@ defineOptions({
             description="Gruppen-Foundation für regionale und thematische Community-Bereiche."
         />
 
-        <div v-if="group.can_edit" class="flex justify-start sm:justify-end">
+        <div
+            v-if="group.can_edit && group.edit_url"
+            class="flex justify-start sm:justify-end"
+        >
             <Button as-child variant="secondary" class="w-full sm:w-auto">
                 <Link :href="group.edit_url">Gruppe bearbeiten</Link>
             </Button>
