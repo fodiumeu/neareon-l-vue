@@ -300,6 +300,34 @@ test('owner can remove a regular active member', function () {
         );
 });
 
+test('active moderator can remove a regular active member', function () {
+    $owner = User::factory()->create();
+    createOnboardedProfile($owner);
+    $moderator = User::factory()->create();
+    createOnboardedProfile($moderator);
+    $member = User::factory()->create();
+    createOnboardedProfile($member);
+    $group = Group::factory()->for($owner, 'owner')->create();
+    GroupMember::factory()
+        ->for($group)
+        ->for($moderator)
+        ->create(['role' => GroupMember::ROLE_MODERATOR]);
+    $membership = GroupMember::factory()
+        ->for($group)
+        ->for($member)
+        ->create(['role' => GroupMember::ROLE_MEMBER]);
+
+    $this->actingAs($moderator)
+        ->delete(route('groups.members.destroy', [
+            'group' => $group->slug,
+            'member' => $membership->id,
+        ]))
+        ->assertRedirect(route('groups.members.index', $group->slug))
+        ->assertSessionHas('success', 'Mitglied wurde aus der Gruppe entfernt.');
+
+    expect(GroupMember::query()->whereKey($membership->id)->exists())->toBeFalse();
+});
+
 test('removed member cannot view a private group anymore', function () {
     $owner = User::factory()->create();
     createOnboardedProfile($owner);
@@ -378,6 +406,61 @@ test('owner cannot remove owners moderators pending memberships or wrong group m
     }
 });
 
+test('moderator cannot remove owners other moderators self pending or wrong group memberships', function () {
+    $owner = User::factory()->create();
+    createOnboardedProfile($owner);
+    $moderator = User::factory()->create();
+    createOnboardedProfile($moderator);
+    $otherModerator = User::factory()->create();
+    createOnboardedProfile($otherModerator);
+    $pending = User::factory()->create();
+    createOnboardedProfile($pending);
+    $otherMember = User::factory()->create();
+    createOnboardedProfile($otherMember);
+    $group = Group::factory()->for($owner, 'owner')->create();
+    $otherGroup = Group::factory()->create();
+    $ownerMembership = GroupMember::factory()
+        ->for($group)
+        ->for($owner)
+        ->create(['role' => GroupMember::ROLE_OWNER]);
+    $moderatorMembership = GroupMember::factory()
+        ->for($group)
+        ->for($moderator)
+        ->create(['role' => GroupMember::ROLE_MODERATOR]);
+    $otherModeratorMembership = GroupMember::factory()
+        ->for($group)
+        ->for($otherModerator)
+        ->create(['role' => GroupMember::ROLE_MODERATOR]);
+    $pendingMembership = GroupMember::factory()
+        ->for($group)
+        ->for($pending)
+        ->create([
+            'status' => GroupMember::STATUS_PENDING,
+            'joined_at' => null,
+        ]);
+    $wrongGroupMembership = GroupMember::factory()
+        ->for($otherGroup)
+        ->for($otherMember)
+        ->create();
+
+    foreach ([
+        $ownerMembership,
+        $moderatorMembership,
+        $otherModeratorMembership,
+        $pendingMembership,
+        $wrongGroupMembership,
+    ] as $membership) {
+        $this->actingAs($moderator)
+            ->delete(route('groups.members.destroy', [
+                'group' => $group->slug,
+                'member' => $membership->id,
+            ]))
+            ->assertNotFound();
+
+        expect(GroupMember::query()->whereKey($membership->id)->exists())->toBeTrue();
+    }
+});
+
 test('regular pending and non members cannot remove group members', function () {
     $regular = User::factory()->create();
     createOnboardedProfile($regular);
@@ -416,6 +499,76 @@ test('regular pending and non members cannot remove group members', function () 
     }
 
     expect(GroupMember::query()->whereKey($targetMembership->id)->exists())->toBeTrue();
+});
+
+test('moderator receives remove urls only for regular members and no role urls', function () {
+    $owner = User::factory()->create();
+    createOnboardedProfile($owner);
+    $moderator = User::factory()->create();
+    createOnboardedProfile($moderator);
+    $otherModerator = User::factory()->create();
+    createOnboardedProfile($otherModerator);
+    $member = User::factory()->create();
+    createOnboardedProfile($member);
+    $pending = User::factory()->create();
+    createOnboardedProfile($pending);
+    $group = Group::factory()->for($owner, 'owner')->create();
+    $ownerMembership = GroupMember::factory()
+        ->for($group)
+        ->for($owner)
+        ->create(['role' => GroupMember::ROLE_OWNER]);
+    $moderatorMembership = GroupMember::factory()
+        ->for($group)
+        ->for($moderator)
+        ->create(['role' => GroupMember::ROLE_MODERATOR]);
+    $otherModeratorMembership = GroupMember::factory()
+        ->for($group)
+        ->for($otherModerator)
+        ->create(['role' => GroupMember::ROLE_MODERATOR]);
+    $memberMembership = GroupMember::factory()
+        ->for($group)
+        ->for($member)
+        ->create(['role' => GroupMember::ROLE_MEMBER]);
+    GroupMember::factory()
+        ->for($group)
+        ->for($pending)
+        ->create([
+            'status' => GroupMember::STATUS_PENDING,
+            'joined_at' => null,
+        ]);
+
+    $this->actingAs($moderator)
+        ->get(route('groups.members.index', $group->slug))
+        ->assertOk()
+        ->assertInertia(fn (Assert $page) => $page
+            ->component('Groups/Members')
+            ->where('group.can_manage_members', true)
+            ->where('group.can_manage_roles', false)
+            ->has('members.data', 4)
+            ->where('members.data.0.id', $ownerMembership->id)
+            ->where('members.data.0.can_remove', false)
+            ->where('members.data.0.remove_url', null)
+            ->where('members.data.0.can_promote', false)
+            ->where('members.data.0.can_demote', false)
+            ->where('members.data.0.role_update_url', null)
+            ->where('members.data.1.id', $moderatorMembership->id)
+            ->where('members.data.1.can_remove', false)
+            ->where('members.data.1.remove_url', null)
+            ->where('members.data.1.role_update_url', null)
+            ->where('members.data.2.id', $otherModeratorMembership->id)
+            ->where('members.data.2.can_remove', false)
+            ->where('members.data.2.remove_url', null)
+            ->where('members.data.2.role_update_url', null)
+            ->where('members.data.3.id', $memberMembership->id)
+            ->where('members.data.3.can_remove', true)
+            ->where('members.data.3.remove_url', route('groups.members.destroy', [
+                'group' => $group->slug,
+                'member' => $memberMembership->id,
+            ]))
+            ->where('members.data.3.can_promote', false)
+            ->where('members.data.3.can_demote', false)
+            ->where('members.data.3.role_update_url', null),
+        );
 });
 
 test('platform admin can remove a regular active member', function () {

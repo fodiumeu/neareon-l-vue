@@ -55,6 +55,7 @@ type GroupDetail = {
     back_source: 'groups' | 'my-groups';
     back_url: string;
     can_edit: boolean;
+    can_manage_requests: boolean;
     can_join: boolean;
     can_leave: boolean;
     can_manage_invite: boolean;
@@ -513,7 +514,7 @@ defineOptions({
             </Card>
         </PageSection>
 
-        <PageSection v-if="group.can_edit">
+        <PageSection v-if="group.can_manage_requests">
             <Card>
                 <CardContent class="space-y-4 p-5">
                     <div class="space-y-1">

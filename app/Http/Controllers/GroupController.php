@@ -228,7 +228,7 @@ class GroupController extends Controller
     {
         $viewer = $request->user();
 
-        abort_unless($this->canManageGroup($group, $viewer), 403);
+        abort_unless($this->canModerateGroup($group, $viewer), 403);
         $this->ensurePendingRequestBelongsToGroup($group, $member);
 
         $member->forceFill([
@@ -254,7 +254,7 @@ class GroupController extends Controller
     {
         $viewer = $request->user();
 
-        abort_unless($this->canManageGroup($group, $viewer), 403);
+        abort_unless($this->canModerateGroup($group, $viewer), 403);
         $this->ensurePendingRequestBelongsToGroup($group, $member);
 
         $member->loadMissing('user');
@@ -342,7 +342,7 @@ class GroupController extends Controller
                 'name' => $group->name,
                 'slug' => $group->slug,
                 'url' => route('groups.show', $this->showRouteParameters($group, self::SOURCE_MY_GROUPS)),
-                'can_manage_members' => $this->canManageGroup($group, $viewer),
+                'can_manage_members' => $this->canModerateGroup($group, $viewer),
                 'can_manage_roles' => $this->canManageGroup($group, $viewer),
             ],
             'members' => $members,
@@ -357,7 +357,7 @@ class GroupController extends Controller
         $viewer = $request->user();
 
         abort_unless($this->canViewGroup($group, $viewer), 404);
-        abort_unless($this->canManageGroup($group, $viewer), 403);
+        abort_unless($this->canModerateGroup($group, $viewer), 403);
         $this->ensureRemovableMemberBelongsToGroup($group, $member, $viewer);
 
         $member->loadMissing('user');
@@ -491,7 +491,7 @@ class GroupController extends Controller
                 ->limit(6),
         ])->loadCount('activeMembers');
 
-        $pendingRequests = $this->canManageGroup($group, $viewer)
+        $pendingRequests = $this->canModerateGroup($group, $viewer)
             ? $this->pendingRequestsData($group)
             : [];
 
@@ -807,6 +807,7 @@ class GroupController extends Controller
             'owner' => $this->userData($group->owner),
             'membership' => $membershipData,
             'can_edit' => $this->canManageGroup($group, $viewer),
+            'can_manage_requests' => $this->canModerateGroup($group, $viewer),
             'can_join' => $this->canJoinGroup($group, $membershipData, $viewer, $inviteToken),
             'join_label' => $this->joinLabel($group, $membershipData, $viewer, $inviteToken),
             'join_url' => $this->joinUrl($group, $membershipData, $viewer, $inviteToken),
@@ -918,6 +919,18 @@ class GroupController extends Controller
     private function canManageGroup(Group $group, User $viewer): bool
     {
         return $group->owner_id === $viewer->id || $viewer->canAccessAdmin();
+    }
+
+    private function canModerateGroup(Group $group, User $viewer): bool
+    {
+        if ($this->canManageGroup($group, $viewer)) {
+            return true;
+        }
+
+        return $group->activeMembers()
+            ->where('user_id', $viewer->id)
+            ->where('role', GroupMember::ROLE_MODERATOR)
+            ->exists();
     }
 
     private function canManageInvite(Group $group, User $viewer): bool
@@ -1156,7 +1169,7 @@ class GroupController extends Controller
 
     private function canRemoveGroupMember(Group $group, GroupMember $membership, User $viewer): bool
     {
-        return $this->canManageGroup($group, $viewer)
+        return $this->canModerateGroup($group, $viewer)
             && $membership->group_id === $group->id
             && $membership->status === GroupMember::STATUS_ACTIVE
             && $membership->role === GroupMember::ROLE_MEMBER
