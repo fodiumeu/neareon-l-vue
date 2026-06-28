@@ -10,6 +10,7 @@ use App\Http\Controllers\CommunityController;
 use App\Http\Controllers\ContactController;
 use App\Http\Controllers\ContactRequestController;
 use App\Http\Controllers\DiscoverController;
+use App\Http\Controllers\EventController;
 use App\Http\Controllers\FollowController;
 use App\Http\Controllers\FollowerController;
 use App\Http\Controllers\FollowingController;
@@ -81,6 +82,14 @@ Route::middleware(['auth', 'age.gate', 'verified', 'onboarding.complete'])->grou
         ->name('groups.update');
     Route::get('groups/{group:slug}', [GroupController::class, 'show'])
         ->name('groups.show');
+    Route::get('events/create', [EventController::class, 'create'])
+        ->name('events.create');
+    Route::post('events', [EventController::class, 'store'])
+        ->name('events.store');
+    Route::get('events/{event:slug}/edit', [EventController::class, 'edit'])
+        ->name('events.edit');
+    Route::patch('events/{event:slug}', [EventController::class, 'update'])
+        ->name('events.update');
     Route::get('contacts', [ContactController::class, 'index'])
         ->name('contacts.index');
     Route::get('followers', [FollowerController::class, 'index'])
