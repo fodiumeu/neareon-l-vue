@@ -82,10 +82,11 @@ test('natural app entry pages do not render the back button', function (
     'blocked profiles' => 'BlockedProfiles/Index.vue',
     'messages' => 'Messages/Index.vue',
     'notifications' => 'Notifications/Index.vue',
+    'events' => 'Events/Index.vue',
 ]);
 
 test('groups foundation exposes real routes while events remain ready for later integration', function () {
     expect(Route::has('groups.index'))->toBeTrue()
         ->and(Route::has('groups.show'))->toBeTrue()
-        ->and(Route::has('events.index'))->toBeFalse();
+        ->and(Route::has('events.index'))->toBeTrue();
 });

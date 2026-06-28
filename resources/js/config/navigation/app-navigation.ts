@@ -1,5 +1,6 @@
 import {
     Bell,
+    CalendarDays,
     ContactRound,
     CircleSlash2,
     Database,
@@ -60,6 +61,11 @@ export const getMainNavGroups = ({
                 title: 'Gruppen entdecken',
                 href: '/groups',
                 icon: Users,
+            },
+            {
+                title: 'Events entdecken',
+                href: '/events',
+                icon: CalendarDays,
             },
         ],
     },

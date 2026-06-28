@@ -68,8 +68,8 @@ defineOptions({
         class="mx-auto flex h-full w-full max-w-4xl flex-1 flex-col gap-6 overflow-x-hidden p-4 sm:p-6"
     >
         <AppBackButton
-            fallback="/dashboard"
-            label="Zurück"
+            fallback="/events"
+            label="Zurück zu Events"
             class="hidden md:inline-flex"
         />
 

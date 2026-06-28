@@ -33,7 +33,9 @@ test('onboarded users can see active public and request events', function (strin
             ->where('event.id', $event->id)
             ->where('event.visibility', $visibility)
             ->where('event.can_edit', false)
-            ->where('event.edit_url', null),
+            ->where('event.edit_url', null)
+            ->where('event.back_url', route('events.index'))
+            ->where('event.back_label', 'Zurück zu Events'),
         );
 })->with([
     Event::VISIBILITY_PUBLIC,
@@ -124,6 +126,8 @@ test('event detail shows empty description state in the vue page', function () {
     expect($page)
         ->toContain('Dieses Event hat noch keine Beschreibung.')
         ->toContain('Teilnahmefunktionen folgen in einem späteren Modul.')
+        ->toContain(':href="event.back_url"')
+        ->toContain('event.back_label')
         ->not->toContain('name="join"')
         ->not->toContain('join_url')
         ->not->toContain('request_url');
@@ -184,13 +188,4 @@ test('foreign cancelled event is hidden from normal users but visible to owner a
     $this->actingAs($admin)
         ->get(route('events.show', $event->slug))
         ->assertOk();
-});
-
-test('events get route remains unavailable as an index', function () {
-    $viewer = User::factory()->create();
-    createOnboardedProfile($viewer);
-
-    $this->actingAs($viewer)
-        ->get('/events')
-        ->assertStatus(405);
 });

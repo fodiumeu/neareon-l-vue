@@ -33,6 +33,8 @@ type EventDetail = {
     attendee_count: number;
     can_edit: boolean;
     edit_url?: string | null;
+    back_url: string;
+    back_label: string;
 };
 
 defineProps<{
@@ -67,8 +69,8 @@ defineOptions({
     layout: {
         breadcrumbs: [
             {
-                title: 'Event',
-                href: '/events/create',
+                title: 'Events',
+                href: '/events',
             },
         ],
     },
@@ -86,7 +88,9 @@ defineOptions({
             variant="secondary"
             class="max-w-full min-w-0 w-fit"
         >
-            <Link href="/dashboard" class="min-w-0 truncate">← Zurück</Link>
+            <Link :href="event.back_url" class="min-w-0 truncate">
+                ← {{ event.back_label }}
+            </Link>
         </Button>
 
         <div

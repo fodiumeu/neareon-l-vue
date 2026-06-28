@@ -49,6 +49,8 @@ test('event creation page renders expected fields and processing state', functio
     expect($page)
         ->toContain('Event erstellen')
         ->toContain('Erstelle ein regionales Event für deine Community.')
+        ->toContain('fallback="/events"')
+        ->toContain('label="Zurück zu Events"')
         ->toContain('name="title"')
         ->toContain('name="description"')
         ->toContain('name="starts_at"')

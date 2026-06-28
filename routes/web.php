@@ -82,6 +82,8 @@ Route::middleware(['auth', 'age.gate', 'verified', 'onboarding.complete'])->grou
         ->name('groups.update');
     Route::get('groups/{group:slug}', [GroupController::class, 'show'])
         ->name('groups.show');
+    Route::get('events', [EventController::class, 'index'])
+        ->name('events.index');
     Route::get('events/create', [EventController::class, 'create'])
         ->name('events.create');
     Route::post('events', [EventController::class, 'store'])

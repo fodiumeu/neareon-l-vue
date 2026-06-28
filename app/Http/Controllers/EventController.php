@@ -7,6 +7,7 @@ use App\Http\Requests\UpdateEventRequest;
 use App\Models\Event;
 use App\Models\InterestOption;
 use App\Models\User;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
@@ -15,6 +16,38 @@ use Inertia\Response;
 
 class EventController extends Controller
 {
+    private const PER_PAGE = 12;
+
+    /**
+     * Show discoverable events.
+     */
+    public function index(Request $request): Response
+    {
+        $filters = $this->eventDiscoverFilters($request);
+
+        $events = $this->applyEventDiscoverFilters(
+            $this->discoverEventsQuery(),
+            $filters,
+        )
+            ->with(['category', 'owner.profile'])
+            ->withCount('activeAttendees')
+            ->orderBy('starts_at')
+            ->orderBy('id')
+            ->paginate(self::PER_PAGE)
+            ->withQueryString()
+            ->through(fn (Event $event): array => $this->eventSummaryData($event));
+
+        return Inertia::render('Events/Index', [
+            'events' => $events,
+            'filters' => $filters,
+            'filterOptions' => [
+                'regions' => $this->eventDiscoverRegionOptions(),
+                'categories' => $this->eventDiscoverCategoryOptions(),
+                'visibilities' => $this->eventDiscoverVisibilityOptions(),
+            ],
+        ]);
+    }
+
     /**
      * Show the event creation form.
      */
@@ -60,7 +93,10 @@ class EventController extends Controller
         $canEdit = $this->canManageEvent($event, $viewer);
 
         return Inertia::render('Events/Show', [
-            'event' => $this->eventDetailData($event, $canEdit),
+            'event' => array_merge($this->eventDetailData($event, $canEdit), [
+                'back_url' => route('events.index'),
+                'back_label' => 'Zurück zu Events',
+            ]),
         ]);
     }
 
@@ -109,6 +145,131 @@ class EventController extends Controller
                 Event::VISIBILITY_PUBLIC,
                 Event::VISIBILITY_REQUEST,
             ], true);
+    }
+
+    /**
+     * @return Builder<Event>
+     */
+    private function discoverEventsQuery(): Builder
+    {
+        return Event::query()->visibleForDiscover();
+    }
+
+    /**
+     * @return array{q: string, region: string, category: string, visibility: string}
+     */
+    private function eventDiscoverFilters(Request $request): array
+    {
+        $visibility = trim($request->string('visibility')->toString());
+
+        if (! in_array($visibility, [
+            Event::VISIBILITY_PUBLIC,
+            Event::VISIBILITY_REQUEST,
+        ], true)) {
+            $visibility = '';
+        }
+
+        return [
+            'q' => trim($request->string('q')->toString()),
+            'region' => trim($request->string('region')->toString()),
+            'category' => trim($request->string('category')->toString()),
+            'visibility' => $visibility,
+        ];
+    }
+
+    /**
+     * @param  Builder<Event>  $query
+     * @param  array{q: string, region: string, category: string, visibility: string}  $filters
+     * @return Builder<Event>
+     */
+    private function applyEventDiscoverFilters(Builder $query, array $filters): Builder
+    {
+        if ($filters['q'] !== '') {
+            $like = $this->databaseLikeTerm($filters['q']);
+
+            $query->where(function (Builder $searchQuery) use ($like): void {
+                $searchQuery
+                    ->where('title', 'like', $like)
+                    ->orWhere('description', 'like', $like)
+                    ->orWhere('region', 'like', $like)
+                    ->orWhere('postal_code', 'like', $like)
+                    ->orWhereHas('category', function (Builder $categoryQuery) use ($like): void {
+                        $categoryQuery
+                            ->where('label', 'like', $like)
+                            ->orWhere('slug', 'like', $like);
+                    });
+            });
+        }
+
+        if ($filters['region'] !== '') {
+            $query->where('region', $filters['region']);
+        }
+
+        if ($filters['category'] !== '') {
+            $query->whereHas('category', fn (Builder $categoryQuery) => $categoryQuery
+                ->where('is_active', true)
+                ->where('slug', $filters['category']));
+        }
+
+        if ($filters['visibility'] !== '') {
+            $query->where('visibility', $filters['visibility']);
+        }
+
+        return $query;
+    }
+
+    private function databaseLikeTerm(string $value): string
+    {
+        return '%'.addcslashes($value, '\\%_').'%';
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function eventDiscoverRegionOptions(): array
+    {
+        return $this->discoverEventsQuery()
+            ->whereNotNull('region')
+            ->where('region', '!=', '')
+            ->distinct()
+            ->orderBy('region')
+            ->pluck('region')
+            ->values()
+            ->all();
+    }
+
+    /**
+     * @return list<array{id: int, slug: string, label: string}>
+     */
+    private function eventDiscoverCategoryOptions(): array
+    {
+        return InterestOption::query()
+            ->where('is_active', true)
+            ->whereHas('events', fn (Builder $eventQuery) => $eventQuery
+                ->visibleForDiscover())
+            ->orderBy('sort_order')
+            ->orderBy('label')
+            ->get(['id', 'slug', 'label'])
+            ->map(fn (InterestOption $option): array => $this->categoryData($option))
+            ->values()
+            ->all();
+    }
+
+    /**
+     * @return list<array{value: string, label: string}>
+     */
+    private function eventDiscoverVisibilityOptions(): array
+    {
+        return [
+            [
+                'value' => Event::VISIBILITY_PUBLIC,
+                'label' => 'Öffentlich',
+            ],
+            [
+                'value' => Event::VISIBILITY_REQUEST,
+                'label' => 'Anfrage',
+            ],
+        ];
     }
 
     private function uniqueSlug(string $title): string
@@ -194,6 +355,42 @@ class EventController extends Controller
             'max_attendees' => $event->max_attendees,
             'edit_url' => route('events.edit', ['event' => $event->slug]),
             'show_url' => route('events.show', ['event' => $event->slug]),
+        ];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function eventSummaryData(Event $event): array
+    {
+        $description = $event->description;
+
+        return [
+            'id' => $event->id,
+            'title' => $event->title,
+            'slug' => $event->slug,
+            'description' => $description !== null && mb_strlen($description) > 180
+                ? Str::limit($description, 180)
+                : $description,
+            'show_url' => route('events.show', ['event' => $event->slug]),
+            'starts_at' => $event->starts_at?->toIso8601String(),
+            'ends_at' => $event->ends_at?->toIso8601String(),
+            'region' => $event->region,
+            'postal_code' => $event->postal_code,
+            'country_code' => $event->country_code,
+            'visibility' => $event->visibility,
+            'visibility_label' => $this->visibilityLabel($event->visibility),
+            'status' => $event->status,
+            'category' => $event->category !== null
+                ? $this->categoryData($event->category)
+                : null,
+            'attendee_count' => $event->active_attendees_count ?? 0,
+            'max_attendees' => $event->max_attendees,
+            'owner' => [
+                'name' => $event->owner->profile?->display_name
+                    ?? $event->owner->name,
+                'username' => $event->owner->profile?->username,
+            ],
         ];
     }
 

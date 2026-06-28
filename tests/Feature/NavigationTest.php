@@ -47,6 +47,8 @@ test('desktop navigation is grouped for community communication profile and admi
         ->toContain("href: '/community'")
         ->toContain("title: 'Gruppen entdecken'")
         ->toContain("href: '/groups'")
+        ->toContain("title: 'Events entdecken'")
+        ->toContain("href: '/events'")
         ->toContain("title: 'Meine Gruppen'")
         ->toContain("href: '/my-groups'")
         ->toContain("title: 'Kontakte'")
@@ -123,6 +125,7 @@ test('mobile navigation keeps a compact five item structure', function () {
         ->toContain("href: '/community'")
         ->toContain("title: 'Nachrichten'")
         ->toContain("href: '/messages'")
+        ->not->toContain("title: 'Events entdecken'")
         ->not->toContain("title: 'Einstellungen'");
 });
 
