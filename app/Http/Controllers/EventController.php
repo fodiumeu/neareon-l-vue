@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Requests\StoreEventRequest;
 use App\Http\Requests\UpdateEventRequest;
 use App\Models\Event;
+use App\Models\EventAttendee;
 use App\Models\InterestOption;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Builder;
@@ -30,6 +31,11 @@ class EventController extends Controller
             $filters,
         )
             ->with(['category', 'owner.profile'])
+            ->with([
+                'attendees' => fn ($query) => $query
+                    ->where('user_id', $request->user()->id)
+                    ->select(['id', 'event_id', 'user_id', 'status', 'joined_at']),
+            ])
             ->withCount('activeAttendees')
             ->orderBy('starts_at')
             ->orderBy('id')
@@ -88,6 +94,11 @@ class EventController extends Controller
         abort_unless($this->canViewEvent($event, $viewer), 404);
 
         $event->load(['category', 'owner.profile'])
+            ->load([
+                'attendees' => fn ($query) => $query
+                    ->where('user_id', $viewer->id)
+                    ->select(['id', 'event_id', 'user_id', 'status', 'joined_at']),
+            ])
             ->loadCount('activeAttendees');
 
         $canEdit = $this->canManageEvent($event, $viewer);
@@ -129,6 +140,98 @@ class EventController extends Controller
             ->with('success', 'Event wurde aktualisiert.');
     }
 
+    /**
+     * Join a public event or request participation for a request-based event.
+     */
+    public function storeAttendance(Request $request, Event $event): RedirectResponse
+    {
+        $viewer = $request->user();
+
+        abort_unless($this->canUseAttendance($event), 404);
+        abort_if($event->owner_id === $viewer->id, 403);
+
+        $attendance = EventAttendee::query()
+            ->where('event_id', $event->id)
+            ->where('user_id', $viewer->id)
+            ->first();
+
+        if ($attendance instanceof EventAttendee) {
+            if ($attendance->status === EventAttendee::STATUS_ACTIVE) {
+                return to_route('events.show', ['event' => $event->slug])
+                    ->with('success', 'Du nimmst bereits am Event teil.');
+            }
+
+            if ($attendance->status === EventAttendee::STATUS_PENDING
+                && $event->visibility === Event::VISIBILITY_REQUEST) {
+                return to_route('events.show', ['event' => $event->slug])
+                    ->with('success', 'Deine Teilnahme-Anfrage wartet bereits auf Bestätigung.');
+            }
+        }
+
+        if ($this->eventIsFull($event)) {
+            return to_route('events.show', ['event' => $event->slug])
+                ->withErrors(['attendance' => 'Dieses Event ist bereits ausgebucht.']);
+        }
+
+        if ($event->visibility === Event::VISIBILITY_PUBLIC) {
+            EventAttendee::query()->updateOrCreate(
+                [
+                    'event_id' => $event->id,
+                    'user_id' => $viewer->id,
+                ],
+                [
+                    'status' => EventAttendee::STATUS_ACTIVE,
+                    'joined_at' => now(),
+                ],
+            );
+
+            return to_route('events.show', ['event' => $event->slug])
+                ->with('success', 'Du nimmst am Event teil.');
+        }
+
+        EventAttendee::query()->firstOrCreate(
+            [
+                'event_id' => $event->id,
+                'user_id' => $viewer->id,
+            ],
+            [
+                'status' => EventAttendee::STATUS_PENDING,
+                'joined_at' => null,
+            ],
+        );
+
+        return to_route('events.show', ['event' => $event->slug])
+            ->with('success', 'Deine Teilnahme-Anfrage wurde gesendet.');
+    }
+
+    /**
+     * Leave an event or withdraw the current user's pending participation request.
+     */
+    public function destroyAttendance(Request $request, Event $event): RedirectResponse
+    {
+        $viewer = $request->user();
+
+        $attendance = EventAttendee::query()
+            ->where('event_id', $event->id)
+            ->where('user_id', $viewer->id)
+            ->first();
+
+        abort_unless($attendance instanceof EventAttendee, 404);
+        abort_unless(in_array($attendance->status, [
+            EventAttendee::STATUS_ACTIVE,
+            EventAttendee::STATUS_PENDING,
+        ], true), 404);
+
+        $wasPending = $attendance->status === EventAttendee::STATUS_PENDING;
+
+        $attendance->delete();
+
+        return to_route('events.show', ['event' => $event->slug])
+            ->with('success', $wasPending
+                ? 'Deine Teilnahme-Anfrage wurde zurückgezogen.'
+                : 'Du nimmst nicht mehr am Event teil.');
+    }
+
     private function canManageEvent(Event $event, User $viewer): bool
     {
         return $event->owner_id === $viewer->id || $viewer->canAccessAdmin();
@@ -145,6 +248,27 @@ class EventController extends Controller
                 Event::VISIBILITY_PUBLIC,
                 Event::VISIBILITY_REQUEST,
             ], true);
+    }
+
+    private function canUseAttendance(Event $event): bool
+    {
+        return $event->status === Event::STATUS_ACTIVE
+            && in_array($event->visibility, [
+                Event::VISIBILITY_PUBLIC,
+                Event::VISIBILITY_REQUEST,
+            ], true);
+    }
+
+    private function eventIsFull(Event $event): bool
+    {
+        if ($event->max_attendees === null) {
+            return false;
+        }
+
+        $activeAttendeesCount = $event->active_attendees_count
+            ?? $event->activeAttendees()->count();
+
+        return $activeAttendeesCount >= $event->max_attendees;
     }
 
     /**
@@ -364,8 +488,9 @@ class EventController extends Controller
     private function eventSummaryData(Event $event): array
     {
         $description = $event->description;
+        $attendanceState = $this->eventAttendanceState($event);
 
-        return [
+        return array_merge([
             'id' => $event->id,
             'title' => $event->title,
             'slug' => $event->slug,
@@ -391,7 +516,7 @@ class EventController extends Controller
                     ?? $event->owner->name,
                 'username' => $event->owner->profile?->username,
             ],
-        ];
+        ], $attendanceState);
     }
 
     /**
@@ -399,7 +524,9 @@ class EventController extends Controller
      */
     private function eventDetailData(Event $event, bool $canEdit): array
     {
-        return [
+        $attendanceState = $this->eventAttendanceState($event);
+
+        return array_merge([
             'id' => $event->id,
             'title' => $event->title,
             'slug' => $event->slug,
@@ -426,6 +553,64 @@ class EventController extends Controller
             'can_edit' => $canEdit,
             'edit_url' => $canEdit
                 ? route('events.edit', ['event' => $event->slug])
+                : null,
+        ], $attendanceState);
+    }
+
+    /**
+     * @return array{
+     *     is_full: bool,
+     *     viewer_attendance_status: string|null,
+     *     viewer_event_role: string,
+     *     can_join: bool,
+     *     can_request: bool,
+     *     can_leave: bool,
+     *     attendance_store_url: string|null,
+     *     attendance_destroy_url: string|null
+     * }
+     */
+    private function eventAttendanceState(Event $event): array
+    {
+        $attendance = $event->attendees->first();
+        $attendanceStatus = $attendance instanceof EventAttendee
+            ? $attendance->status
+            : null;
+        $isOwner = auth()->id() !== null && $event->owner_id === auth()->id();
+        $isFull = $this->eventIsFull($event);
+        $canUseAttendance = $this->canUseAttendance($event);
+        $canJoin = $canUseAttendance
+            && ! $isOwner
+            && $attendanceStatus === null
+            && ! $isFull
+            && $event->visibility === Event::VISIBILITY_PUBLIC;
+        $canRequest = $canUseAttendance
+            && ! $isOwner
+            && $attendanceStatus === null
+            && ! $isFull
+            && $event->visibility === Event::VISIBILITY_REQUEST;
+        $canLeave = in_array($attendanceStatus, [
+            EventAttendee::STATUS_ACTIVE,
+            EventAttendee::STATUS_PENDING,
+        ], true);
+
+        return [
+            'is_full' => $isFull,
+            'viewer_attendance_status' => $attendanceStatus,
+            'viewer_event_role' => $isOwner
+                ? 'owner'
+                : match ($attendanceStatus) {
+                    EventAttendee::STATUS_ACTIVE => 'attendee',
+                    EventAttendee::STATUS_PENDING => 'pending',
+                    default => 'none',
+                },
+            'can_join' => $canJoin,
+            'can_request' => $canRequest,
+            'can_leave' => $canLeave,
+            'attendance_store_url' => $canJoin || $canRequest
+                ? route('events.attendance.store', ['event' => $event->slug])
+                : null,
+            'attendance_destroy_url' => $canLeave
+                ? route('events.attendance.destroy', ['event' => $event->slug])
                 : null,
         ];
     }

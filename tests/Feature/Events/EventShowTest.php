@@ -125,7 +125,7 @@ test('event detail shows empty description state in the vue page', function () {
 
     expect($page)
         ->toContain('Dieses Event hat noch keine Beschreibung.')
-        ->toContain('Teilnahmefunktionen folgen in einem späteren Modul.')
+        ->toContain('Teilnahme')
         ->toContain(':href="event.back_url"')
         ->toContain('event.back_label')
         ->not->toContain('name="join"')

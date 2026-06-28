@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Head, Link, router } from '@inertiajs/vue3';
+import { Form, Head, Link, router } from '@inertiajs/vue3';
 import { Search } from 'lucide-vue-next';
 import { computed, onBeforeUnmount, ref, watch } from 'vue';
 import PageHeader from '@/components/PageHeader.vue';
@@ -42,6 +42,14 @@ type EventSummary = {
         name: string;
         username?: string | null;
     };
+    is_full: boolean;
+    viewer_attendance_status: 'active' | 'pending' | null;
+    viewer_event_role: 'owner' | 'attendee' | 'pending' | 'none';
+    can_join: boolean;
+    can_request: boolean;
+    can_leave: boolean;
+    attendance_store_url?: string | null;
+    attendance_destroy_url?: string | null;
 };
 
 type PaginationLink = {
@@ -132,6 +140,38 @@ const attendeeLabel = (event: EventSummary) => {
             : `${event.attendee_count} Teilnehmer`;
 
     return event.max_attendees ? `${base} / max. ${event.max_attendees}` : base;
+};
+
+const statusBadgeLabel = (event: EventSummary) => {
+    if (event.viewer_event_role === 'owner') {
+        return 'Veranstalter';
+    }
+
+    if (event.viewer_attendance_status === 'active') {
+        return 'Teilnehmer';
+    }
+
+    if (event.viewer_attendance_status === 'pending') {
+        return 'Anfrage gesendet';
+    }
+
+    if (event.is_full) {
+        return 'Ausgebucht';
+    }
+
+    return null;
+};
+
+const statusHint = (event: EventSummary) => {
+    if (event.viewer_attendance_status === 'active') {
+        return 'Du nimmst an diesem Event teil.';
+    }
+
+    if (event.viewer_attendance_status === 'pending') {
+        return 'Deine Teilnahme-Anfrage wartet auf Bestätigung.';
+    }
+
+    return null;
 };
 
 const toSelectValue = (value: string) => value || allFilterValue;
@@ -610,9 +650,51 @@ defineOptions({
                             >
                                 Von {{ event.owner.name }}
                             </span>
+                            <span
+                                v-if="statusBadgeLabel(event)"
+                                class="max-w-full rounded-full border border-primary/30 bg-primary/10 px-3 py-1 text-xs font-medium break-words text-primary"
+                            >
+                                {{ statusBadgeLabel(event) }}
+                            </span>
                         </div>
 
                         <div class="mt-auto grid min-w-0 gap-2">
+                            <p
+                                v-if="statusHint(event)"
+                                class="rounded-md border border-primary/20 bg-primary/10 px-3 py-2 text-sm text-primary"
+                            >
+                                {{ statusHint(event) }}
+                            </p>
+
+                            <p
+                                v-else-if="event.is_full && event.viewer_event_role === 'none'"
+                                class="rounded-md border border-border bg-background/70 px-3 py-2 text-sm text-muted-foreground dark:bg-input/30"
+                            >
+                                Dieses Event ist bereits ausgebucht.
+                            </p>
+
+                            <Form
+                                v-if="(event.can_join || event.can_request) && event.attendance_store_url"
+                                :action="event.attendance_store_url"
+                                method="post"
+                                class="min-w-0 w-full"
+                                v-slot="{ processing }"
+                            >
+                                <Button
+                                    type="submit"
+                                    class="max-w-full min-w-0 w-full"
+                                    :disabled="processing"
+                                >
+                                    {{
+                                        processing
+                                            ? 'Wird verarbeitet...'
+                                            : event.can_join
+                                              ? 'Teilnehmen'
+                                              : 'Teilnahme anfragen'
+                                    }}
+                                </Button>
+                            </Form>
+
                             <Button
                                 as-child
                                 variant="secondary"

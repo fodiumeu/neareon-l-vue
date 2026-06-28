@@ -88,6 +88,10 @@ Route::middleware(['auth', 'age.gate', 'verified', 'onboarding.complete'])->grou
         ->name('events.create');
     Route::post('events', [EventController::class, 'store'])
         ->name('events.store');
+    Route::post('events/{event:slug}/attendance', [EventController::class, 'storeAttendance'])
+        ->name('events.attendance.store');
+    Route::delete('events/{event:slug}/attendance', [EventController::class, 'destroyAttendance'])
+        ->name('events.attendance.destroy');
     Route::get('events/{event:slug}/edit', [EventController::class, 'edit'])
         ->name('events.edit');
     Route::patch('events/{event:slug}', [EventController::class, 'update'])

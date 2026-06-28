@@ -1,10 +1,20 @@
 <script setup lang="ts">
-import { Head, Link } from '@inertiajs/vue3';
+import { Form, Head, Link } from '@inertiajs/vue3';
 import PageHeader from '@/components/PageHeader.vue';
 import PageSection from '@/components/PageSection.vue';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+import {
+    Dialog,
+    DialogClose,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+    DialogTrigger,
+} from '@/components/ui/dialog';
 
 type EventDetail = {
     id: number;
@@ -35,6 +45,14 @@ type EventDetail = {
     edit_url?: string | null;
     back_url: string;
     back_label: string;
+    is_full: boolean;
+    viewer_attendance_status: 'active' | 'pending' | null;
+    viewer_event_role: 'owner' | 'attendee' | 'pending' | 'none';
+    can_join: boolean;
+    can_request: boolean;
+    can_leave: boolean;
+    attendance_store_url?: string | null;
+    attendance_destroy_url?: string | null;
 };
 
 defineProps<{
@@ -64,6 +82,50 @@ const formatDateTime = (value?: string | null) => {
 
 const locationLabel = (event: EventDetail) =>
     [event.postal_code, event.region].filter(Boolean).join(' ');
+
+const participationLabel = (event: EventDetail) => {
+    if (event.viewer_event_role === 'owner') {
+        return 'Veranstalter';
+    }
+
+    if (event.viewer_attendance_status === 'active') {
+        return 'Teilnehmer';
+    }
+
+    if (event.viewer_attendance_status === 'pending') {
+        return 'Anfrage gesendet';
+    }
+
+    if (event.is_full) {
+        return 'Ausgebucht';
+    }
+
+    return null;
+};
+
+const participationText = (event: EventDetail) => {
+    if (event.viewer_event_role === 'owner') {
+        return 'Du bist Veranstalter dieses Events.';
+    }
+
+    if (event.viewer_attendance_status === 'active') {
+        return 'Du nimmst an diesem Event teil.';
+    }
+
+    if (event.viewer_attendance_status === 'pending') {
+        return 'Deine Teilnahme-Anfrage wartet auf Bestätigung.';
+    }
+
+    if (event.is_full) {
+        return 'Dieses Event ist bereits ausgebucht.';
+    }
+
+    if (event.visibility === 'request') {
+        return 'Sende eine Teilnahme-Anfrage, um an diesem Event teilzunehmen.';
+    }
+
+    return 'Du kannst direkt an diesem Event teilnehmen.';
+};
 
 defineOptions({
     layout: {
@@ -258,10 +320,163 @@ defineOptions({
 
         <PageSection>
             <Card class="border-primary/15 bg-card/80">
-                <CardContent class="p-5">
-                    <p class="text-sm leading-6 text-muted-foreground">
-                        Teilnahmefunktionen folgen in einem späteren Modul.
-                    </p>
+                <CardContent class="space-y-4 p-5">
+                    <div class="space-y-2">
+                        <div class="flex flex-wrap items-center gap-2">
+                            <h2 class="text-base font-semibold">
+                                Teilnahme
+                            </h2>
+                            <Badge
+                                v-if="participationLabel(event)"
+                                variant="outline"
+                                class="border-primary/30 bg-primary/10 text-primary"
+                            >
+                                {{ participationLabel(event) }}
+                            </Badge>
+                        </div>
+
+                        <p class="text-sm leading-6 text-muted-foreground">
+                            {{ participationText(event) }}
+                        </p>
+                    </div>
+
+                    <div
+                        class="flex min-w-0 flex-col gap-2 sm:flex-row sm:items-center"
+                    >
+                        <Form
+                            v-if="(event.can_join || event.can_request) && event.attendance_store_url"
+                            :action="event.attendance_store_url"
+                            method="post"
+                            class="w-full sm:w-auto"
+                            v-slot="{ processing }"
+                        >
+                            <Button
+                                type="submit"
+                                class="w-full sm:w-auto"
+                                :disabled="processing"
+                            >
+                                {{
+                                    processing
+                                        ? 'Wird verarbeitet...'
+                                        : event.can_join
+                                          ? 'Teilnehmen'
+                                          : 'Teilnahme anfragen'
+                                }}
+                            </Button>
+                        </Form>
+
+                        <Dialog
+                            v-if="event.can_leave && event.attendance_destroy_url && event.viewer_attendance_status === 'active'"
+                        >
+                            <DialogTrigger as-child>
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    class="w-full border-destructive/30 text-destructive hover:border-destructive/45 hover:bg-destructive/10 sm:w-auto"
+                                >
+                                    Teilnahme absagen
+                                </Button>
+                            </DialogTrigger>
+                            <DialogContent>
+                                <Form
+                                    :action="event.attendance_destroy_url"
+                                    method="delete"
+                                    v-slot="{ processing }"
+                                    class="space-y-6"
+                                >
+                                    <DialogHeader class="space-y-3">
+                                        <DialogTitle>
+                                            Teilnahme absagen?
+                                        </DialogTitle>
+                                        <DialogDescription>
+                                            Du wirst aus der Teilnehmerliste
+                                            dieses Events entfernt.
+                                        </DialogDescription>
+                                    </DialogHeader>
+
+                                    <DialogFooter class="gap-2">
+                                        <DialogClose as-child>
+                                            <Button
+                                                type="button"
+                                                variant="secondary"
+                                                :disabled="processing"
+                                            >
+                                                Abbrechen
+                                            </Button>
+                                        </DialogClose>
+                                        <Button
+                                            type="submit"
+                                            variant="outline"
+                                            class="border-destructive/30 text-destructive hover:border-destructive/45 hover:bg-destructive/10"
+                                            :disabled="processing"
+                                        >
+                                            {{
+                                                processing
+                                                    ? 'Wird verarbeitet...'
+                                                    : 'Teilnahme absagen'
+                                            }}
+                                        </Button>
+                                    </DialogFooter>
+                                </Form>
+                            </DialogContent>
+                        </Dialog>
+
+                        <Dialog
+                            v-else-if="event.can_leave && event.attendance_destroy_url && event.viewer_attendance_status === 'pending'"
+                        >
+                            <DialogTrigger as-child>
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    class="w-full border-destructive/30 text-destructive hover:border-destructive/45 hover:bg-destructive/10 sm:w-auto"
+                                >
+                                    Anfrage zurückziehen
+                                </Button>
+                            </DialogTrigger>
+                            <DialogContent>
+                                <Form
+                                    :action="event.attendance_destroy_url"
+                                    method="delete"
+                                    v-slot="{ processing }"
+                                    class="space-y-6"
+                                >
+                                    <DialogHeader class="space-y-3">
+                                        <DialogTitle>
+                                            Anfrage zurückziehen?
+                                        </DialogTitle>
+                                        <DialogDescription>
+                                            Deine Teilnahme-Anfrage wird
+                                            zurückgezogen.
+                                        </DialogDescription>
+                                    </DialogHeader>
+
+                                    <DialogFooter class="gap-2">
+                                        <DialogClose as-child>
+                                            <Button
+                                                type="button"
+                                                variant="secondary"
+                                                :disabled="processing"
+                                            >
+                                                Abbrechen
+                                            </Button>
+                                        </DialogClose>
+                                        <Button
+                                            type="submit"
+                                            variant="outline"
+                                            class="border-destructive/30 text-destructive hover:border-destructive/45 hover:bg-destructive/10"
+                                            :disabled="processing"
+                                        >
+                                            {{
+                                                processing
+                                                    ? 'Wird verarbeitet...'
+                                                    : 'Anfrage zurückziehen'
+                                            }}
+                                        </Button>
+                                    </DialogFooter>
+                                </Form>
+                            </DialogContent>
+                        </Dialog>
+                    </div>
                 </CardContent>
             </Card>
         </PageSection>
