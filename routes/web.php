@@ -92,6 +92,10 @@ Route::middleware(['auth', 'age.gate', 'verified', 'onboarding.complete'])->grou
         ->name('events.attendance.store');
     Route::delete('events/{event:slug}/attendance', [EventController::class, 'destroyAttendance'])
         ->name('events.attendance.destroy');
+    Route::patch('events/{event:slug}/attendance/{attendee}/accept', [EventController::class, 'acceptAttendanceRequest'])
+        ->name('events.attendance.accept');
+    Route::delete('events/{event:slug}/attendance/{attendee}/decline', [EventController::class, 'declineAttendanceRequest'])
+        ->name('events.attendance.decline');
     Route::get('events/{event:slug}/edit', [EventController::class, 'edit'])
         ->name('events.edit');
     Route::patch('events/{event:slug}', [EventController::class, 'update'])

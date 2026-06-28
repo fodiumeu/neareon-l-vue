@@ -19,6 +19,8 @@ class EventController extends Controller
 {
     private const PER_PAGE = 12;
 
+    private const ATTENDEES_PREVIEW_LIMIT = 6;
+
     /**
      * Show discoverable events.
      */
@@ -102,11 +104,17 @@ class EventController extends Controller
             ->loadCount('activeAttendees');
 
         $canEdit = $this->canManageEvent($event, $viewer);
+        $canManageAttendanceRequests = $this->canManageAttendanceRequests($event, $viewer);
 
         return Inertia::render('Events/Show', [
             'event' => array_merge($this->eventDetailData($event, $canEdit), [
                 'back_url' => route('events.index'),
                 'back_label' => 'Zurück zu Events',
+                'attendees_preview' => $this->attendeesPreview($event),
+                'pending_requests' => $canManageAttendanceRequests
+                    ? $this->pendingAttendanceRequests($event)
+                    : [],
+                'can_manage_attendance_requests' => $canManageAttendanceRequests,
             ]),
         ]);
     }
@@ -232,9 +240,54 @@ class EventController extends Controller
                 : 'Du nimmst nicht mehr am Event teil.');
     }
 
+    /**
+     * Accept a pending attendance request.
+     */
+    public function acceptAttendanceRequest(Request $request, Event $event, EventAttendee $attendee): RedirectResponse
+    {
+        $viewer = $request->user();
+
+        abort_unless($this->canManageAttendanceRequests($event, $viewer), 403);
+        $this->ensureProcessableAttendanceRequest($event, $attendee);
+
+        if ($this->eventIsFull($event)) {
+            return to_route('events.show', ['event' => $event->slug])
+                ->withErrors(['attendance' => 'Dieses Event ist bereits ausgebucht.']);
+        }
+
+        $attendee->forceFill([
+            'status' => EventAttendee::STATUS_ACTIVE,
+            'joined_at' => now(),
+        ])->save();
+
+        return to_route('events.show', ['event' => $event->slug])
+            ->with('success', 'Teilnahme-Anfrage angenommen.');
+    }
+
+    /**
+     * Decline a pending attendance request.
+     */
+    public function declineAttendanceRequest(Request $request, Event $event, EventAttendee $attendee): RedirectResponse
+    {
+        $viewer = $request->user();
+
+        abort_unless($this->canManageAttendanceRequests($event, $viewer), 403);
+        $this->ensureProcessableAttendanceRequest($event, $attendee);
+
+        $attendee->delete();
+
+        return to_route('events.show', ['event' => $event->slug])
+            ->with('success', 'Teilnahme-Anfrage abgelehnt.');
+    }
+
     private function canManageEvent(Event $event, User $viewer): bool
     {
         return $event->owner_id === $viewer->id || $viewer->canAccessAdmin();
+    }
+
+    private function canManageAttendanceRequests(Event $event, User $viewer): bool
+    {
+        return $this->canManageEvent($event, $viewer);
     }
 
     private function canViewEvent(Event $event, User $viewer): bool
@@ -269,6 +322,15 @@ class EventController extends Controller
             ?? $event->activeAttendees()->count();
 
         return $activeAttendeesCount >= $event->max_attendees;
+    }
+
+    private function ensureProcessableAttendanceRequest(Event $event, EventAttendee $attendee): void
+    {
+        abort_unless($attendee->event_id === $event->id, 404);
+        abort_unless($event->status === Event::STATUS_ACTIVE, 404);
+        abort_unless($event->visibility === Event::VISIBILITY_REQUEST, 404);
+        abort_unless($attendee->status === EventAttendee::STATUS_PENDING, 404);
+        abort_if($attendee->user_id === $event->owner_id, 404);
     }
 
     /**
@@ -611,6 +673,77 @@ class EventController extends Controller
                 : null,
             'attendance_destroy_url' => $canLeave
                 ? route('events.attendance.destroy', ['event' => $event->slug])
+                : null,
+        ];
+    }
+
+    /**
+     * @return list<array<string, mixed>>
+     */
+    private function attendeesPreview(Event $event): array
+    {
+        return EventAttendee::query()
+            ->where('event_id', $event->id)
+            ->where('status', EventAttendee::STATUS_ACTIVE)
+            ->with('user.profile')
+            ->orderByDesc('joined_at')
+            ->orderByDesc('id')
+            ->limit(self::ATTENDEES_PREVIEW_LIMIT)
+            ->get()
+            ->map(fn (EventAttendee $attendee): array => [
+                'id' => $attendee->id,
+                'user' => $this->eventUserData($attendee->user),
+                'joined_at' => $attendee->joined_at?->toIso8601String(),
+                'status_label' => 'Teilnehmer',
+            ])
+            ->values()
+            ->all();
+    }
+
+    /**
+     * @return list<array<string, mixed>>
+     */
+    private function pendingAttendanceRequests(Event $event): array
+    {
+        return EventAttendee::query()
+            ->where('event_id', $event->id)
+            ->where('status', EventAttendee::STATUS_PENDING)
+            ->where('user_id', '!=', $event->owner_id)
+            ->with('user.profile')
+            ->orderBy('created_at')
+            ->orderBy('id')
+            ->get()
+            ->map(fn (EventAttendee $attendee): array => [
+                'id' => $attendee->id,
+                'user' => $this->eventUserData($attendee->user),
+                'requested_at' => $attendee->created_at?->toIso8601String(),
+                'accept_url' => route('events.attendance.accept', [
+                    'event' => $event->slug,
+                    'attendee' => $attendee->id,
+                ]),
+                'decline_url' => route('events.attendance.decline', [
+                    'event' => $event->slug,
+                    'attendee' => $attendee->id,
+                ]),
+            ])
+            ->values()
+            ->all();
+    }
+
+    /**
+     * @return array{id: int, name: string, username: string|null, profile_photo_url: string|null, profile_url: string|null}
+     */
+    private function eventUserData(User $user): array
+    {
+        $profile = $user->profile;
+
+        return [
+            'id' => $user->id,
+            'name' => $profile?->display_name ?? $user->name,
+            'username' => $profile?->username,
+            'profile_photo_url' => $profile?->profilePhotoUrl(),
+            'profile_url' => $profile?->username !== null
+                ? route('public-profile.show', ['username' => $profile->username])
                 : null,
         ];
     }

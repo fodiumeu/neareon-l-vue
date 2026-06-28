@@ -53,6 +53,32 @@ type EventDetail = {
     can_leave: boolean;
     attendance_store_url?: string | null;
     attendance_destroy_url?: string | null;
+    attendees_preview: EventAttendeePreview[];
+    pending_requests: EventAttendanceRequest[];
+    can_manage_attendance_requests: boolean;
+};
+
+type EventUser = {
+    id: number;
+    name: string;
+    username?: string | null;
+    profile_photo_url?: string | null;
+    profile_url?: string | null;
+};
+
+type EventAttendeePreview = {
+    id: number;
+    user: EventUser;
+    joined_at?: string | null;
+    status_label: string;
+};
+
+type EventAttendanceRequest = {
+    id: number;
+    user: EventUser;
+    requested_at?: string | null;
+    accept_url: string;
+    decline_url: string;
 };
 
 defineProps<{
@@ -82,6 +108,14 @@ const formatDateTime = (value?: string | null) => {
 
 const locationLabel = (event: EventDetail) =>
     [event.postal_code, event.region].filter(Boolean).join(' ');
+
+const initials = (name: string) =>
+    name
+        .split(/\s+/)
+        .filter(Boolean)
+        .slice(0, 2)
+        .map((part) => part.charAt(0).toUpperCase())
+        .join('') || '?';
 
 const participationLabel = (event: EventDetail) => {
     if (event.viewer_event_role === 'owner') {
@@ -477,6 +511,254 @@ defineOptions({
                             </DialogContent>
                         </Dialog>
                     </div>
+                </CardContent>
+            </Card>
+        </PageSection>
+
+        <PageSection>
+            <Card>
+                <CardContent class="space-y-5 p-5">
+                    <div class="space-y-1">
+                        <h2 class="text-base font-semibold">Teilnehmer</h2>
+                        <p class="text-sm leading-6 text-muted-foreground">
+                            Ein Überblick über die aktiven Teilnehmer dieses
+                            Events.
+                        </p>
+                    </div>
+
+                    <div
+                        v-if="event.attendees_preview.length > 0"
+                        class="grid min-w-0 gap-3"
+                    >
+                        <div
+                            v-for="attendee in event.attendees_preview"
+                            :key="attendee.id"
+                            class="flex min-w-0 flex-col gap-3 rounded-lg border border-border bg-background/60 p-4 sm:flex-row sm:items-center sm:justify-between dark:bg-input/20"
+                        >
+                            <div class="flex min-w-0 items-center gap-3">
+                                <img
+                                    v-if="attendee.user.profile_photo_url"
+                                    :src="attendee.user.profile_photo_url"
+                                    :alt="attendee.user.name"
+                                    class="size-11 shrink-0 rounded-full object-cover"
+                                />
+                                <div
+                                    v-else
+                                    class="flex size-11 shrink-0 items-center justify-center rounded-full border border-primary/20 bg-primary/10 text-sm font-semibold text-primary"
+                                    aria-hidden="true"
+                                >
+                                    {{ initials(attendee.user.name) }}
+                                </div>
+
+                                <div class="min-w-0">
+                                    <p class="truncate font-medium">
+                                        {{ attendee.user.name }}
+                                    </p>
+                                    <p
+                                        v-if="attendee.user.username"
+                                        class="truncate text-sm text-muted-foreground"
+                                    >
+                                        @{{ attendee.user.username }}
+                                    </p>
+                                    <p
+                                        v-if="attendee.joined_at"
+                                        class="text-xs text-muted-foreground"
+                                    >
+                                        Teilnahme seit
+                                        {{ formatDateTime(attendee.joined_at) }}
+                                    </p>
+                                </div>
+                            </div>
+
+                            <div
+                                class="flex min-w-0 flex-col gap-2 sm:flex-row sm:items-center"
+                            >
+                                <Badge
+                                    variant="outline"
+                                    class="w-fit border-primary/30 bg-primary/10 text-primary"
+                                >
+                                    {{ attendee.status_label }}
+                                </Badge>
+                                <Button
+                                    v-if="attendee.user.profile_url"
+                                    as-child
+                                    variant="secondary"
+                                    size="sm"
+                                    class="w-full sm:w-auto"
+                                >
+                                    <Link :href="attendee.user.profile_url">
+                                        Profil ansehen
+                                    </Link>
+                                </Button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <p
+                        v-else
+                        class="rounded-md border border-dashed border-border/80 bg-muted/30 px-3 py-2 text-sm text-muted-foreground"
+                    >
+                        Aktuell nimmt noch niemand an diesem Event teil.
+                    </p>
+                </CardContent>
+            </Card>
+        </PageSection>
+
+        <PageSection v-if="event.can_manage_attendance_requests">
+            <Card>
+                <CardContent class="space-y-5 p-5">
+                    <div class="space-y-1">
+                        <h2 class="text-base font-semibold">
+                            Teilnahme-Anfragen
+                        </h2>
+                        <p class="text-sm leading-6 text-muted-foreground">
+                            Diese Mitglieder möchten an deinem Event teilnehmen.
+                        </p>
+                    </div>
+
+                    <div
+                        v-if="event.pending_requests.length > 0"
+                        class="grid min-w-0 gap-3"
+                    >
+                        <div
+                            v-for="request in event.pending_requests"
+                            :key="request.id"
+                            class="flex min-w-0 flex-col gap-3 rounded-lg border border-border bg-background/60 p-4 lg:flex-row lg:items-center lg:justify-between dark:bg-input/20"
+                        >
+                            <div class="flex min-w-0 items-center gap-3">
+                                <img
+                                    v-if="request.user.profile_photo_url"
+                                    :src="request.user.profile_photo_url"
+                                    :alt="request.user.name"
+                                    class="size-11 shrink-0 rounded-full object-cover"
+                                />
+                                <div
+                                    v-else
+                                    class="flex size-11 shrink-0 items-center justify-center rounded-full border border-primary/20 bg-primary/10 text-sm font-semibold text-primary"
+                                    aria-hidden="true"
+                                >
+                                    {{ initials(request.user.name) }}
+                                </div>
+
+                                <div class="min-w-0">
+                                    <p class="truncate font-medium">
+                                        {{ request.user.name }}
+                                    </p>
+                                    <p
+                                        v-if="request.user.username"
+                                        class="truncate text-sm text-muted-foreground"
+                                    >
+                                        @{{ request.user.username }}
+                                    </p>
+                                    <p
+                                        v-if="request.requested_at"
+                                        class="text-xs text-muted-foreground"
+                                    >
+                                        Anfrage vom
+                                        {{ formatDateTime(request.requested_at) }}
+                                    </p>
+                                </div>
+                            </div>
+
+                            <div
+                                class="flex min-w-0 flex-col gap-2 sm:flex-row sm:items-center"
+                            >
+                                <Form
+                                    :action="request.accept_url"
+                                    method="patch"
+                                    class="w-full sm:w-auto"
+                                    v-slot="{ processing }"
+                                >
+                                    <Button
+                                        type="submit"
+                                        size="sm"
+                                        class="w-full sm:w-auto"
+                                        :disabled="processing"
+                                    >
+                                        {{
+                                            processing
+                                                ? 'Wird angenommen...'
+                                                : 'Annehmen'
+                                        }}
+                                    </Button>
+                                </Form>
+
+                                <Dialog>
+                                    <DialogTrigger as-child>
+                                        <Button
+                                            type="button"
+                                            variant="outline"
+                                            size="sm"
+                                            class="w-full border-destructive/30 text-destructive hover:border-destructive/45 hover:bg-destructive/10 sm:w-auto"
+                                        >
+                                            Ablehnen
+                                        </Button>
+                                    </DialogTrigger>
+                                    <DialogContent>
+                                        <Form
+                                            :action="request.decline_url"
+                                            method="delete"
+                                            v-slot="{ processing }"
+                                            class="space-y-6"
+                                        >
+                                            <DialogHeader class="space-y-3">
+                                                <DialogTitle>
+                                                    Teilnahme-Anfrage ablehnen?
+                                                </DialogTitle>
+                                                <DialogDescription>
+                                                    Diese Anfrage wird abgelehnt
+                                                    und nicht weiter angezeigt.
+                                                </DialogDescription>
+                                            </DialogHeader>
+
+                                            <DialogFooter class="gap-2">
+                                                <DialogClose as-child>
+                                                    <Button
+                                                        type="button"
+                                                        variant="secondary"
+                                                        :disabled="processing"
+                                                    >
+                                                        Abbrechen
+                                                    </Button>
+                                                </DialogClose>
+                                                <Button
+                                                    type="submit"
+                                                    variant="outline"
+                                                    class="border-destructive/30 text-destructive hover:border-destructive/45 hover:bg-destructive/10"
+                                                    :disabled="processing"
+                                                >
+                                                    {{
+                                                        processing
+                                                            ? 'Wird abgelehnt...'
+                                                            : 'Ablehnen'
+                                                    }}
+                                                </Button>
+                                            </DialogFooter>
+                                        </Form>
+                                    </DialogContent>
+                                </Dialog>
+
+                                <Button
+                                    v-if="request.user.profile_url"
+                                    as-child
+                                    variant="secondary"
+                                    size="sm"
+                                    class="w-full sm:w-auto"
+                                >
+                                    <Link :href="request.user.profile_url">
+                                        Profil ansehen
+                                    </Link>
+                                </Button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <p
+                        v-else
+                        class="rounded-md border border-dashed border-border/80 bg-muted/30 px-3 py-2 text-sm text-muted-foreground"
+                    >
+                        Aktuell liegen keine Teilnahme-Anfragen vor.
+                    </p>
                 </CardContent>
             </Card>
         </PageSection>
