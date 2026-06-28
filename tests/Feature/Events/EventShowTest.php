@@ -69,6 +69,7 @@ test('event detail exposes event information without management urls for non own
     createOnboardedProfile($owner, [
         'display_name' => 'Owner Anzeige',
         'username' => 'owner_event',
+        'profile_photo_path' => 'profile-photos/event-owner.webp',
     ]);
     $category = InterestOption::query()->create([
         'slug' => 'event-show-category',
@@ -111,6 +112,8 @@ test('event detail exposes event information without management urls for non own
             ->where('event.max_attendees', 50)
             ->where('event.owner.name', 'Owner Anzeige')
             ->where('event.owner.username', 'owner_event')
+            ->where('event.owner.profile_photo_url', '/storage/profile-photos/event-owner.webp')
+            ->where('event.owner.profile_url', route('public-profile.show', 'owner_event'))
             ->where('event.attendee_count', 1)
             ->where('event.can_edit', false)
             ->where('event.edit_url', null)
@@ -120,11 +123,42 @@ test('event detail exposes event information without management urls for non own
         );
 });
 
+test('event detail exposes owner avatar fallback data without profile photo', function () {
+    $viewer = User::factory()->create();
+    createOnboardedProfile($viewer);
+    $owner = User::factory()->create([
+        'name' => 'Fallback Owner',
+    ]);
+    createOnboardedProfile($owner, [
+        'display_name' => 'Fallback Anzeige',
+        'username' => 'fallback_owner',
+        'profile_photo_path' => null,
+    ]);
+    $event = Event::factory()->for($owner, 'owner')->create([
+        'slug' => 'event-owner-avatar-fallback',
+    ]);
+
+    $this->actingAs($viewer)
+        ->get(route('events.show', $event->slug))
+        ->assertOk()
+        ->assertInertia(fn (Assert $page) => $page
+            ->component('Events/Show')
+            ->where('event.owner.id', $owner->id)
+            ->where('event.owner.name', 'Fallback Anzeige')
+            ->where('event.owner.username', 'fallback_owner')
+            ->where('event.owner.profile_photo_url', null)
+            ->where('event.owner.profile_url', route('public-profile.show', 'fallback_owner')),
+        );
+});
+
 test('event detail shows empty description state in the vue page', function () {
     $page = file_get_contents(resource_path('js/pages/Events/Show.vue'));
 
     expect($page)
         ->toContain('Dieses Event hat noch keine Beschreibung.')
+        ->toContain('event.owner.profile_photo_url')
+        ->toContain('initials(event.owner.name)')
+        ->toContain('event.owner.profile_url')
         ->toContain('Teilnahme')
         ->toContain(':href="event.back_url"')
         ->toContain('event.back_label')

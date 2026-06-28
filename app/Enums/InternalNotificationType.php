@@ -7,6 +7,10 @@ enum InternalNotificationType: string
     case ContactRequestReceived = 'contact_request_received';
     case ContactRequestAccepted = 'contact_request_accepted';
     case ContactRequestDeclined = 'contact_request_declined';
+    case EventAttendanceRequestReceived = 'event_attendance_request_received';
+    case EventAttendanceRequestAccepted = 'event_attendance_request_accepted';
+    case EventAttendanceRequestDeclined = 'event_attendance_request_declined';
+    case EventAttendeeJoined = 'event_attendee_joined';
     case GroupJoinRequestReceived = 'group_join_request_received';
     case GroupJoinRequestAccepted = 'group_join_request_accepted';
     case GroupJoinRequestDeclined = 'group_join_request_declined';

@@ -37,8 +37,11 @@ type EventDetail = {
     } | null;
     max_attendees?: number | null;
     owner: {
+        id: number;
         name: string;
         username?: string | null;
+        profile_photo_url?: string | null;
+        profile_url?: string | null;
     };
     attendee_count: number;
     can_edit: boolean;
@@ -303,15 +306,49 @@ defineOptions({
                             <p class="text-sm text-muted-foreground">
                                 Ersteller
                             </p>
-                            <p class="mt-1 break-words font-medium">
-                                {{ event.owner.name }}
-                            </p>
-                            <p
-                                v-if="event.owner.username"
-                                class="text-xs text-muted-foreground"
+                            <div
+                                class="mt-3 flex min-w-0 flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"
                             >
-                                @{{ event.owner.username }}
-                            </p>
+                                <div class="flex min-w-0 items-center gap-3">
+                                    <img
+                                        v-if="event.owner.profile_photo_url"
+                                        :src="event.owner.profile_photo_url"
+                                        :alt="event.owner.name"
+                                        class="size-11 shrink-0 rounded-full object-cover"
+                                    />
+                                    <div
+                                        v-else
+                                        class="flex size-11 shrink-0 items-center justify-center rounded-full border border-primary/20 bg-primary/10 text-sm font-semibold text-primary"
+                                        aria-hidden="true"
+                                    >
+                                        {{ initials(event.owner.name) }}
+                                    </div>
+
+                                    <div class="min-w-0">
+                                        <p class="truncate font-medium">
+                                            {{ event.owner.name }}
+                                        </p>
+                                        <p
+                                            v-if="event.owner.username"
+                                            class="truncate text-sm text-muted-foreground"
+                                        >
+                                            @{{ event.owner.username }}
+                                        </p>
+                                    </div>
+                                </div>
+
+                                <Button
+                                    v-if="event.owner.profile_url"
+                                    as-child
+                                    variant="secondary"
+                                    size="sm"
+                                    class="w-full sm:w-auto"
+                                >
+                                    <Link :href="event.owner.profile_url">
+                                        Profil ansehen
+                                    </Link>
+                                </Button>
+                            </div>
                         </div>
 
                         <div

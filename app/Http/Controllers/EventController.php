@@ -8,6 +8,7 @@ use App\Models\Event;
 use App\Models\EventAttendee;
 use App\Models\InterestOption;
 use App\Models\User;
+use App\Services\InternalNotificationService;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -20,6 +21,10 @@ class EventController extends Controller
     private const PER_PAGE = 12;
 
     private const ATTENDEES_PREVIEW_LIMIT = 6;
+
+    public function __construct(
+        private readonly InternalNotificationService $notifications,
+    ) {}
 
     /**
      * Show discoverable events.
@@ -182,7 +187,7 @@ class EventController extends Controller
         }
 
         if ($event->visibility === Event::VISIBILITY_PUBLIC) {
-            EventAttendee::query()->updateOrCreate(
+            $attendance = EventAttendee::query()->updateOrCreate(
                 [
                     'event_id' => $event->id,
                     'user_id' => $viewer->id,
@@ -193,11 +198,15 @@ class EventController extends Controller
                 ],
             );
 
+            if ($attendance->wasRecentlyCreated) {
+                $this->notifications->eventAttendeeJoined($viewer, $event);
+            }
+
             return to_route('events.show', ['event' => $event->slug])
                 ->with('success', 'Du nimmst am Event teil.');
         }
 
-        EventAttendee::query()->firstOrCreate(
+        $attendance = EventAttendee::query()->firstOrCreate(
             [
                 'event_id' => $event->id,
                 'user_id' => $viewer->id,
@@ -207,6 +216,13 @@ class EventController extends Controller
                 'joined_at' => null,
             ],
         );
+
+        if ($attendance->wasRecentlyCreated) {
+            $this->notifications->eventAttendanceRequestReceived(
+                $viewer,
+                $event,
+            );
+        }
 
         return to_route('events.show', ['event' => $event->slug])
             ->with('success', 'Deine Teilnahme-Anfrage wurde gesendet.');
@@ -260,6 +276,13 @@ class EventController extends Controller
             'joined_at' => now(),
         ])->save();
 
+        $attendee->loadMissing('user');
+        $this->notifications->eventAttendanceRequestAccepted(
+            $viewer,
+            $attendee->user,
+            $event,
+        );
+
         return to_route('events.show', ['event' => $event->slug])
             ->with('success', 'Teilnahme-Anfrage angenommen.');
     }
@@ -273,6 +296,13 @@ class EventController extends Controller
 
         abort_unless($this->canManageAttendanceRequests($event, $viewer), 403);
         $this->ensureProcessableAttendanceRequest($event, $attendee);
+
+        $attendee->loadMissing('user');
+        $this->notifications->eventAttendanceRequestDeclined(
+            $viewer,
+            $attendee->user,
+            $event,
+        );
 
         $attendee->delete();
 
@@ -607,9 +637,7 @@ class EventController extends Controller
                 : null,
             'max_attendees' => $event->max_attendees,
             'owner' => [
-                'name' => $event->owner->profile?->display_name
-                    ?? $event->owner->name,
-                'username' => $event->owner->profile?->username,
+                ...$this->eventUserData($event->owner),
             ],
             'attendee_count' => $event->active_attendees_count ?? 0,
             'can_edit' => $canEdit,

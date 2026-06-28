@@ -6,6 +6,7 @@ use App\Enums\ContactRequestStatus;
 use App\Enums\InternalNotificationType;
 use App\Models\ContactRequest;
 use App\Models\Conversation;
+use App\Models\Event;
 use App\Models\Group;
 use App\Models\User;
 use App\Notifications\InternalNotification;
@@ -112,6 +113,84 @@ class InternalNotificationService
             'created_at' => now(),
             'updated_at' => now(),
         ])->save();
+    }
+
+    public function eventAttendanceRequestReceived(
+        User $actor,
+        Event $event,
+    ): void {
+        $owner = $event->owner;
+
+        if ($owner === null || $owner->is($actor)) {
+            return;
+        }
+
+        $owner->notify(new InternalNotification(
+            InternalNotificationType::EventAttendanceRequestReceived,
+            'Neue Teilnahme-Anfrage',
+            "{$this->displayName($actor)} möchte an deinem Event {$event->title} teilnehmen.",
+            route('events.show', $event->slug, absolute: false),
+            $actor->id,
+            extraData: $this->eventData($event),
+        ));
+    }
+
+    public function eventAttendanceRequestAccepted(
+        User $actor,
+        User $recipient,
+        Event $event,
+    ): void {
+        if ($recipient->is($actor)) {
+            return;
+        }
+
+        $recipient->notify(new InternalNotification(
+            InternalNotificationType::EventAttendanceRequestAccepted,
+            'Teilnahme-Anfrage angenommen',
+            "Deine Anfrage für {$event->title} wurde angenommen.",
+            route('events.show', $event->slug, absolute: false),
+            $actor->id,
+            extraData: $this->eventData($event),
+        ));
+    }
+
+    public function eventAttendanceRequestDeclined(
+        User $actor,
+        User $recipient,
+        Event $event,
+    ): void {
+        if ($recipient->is($actor)) {
+            return;
+        }
+
+        $recipient->notify(new InternalNotification(
+            InternalNotificationType::EventAttendanceRequestDeclined,
+            'Teilnahme-Anfrage abgelehnt',
+            "Deine Anfrage für {$event->title} wurde nicht angenommen.",
+            route('events.index', absolute: false),
+            $actor->id,
+            extraData: $this->eventData($event),
+        ));
+    }
+
+    public function eventAttendeeJoined(
+        User $actor,
+        Event $event,
+    ): void {
+        $owner = $event->owner;
+
+        if ($owner === null || $owner->is($actor)) {
+            return;
+        }
+
+        $owner->notify(new InternalNotification(
+            InternalNotificationType::EventAttendeeJoined,
+            'Neuer Event-Teilnehmer',
+            "{$this->displayName($actor)} nimmt an deinem Event {$event->title} teil.",
+            route('events.show', $event->slug, absolute: false),
+            $actor->id,
+            extraData: $this->eventData($event),
+        ));
     }
 
     public function groupJoinRequestReceived(
@@ -244,6 +323,18 @@ class InternalNotificationService
     private function displayName(User $user): string
     {
         return $user->profile?->display_name ?? $user->name;
+    }
+
+    /**
+     * @return array{event_id: int, event_name: string, event_slug: string}
+     */
+    private function eventData(Event $event): array
+    {
+        return [
+            'event_id' => $event->id,
+            'event_name' => $event->title,
+            'event_slug' => $event->slug,
+        ];
     }
 
     /**
