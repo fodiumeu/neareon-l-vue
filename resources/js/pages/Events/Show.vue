@@ -46,6 +46,10 @@ type EventDetail = {
     attendee_count: number;
     can_edit: boolean;
     edit_url?: string | null;
+    can_cancel: boolean;
+    cancel_url?: string | null;
+    can_restore: boolean;
+    restore_url?: string | null;
     back_url: string;
     back_label: string;
     is_full: boolean;
@@ -200,14 +204,121 @@ defineOptions({
                 description="Regionales Event aus der NEAREON-Community."
             />
 
-            <Button
-                v-if="event.can_edit && event.edit_url"
-                as-child
-                variant="secondary"
-                class="w-full sm:w-auto"
+            <div
+                class="flex min-w-0 flex-col gap-2 sm:flex-row sm:items-center"
             >
-                <Link :href="event.edit_url">Event bearbeiten</Link>
-            </Button>
+                <Button
+                    v-if="event.can_edit && event.edit_url"
+                    as-child
+                    variant="secondary"
+                    class="w-full sm:w-auto"
+                >
+                    <Link :href="event.edit_url">Event bearbeiten</Link>
+                </Button>
+
+                <Dialog v-if="event.can_cancel && event.cancel_url">
+                    <DialogTrigger as-child>
+                        <Button
+                            type="button"
+                            variant="outline"
+                            class="w-full border-destructive/30 text-destructive hover:border-destructive/45 hover:bg-destructive/10 sm:w-auto"
+                        >
+                            Event absagen
+                        </Button>
+                    </DialogTrigger>
+                    <DialogContent>
+                        <Form
+                            :action="event.cancel_url"
+                            method="patch"
+                            v-slot="{ processing }"
+                            class="space-y-6"
+                        >
+                            <DialogHeader class="space-y-3">
+                                <DialogTitle>Event absagen?</DialogTitle>
+                                <DialogDescription>
+                                    Dieses Event wird als abgesagt markiert und
+                                    erscheint nicht mehr unter „Events
+                                    entdecken“.
+                                </DialogDescription>
+                            </DialogHeader>
+
+                            <DialogFooter class="gap-2">
+                                <DialogClose as-child>
+                                    <Button
+                                        type="button"
+                                        variant="secondary"
+                                        :disabled="processing"
+                                    >
+                                        Abbrechen
+                                    </Button>
+                                </DialogClose>
+                                <Button
+                                    type="submit"
+                                    variant="outline"
+                                    class="border-destructive/30 text-destructive hover:border-destructive/45 hover:bg-destructive/10"
+                                    :disabled="processing"
+                                >
+                                    {{
+                                        processing
+                                            ? 'Wird abgesagt...'
+                                            : 'Event absagen'
+                                    }}
+                                </Button>
+                            </DialogFooter>
+                        </Form>
+                    </DialogContent>
+                </Dialog>
+
+                <Dialog v-else-if="event.can_restore && event.restore_url">
+                    <DialogTrigger as-child>
+                        <Button
+                            type="button"
+                            variant="secondary"
+                            class="w-full sm:w-auto"
+                        >
+                            Event wieder aktivieren
+                        </Button>
+                    </DialogTrigger>
+                    <DialogContent>
+                        <Form
+                            :action="event.restore_url"
+                            method="patch"
+                            v-slot="{ processing }"
+                            class="space-y-6"
+                        >
+                            <DialogHeader class="space-y-3">
+                                <DialogTitle>
+                                    Event wieder aktivieren?
+                                </DialogTitle>
+                                <DialogDescription>
+                                    Dieses Event wird wieder als aktiv markiert
+                                    und kann erneut unter „Events entdecken“
+                                    erscheinen.
+                                </DialogDescription>
+                            </DialogHeader>
+
+                            <DialogFooter class="gap-2">
+                                <DialogClose as-child>
+                                    <Button
+                                        type="button"
+                                        variant="secondary"
+                                        :disabled="processing"
+                                    >
+                                        Abbrechen
+                                    </Button>
+                                </DialogClose>
+                                <Button type="submit" :disabled="processing">
+                                    {{
+                                        processing
+                                            ? 'Wird aktiviert...'
+                                            : 'Event wieder aktivieren'
+                                    }}
+                                </Button>
+                            </DialogFooter>
+                        </Form>
+                    </DialogContent>
+                </Dialog>
+            </div>
         </div>
 
         <PageSection>
@@ -246,6 +357,13 @@ defineOptions({
                             {{ event.category.label }}
                         </Badge>
                     </div>
+
+                    <p
+                        v-if="event.status === 'cancelled'"
+                        class="rounded-md border border-destructive/25 bg-destructive/10 px-3 py-2 text-sm leading-6 text-destructive"
+                    >
+                        Dieses Event wurde abgesagt.
+                    </p>
 
                     <div class="grid min-w-0 gap-4 md:grid-cols-2 xl:grid-cols-3">
                         <div
@@ -389,7 +507,7 @@ defineOptions({
             </Card>
         </PageSection>
 
-        <PageSection>
+        <PageSection v-if="event.status === 'active'">
             <Card class="border-primary/15 bg-card/80">
                 <CardContent class="space-y-4 p-5">
                     <div class="space-y-2">

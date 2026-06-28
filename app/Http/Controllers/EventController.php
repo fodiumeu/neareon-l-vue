@@ -174,7 +174,8 @@ class EventController extends Controller
             ->loadCount('activeAttendees');
 
         $canEdit = $this->canManageEvent($event, $viewer);
-        $canManageAttendanceRequests = $this->canManageAttendanceRequests($event, $viewer);
+        $canManageAttendanceRequests = $this->canManageAttendanceRequests($event, $viewer)
+            && $event->status === Event::STATUS_ACTIVE;
         $backLink = $this->eventBackLink($request);
 
         return Inertia::render('Events/Show', [
@@ -217,6 +218,46 @@ class EventController extends Controller
 
         return to_route('events.show', ['event' => $event->slug])
             ->with('success', 'Event wurde aktualisiert.');
+    }
+
+    /**
+     * Mark an event as cancelled without deleting attendees or requests.
+     */
+    public function cancel(Request $request, Event $event): RedirectResponse
+    {
+        abort_unless($this->canManageEvent($event, $request->user()), 403);
+
+        if ($event->status === Event::STATUS_CANCELLED) {
+            return to_route('events.show', ['event' => $event->slug])
+                ->with('success', 'Event ist bereits abgesagt.');
+        }
+
+        $event->forceFill([
+            'status' => Event::STATUS_CANCELLED,
+        ])->save();
+
+        return to_route('events.show', ['event' => $event->slug])
+            ->with('success', 'Event wurde abgesagt.');
+    }
+
+    /**
+     * Mark a cancelled event as active again without changing attendees.
+     */
+    public function restore(Request $request, Event $event): RedirectResponse
+    {
+        abort_unless($this->canManageEvent($event, $request->user()), 403);
+
+        if ($event->status === Event::STATUS_ACTIVE) {
+            return to_route('events.show', ['event' => $event->slug])
+                ->with('success', 'Event ist bereits aktiv.');
+        }
+
+        $event->forceFill([
+            'status' => Event::STATUS_ACTIVE,
+        ])->save();
+
+        return to_route('events.show', ['event' => $event->slug])
+            ->with('success', 'Event wurde wieder aktiviert.');
     }
 
     /**
@@ -727,6 +768,14 @@ class EventController extends Controller
             'edit_url' => $canEdit
                 ? route('events.edit', ['event' => $event->slug])
                 : null,
+            'can_cancel' => $canEdit && $event->status === Event::STATUS_ACTIVE,
+            'cancel_url' => $canEdit && $event->status === Event::STATUS_ACTIVE
+                ? route('events.cancel', ['event' => $event->slug])
+                : null,
+            'can_restore' => $canEdit && $event->status === Event::STATUS_CANCELLED,
+            'restore_url' => $canEdit && $event->status === Event::STATUS_CANCELLED
+                ? route('events.restore', ['event' => $event->slug])
+                : null,
         ], $attendanceState);
     }
 
@@ -796,7 +845,7 @@ class EventController extends Controller
             && $attendanceStatus === null
             && ! $isFull
             && $event->visibility === Event::VISIBILITY_REQUEST;
-        $canLeave = in_array($attendanceStatus, [
+        $canLeave = $canUseAttendance && in_array($attendanceStatus, [
             EventAttendee::STATUS_ACTIVE,
             EventAttendee::STATUS_PENDING,
         ], true);

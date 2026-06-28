@@ -100,6 +100,10 @@ Route::middleware(['auth', 'age.gate', 'verified', 'onboarding.complete'])->grou
         ->name('events.attendance.decline');
     Route::get('events/{event:slug}/edit', [EventController::class, 'edit'])
         ->name('events.edit');
+    Route::patch('events/{event:slug}/cancel', [EventController::class, 'cancel'])
+        ->name('events.cancel');
+    Route::patch('events/{event:slug}/restore', [EventController::class, 'restore'])
+        ->name('events.restore');
     Route::patch('events/{event:slug}', [EventController::class, 'update'])
         ->name('events.update');
     Route::get('events/{event:slug}', [EventController::class, 'show'])
