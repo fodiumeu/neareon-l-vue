@@ -90,6 +90,8 @@ Route::middleware(['auth', 'age.gate', 'verified', 'onboarding.complete'])->grou
         ->name('events.edit');
     Route::patch('events/{event:slug}', [EventController::class, 'update'])
         ->name('events.update');
+    Route::get('events/{event:slug}', [EventController::class, 'show'])
+        ->name('events.show');
     Route::get('contacts', [ContactController::class, 'index'])
         ->name('contacts.index');
     Route::get('followers', [FollowerController::class, 'index'])

@@ -56,6 +56,7 @@ test('event owner can open the edit page with active category options', function
             ->where('event.visibility', Event::VISIBILITY_REQUEST)
             ->where('event.starts_at', '2026-07-10T18:00')
             ->where('event.ends_at', '2026-07-10T20:00')
+            ->where('event.show_url', route('events.show', 'edit-event'))
             ->has('categoryOptions', 2)
             ->where('categoryOptions.0.id', $category->id)
             ->where('categoryOptions.0.label', 'Aktive Edit-Kategorie')
@@ -133,7 +134,7 @@ test('event owner can update editable fields while slug owner and status stay un
         ]))
         ->assertSessionHasNoErrors()
         ->assertSessionHas('success', 'Event wurde aktualisiert.')
-        ->assertRedirect(route('events.edit', 'stabiler-event-slug'));
+        ->assertRedirect(route('events.show', 'stabiler-event-slug'));
 
     $event->refresh();
 
@@ -173,7 +174,7 @@ test('event owner can remove category and max attendees', function () {
             'max_attendees' => '',
         ]))
         ->assertSessionHasNoErrors()
-        ->assertRedirect(route('events.edit', 'remove-event-category'));
+        ->assertRedirect(route('events.show', 'remove-event-category'));
 
     expect($event->refresh())
         ->category_interest_option_id->toBeNull()
@@ -247,6 +248,8 @@ test('event edit page renders expected form controls and custom category select'
     expect($page)
         ->toContain('Event bearbeiten')
         ->toContain('Aktualisiere die Angaben deines Events.')
+        ->toContain('Zurück zum Event')
+        ->toContain(':fallback="event.show_url"')
         ->toContain('name="_method" value="patch"')
         ->toContain('name="title"')
         ->toContain('name="description"')

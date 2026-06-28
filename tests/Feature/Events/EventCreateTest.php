@@ -78,7 +78,7 @@ test('onboarded members can create an event without category', function () {
         ]))
         ->assertSessionHasNoErrors()
         ->assertSessionHas('success', 'Event wurde erstellt.')
-        ->assertRedirect(route('events.edit', 'community-treffen-hamburg'));
+        ->assertRedirect(route('events.show', 'community-treffen-hamburg'));
 
     $event = Event::query()
         ->where('slug', 'community-treffen-hamburg')
@@ -115,7 +115,7 @@ test('onboarded members can create an event with one managed category', function
             'category_interest_option_id' => (string) $category->id,
         ]))
         ->assertSessionHasNoErrors()
-        ->assertRedirect(route('events.edit', 'community-treffen-hamburg'));
+        ->assertRedirect(route('events.show', 'community-treffen-hamburg'));
 
     $event = Event::query()
         ->where('slug', 'community-treffen-hamburg')
@@ -137,7 +137,7 @@ test('event slugs are generated uniquely for duplicate titles', function () {
         ->post(route('events.store'), eventCreatePayload([
             'title' => 'Community Treffen Hamburg',
         ]))
-        ->assertRedirect(route('events.edit', 'community-treffen-hamburg-2'));
+        ->assertRedirect(route('events.show', 'community-treffen-hamburg-2'));
 
     expect(Event::query()->where('slug', 'community-treffen-hamburg-2')->exists())
         ->toBeTrue();

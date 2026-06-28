@@ -45,6 +45,7 @@ type EditableEvent = {
     category?: CategoryOption | null;
     max_attendees?: number | null;
     edit_url: string;
+    show_url: string;
 };
 
 const props = defineProps<{
@@ -91,8 +92,8 @@ defineOptions({
         class="mx-auto flex h-full w-full max-w-4xl flex-1 flex-col gap-6 overflow-x-hidden p-4 sm:p-6"
     >
         <AppBackButton
-            fallback="/dashboard"
-            label="Zurück"
+            :fallback="event.show_url"
+            label="Zurück zum Event"
             class="hidden md:inline-flex"
         />
 

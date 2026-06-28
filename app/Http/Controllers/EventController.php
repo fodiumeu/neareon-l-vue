@@ -41,8 +41,27 @@ class EventController extends Controller
             'status' => Event::STATUS_ACTIVE,
         ]);
 
-        return to_route('events.edit', ['event' => $event->slug])
+        return to_route('events.show', ['event' => $event->slug])
             ->with('success', 'Event wurde erstellt.');
+    }
+
+    /**
+     * Show a visible event.
+     */
+    public function show(Request $request, Event $event): Response
+    {
+        $viewer = $request->user();
+
+        abort_unless($this->canViewEvent($event, $viewer), 404);
+
+        $event->load(['category', 'owner.profile'])
+            ->loadCount('activeAttendees');
+
+        $canEdit = $this->canManageEvent($event, $viewer);
+
+        return Inertia::render('Events/Show', [
+            'event' => $this->eventDetailData($event, $canEdit),
+        ]);
     }
 
     /**
@@ -70,13 +89,26 @@ class EventController extends Controller
 
         $event->update($request->validated());
 
-        return to_route('events.edit', ['event' => $event->slug])
+        return to_route('events.show', ['event' => $event->slug])
             ->with('success', 'Event wurde aktualisiert.');
     }
 
     private function canManageEvent(Event $event, User $viewer): bool
     {
         return $event->owner_id === $viewer->id || $viewer->canAccessAdmin();
+    }
+
+    private function canViewEvent(Event $event, User $viewer): bool
+    {
+        if ($this->canManageEvent($event, $viewer)) {
+            return true;
+        }
+
+        return $event->status === Event::STATUS_ACTIVE
+            && in_array($event->visibility, [
+                Event::VISIBILITY_PUBLIC,
+                Event::VISIBILITY_REQUEST,
+            ], true);
     }
 
     private function uniqueSlug(string $title): string
@@ -161,6 +193,59 @@ class EventController extends Controller
                 : null,
             'max_attendees' => $event->max_attendees,
             'edit_url' => route('events.edit', ['event' => $event->slug]),
+            'show_url' => route('events.show', ['event' => $event->slug]),
         ];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function eventDetailData(Event $event, bool $canEdit): array
+    {
+        return [
+            'id' => $event->id,
+            'title' => $event->title,
+            'slug' => $event->slug,
+            'description' => $event->description,
+            'starts_at' => $event->starts_at?->toIso8601String(),
+            'ends_at' => $event->ends_at?->toIso8601String(),
+            'region' => $event->region,
+            'postal_code' => $event->postal_code,
+            'country_code' => $event->country_code,
+            'visibility' => $event->visibility,
+            'visibility_label' => $this->visibilityLabel($event->visibility),
+            'status' => $event->status,
+            'status_label' => $this->statusLabel($event->status),
+            'category' => $event->category !== null
+                ? $this->categoryData($event->category)
+                : null,
+            'max_attendees' => $event->max_attendees,
+            'owner' => [
+                'name' => $event->owner->profile?->display_name
+                    ?? $event->owner->name,
+                'username' => $event->owner->profile?->username,
+            ],
+            'attendee_count' => $event->active_attendees_count ?? 0,
+            'can_edit' => $canEdit,
+            'edit_url' => $canEdit
+                ? route('events.edit', ['event' => $event->slug])
+                : null,
+        ];
+    }
+
+    private function visibilityLabel(string $visibility): string
+    {
+        return match ($visibility) {
+            Event::VISIBILITY_REQUEST => 'Anfrage',
+            default => 'Öffentlich',
+        };
+    }
+
+    private function statusLabel(string $status): string
+    {
+        return match ($status) {
+            Event::STATUS_CANCELLED => 'Abgesagt',
+            default => 'Aktiv',
+        };
     }
 }
