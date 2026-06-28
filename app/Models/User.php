@@ -164,6 +164,22 @@ class User extends Authenticatable
     }
 
     /**
+     * Get events owned by the user.
+     */
+    public function ownedEvents(): HasMany
+    {
+        return $this->hasMany(Event::class, 'owner_id');
+    }
+
+    /**
+     * Get the user's event attendance records.
+     */
+    public function eventAttendances(): HasMany
+    {
+        return $this->hasMany(EventAttendee::class);
+    }
+
+    /**
      * Get groups the user belongs to.
      */
     public function groups(): BelongsToMany

@@ -44,4 +44,12 @@ class InterestOption extends Model
     {
         return $this->hasMany(Group::class, 'category_interest_option_id');
     }
+
+    /**
+     * Get the events that use this interest option as their main category.
+     */
+    public function events(): HasMany
+    {
+        return $this->hasMany(Event::class, 'category_interest_option_id');
+    }
 }
