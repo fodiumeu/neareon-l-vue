@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { Head, Link } from '@inertiajs/vue3';
 import {
+    CalendarDays,
     CircleSlash2,
     ContactRound,
     Inbox,
@@ -38,6 +39,13 @@ const communityCards: CommunityCard[] = [
         href: '/my-groups',
         actionLabel: 'Meine Gruppen öffnen',
         icon: Users,
+    },
+    {
+        title: 'Meine Events',
+        description: 'Events, die du erstellt hast oder an denen du teilnimmst.',
+        href: '/my-events',
+        actionLabel: 'Meine Events öffnen',
+        icon: CalendarDays,
     },
     {
         title: 'Kontakte',

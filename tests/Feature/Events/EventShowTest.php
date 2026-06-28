@@ -60,6 +60,52 @@ test('event owner can see own event with edit action', function () {
         );
 });
 
+test('event detail uses safe my events backlink context', function () {
+    $viewer = User::factory()->create();
+    createOnboardedProfile($viewer);
+    $event = Event::factory()->create([
+        'slug' => 'my-events-backlink-context',
+        'status' => Event::STATUS_ACTIVE,
+    ]);
+
+    $this->actingAs($viewer)
+        ->get(route('events.show', [
+            'event' => $event->slug,
+            'from' => 'my-events',
+        ]))
+        ->assertOk()
+        ->assertInertia(fn (Assert $page) => $page
+            ->component('Events/Show')
+            ->where('event.back_url', route('events.mine'))
+            ->where('event.back_label', 'Zurück zu Meine Events'),
+        );
+});
+
+test('event detail ignores invalid backlink context', function (string $from) {
+    $viewer = User::factory()->create();
+    createOnboardedProfile($viewer);
+    $event = Event::factory()->create([
+        'slug' => 'invalid-event-backlink-context',
+        'status' => Event::STATUS_ACTIVE,
+    ]);
+
+    $this->actingAs($viewer)
+        ->get(route('events.show', [
+            'event' => $event->slug,
+            'from' => $from,
+        ]))
+        ->assertOk()
+        ->assertInertia(fn (Assert $page) => $page
+            ->component('Events/Show')
+            ->where('event.back_url', route('events.index'))
+            ->where('event.back_label', 'Zurück zu Events'),
+        );
+})->with([
+    'unknown',
+    'https://example.com',
+    '//example.com',
+]);
+
 test('event detail exposes event information without management urls for non owners', function () {
     $viewer = User::factory()->create();
     createOnboardedProfile($viewer);

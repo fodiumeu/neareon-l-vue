@@ -73,6 +73,71 @@ class EventController extends Controller
     }
 
     /**
+     * Show the current user's event overview.
+     */
+    public function mine(Request $request): Response
+    {
+        $viewer = $request->user();
+
+        $ownedEvents = Event::query()
+            ->where('owner_id', $viewer->id)
+            ->with('category')
+            ->withCount('activeAttendees')
+            ->orderByRaw(
+                'case when starts_at >= ? then 0 else 1 end',
+                [now()],
+            )
+            ->orderBy('starts_at')
+            ->orderBy('id')
+            ->get()
+            ->map(fn (Event $event): array => $this->myEventData($event, 'owner'))
+            ->values()
+            ->all();
+
+        $attendingEvents = Event::query()
+            ->where('status', Event::STATUS_ACTIVE)
+            ->whereHas('attendees', fn (Builder $query) => $query
+                ->where('user_id', $viewer->id)
+                ->where('status', EventAttendee::STATUS_ACTIVE))
+            ->with('category')
+            ->withCount('activeAttendees')
+            ->orderByRaw(
+                'case when starts_at >= ? then 0 else 1 end',
+                [now()],
+            )
+            ->orderBy('starts_at')
+            ->orderBy('id')
+            ->get()
+            ->map(fn (Event $event): array => $this->myEventData($event, 'active'))
+            ->values()
+            ->all();
+
+        $pendingEvents = Event::query()
+            ->where('status', Event::STATUS_ACTIVE)
+            ->whereHas('attendees', fn (Builder $query) => $query
+                ->where('user_id', $viewer->id)
+                ->where('status', EventAttendee::STATUS_PENDING))
+            ->with('category')
+            ->withCount('activeAttendees')
+            ->orderByRaw(
+                'case when starts_at >= ? then 0 else 1 end',
+                [now()],
+            )
+            ->orderBy('starts_at')
+            ->orderBy('id')
+            ->get()
+            ->map(fn (Event $event): array => $this->myEventData($event, 'pending'))
+            ->values()
+            ->all();
+
+        return Inertia::render('Events/MyEvents', [
+            'owned_events' => $ownedEvents,
+            'attending_events' => $attendingEvents,
+            'pending_events' => $pendingEvents,
+        ]);
+    }
+
+    /**
      * Store a newly created event.
      */
     public function store(StoreEventRequest $request): RedirectResponse
@@ -110,11 +175,12 @@ class EventController extends Controller
 
         $canEdit = $this->canManageEvent($event, $viewer);
         $canManageAttendanceRequests = $this->canManageAttendanceRequests($event, $viewer);
+        $backLink = $this->eventBackLink($request);
 
         return Inertia::render('Events/Show', [
             'event' => array_merge($this->eventDetailData($event, $canEdit), [
-                'back_url' => route('events.index'),
-                'back_label' => 'Zurück zu Events',
+                'back_url' => $backLink['url'],
+                'back_label' => $backLink['label'],
                 'attendees_preview' => $this->attendeesPreview($event),
                 'pending_requests' => $canManageAttendanceRequests
                     ? $this->pendingAttendanceRequests($event)
@@ -361,6 +427,23 @@ class EventController extends Controller
         abort_unless($event->visibility === Event::VISIBILITY_REQUEST, 404);
         abort_unless($attendee->status === EventAttendee::STATUS_PENDING, 404);
         abort_if($attendee->user_id === $event->owner_id, 404);
+    }
+
+    /**
+     * @return array{url: string, label: string}
+     */
+    private function eventBackLink(Request $request): array
+    {
+        return match ($request->query('from')) {
+            'my-events' => [
+                'url' => route('events.mine'),
+                'label' => 'Zurück zu Meine Events',
+            ],
+            default => [
+                'url' => route('events.index'),
+                'label' => 'Zurück zu Events',
+            ],
+        };
     }
 
     /**
@@ -645,6 +728,41 @@ class EventController extends Controller
                 ? route('events.edit', ['event' => $event->slug])
                 : null,
         ], $attendanceState);
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function myEventData(Event $event, string $viewerState): array
+    {
+        return [
+            'id' => $event->id,
+            'title' => $event->title,
+            'slug' => $event->slug,
+            'show_url' => route('events.show', ['event' => $event->slug]),
+            'my_events_show_url' => route('events.show', [
+                'event' => $event->slug,
+                'from' => 'my-events',
+            ]),
+            'edit_url' => $viewerState === 'owner'
+                ? route('events.edit', ['event' => $event->slug])
+                : null,
+            'starts_at' => $event->starts_at?->toIso8601String(),
+            'ends_at' => $event->ends_at?->toIso8601String(),
+            'region' => $event->region,
+            'postal_code' => $event->postal_code,
+            'country_code' => $event->country_code,
+            'category' => $event->category !== null
+                ? $this->categoryData($event->category)
+                : null,
+            'visibility' => $event->visibility,
+            'visibility_label' => $this->visibilityLabel($event->visibility),
+            'status' => $event->status,
+            'status_label' => $this->statusLabel($event->status),
+            'active_attendees_count' => $event->active_attendees_count ?? 0,
+            'max_attendees' => $event->max_attendees,
+            'viewer_state' => $viewerState,
+        ];
     }
 
     /**

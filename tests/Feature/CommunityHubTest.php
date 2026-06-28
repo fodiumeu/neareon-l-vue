@@ -29,6 +29,10 @@ test('community hub renders the existing community entry points', function () {
         ->toContain("href: '/my-groups'")
         ->toContain('Gruppen, denen du angehörst oder zu denen du eingeladen wurdest.')
         ->toContain('Meine Gruppen öffnen')
+        ->toContain('Meine Events')
+        ->toContain("href: '/my-events'")
+        ->toContain('Events, die du erstellt hast oder an denen du teilnimmst.')
+        ->toContain('Meine Events öffnen')
         ->toContain('Kontakte')
         ->toContain("href: '/contacts'")
         ->toContain('Follower')
@@ -80,6 +84,8 @@ test('community navigation points to existing routes and keeps the contact reque
         ->toContain("href: '/groups'")
         ->toContain("title: 'Meine Gruppen'")
         ->toContain("href: '/my-groups'")
+        ->toContain("title: 'Meine Events'")
+        ->toContain("href: '/my-events'")
         ->toContain("href: '/contacts'")
         ->toContain("href: '/followers'")
         ->toContain("href: '/following'")
@@ -89,5 +95,7 @@ test('community navigation points to existing routes and keeps the contact reque
         ->toContain('badge: pendingContactRequestsCount')
         ->and($mobileNavigation)
         ->toContain("title: 'Community'")
-        ->toContain("href: '/community'");
+        ->toContain("href: '/community'")
+        ->not->toContain("title: 'Meine Events'")
+        ->not->toContain("href: '/my-events'");
 });

@@ -84,6 +84,8 @@ Route::middleware(['auth', 'age.gate', 'verified', 'onboarding.complete'])->grou
         ->name('groups.show');
     Route::get('events', [EventController::class, 'index'])
         ->name('events.index');
+    Route::get('my-events', [EventController::class, 'mine'])
+        ->name('events.mine');
     Route::get('events/create', [EventController::class, 'create'])
         ->name('events.create');
     Route::post('events', [EventController::class, 'store'])

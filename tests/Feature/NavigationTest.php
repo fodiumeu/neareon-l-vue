@@ -35,6 +35,16 @@ test('main navigation config contains the mobile bottom navigation targets', fun
 test('desktop navigation is grouped for community communication profile and admin areas', function () {
     $navigation = file_get_contents(resource_path('js/config/navigation/app-navigation.ts'));
     $navMain = file_get_contents(resource_path('js/components/NavMain.vue'));
+    $mainNavigation = substr(
+        $navigation,
+        strpos($navigation, "title: 'Hauptbereich'"),
+        strpos($navigation, "title: 'Community'") - strpos($navigation, "title: 'Hauptbereich'"),
+    );
+    $communityNavigation = substr(
+        $navigation,
+        strpos($navigation, "title: 'Community'"),
+        strpos($navigation, "title: 'Kommunikation'") - strpos($navigation, "title: 'Community'"),
+    );
 
     expect($navigation)
         ->toContain('getMainNavGroups')
@@ -49,6 +59,8 @@ test('desktop navigation is grouped for community communication profile and admi
         ->toContain("href: '/groups'")
         ->toContain("title: 'Events entdecken'")
         ->toContain("href: '/events'")
+        ->toContain("title: 'Meine Events'")
+        ->toContain("href: '/my-events'")
         ->toContain("title: 'Meine Gruppen'")
         ->toContain("href: '/my-groups'")
         ->toContain("title: 'Kontakte'")
@@ -86,6 +98,14 @@ test('desktop navigation is grouped for community communication profile and admi
         ->toContain('v-for="group in groups"')
         ->toContain('<SidebarGroupLabel>{{ group.title }}</SidebarGroupLabel>')
         ->toContain('SidebarMenuBadge');
+
+    expect($mainNavigation)
+        ->not->toContain("title: 'Meine Events'");
+
+    expect($communityNavigation)
+        ->toContain("title: 'Meine Gruppen'")
+        ->toContain("title: 'Meine Events'")
+        ->toContain("href: '/my-events'");
 });
 
 test('sidebar preserves badge props and allows admin navigation for admins and owners only', function () {
@@ -126,6 +146,7 @@ test('mobile navigation keeps a compact five item structure', function () {
         ->toContain("title: 'Nachrichten'")
         ->toContain("href: '/messages'")
         ->not->toContain("title: 'Events entdecken'")
+        ->not->toContain("title: 'Meine Events'")
         ->not->toContain("title: 'Einstellungen'");
 });
 
@@ -227,6 +248,8 @@ test('guests remain protected from contact navigation destinations', function (
     'contacts.index',
     'groups.index',
     'groups.mine',
+    'events.index',
+    'events.mine',
     'followers.index',
     'following.index',
     'contact-requests.index',

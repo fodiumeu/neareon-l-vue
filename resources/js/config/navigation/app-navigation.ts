@@ -83,6 +83,11 @@ export const getMainNavGroups = ({
                 icon: Users,
             },
             {
+                title: 'Meine Events',
+                href: '/my-events',
+                icon: CalendarDays,
+            },
+            {
                 title: 'Kontakte',
                 href: '/contacts',
                 icon: ContactRound,
