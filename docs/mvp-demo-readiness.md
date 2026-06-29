@@ -1,6 +1,6 @@
 # MVP-Demo-Readiness
 
-Stand: v0.10.63-past-event-guard
+Stand: v0.10.64-mvp-demo-final-check
 
 ## Aktuelle MVP-Bereiche
 
@@ -31,6 +31,7 @@ Stand: v0.10.63-past-event-guard
 
 ## Empfohlene nächste Schritte vor V0.1.00
 
+- Die manuelle Candidate-Prüfung ist in [V0.1.00 Candidate Checkliste](v0.1.00-candidate-checklist.md) gebündelt.
 - Demo-Daten sollten fuer Praesentationen regelmaessig frisch geseedet werden.
 - Sichtbare Demo-Events in Entdecken sollten kommende Termine bleiben, damit die MVP-Oberflaeche nicht wie ein Altbestand wirkt.
 - Eine kurze Demo-Checkliste für Moderation, Privacy und mobile Präsentation wäre sinnvoll.
