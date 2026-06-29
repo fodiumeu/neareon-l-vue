@@ -123,6 +123,19 @@ test('my events separates active attendances and pending requests', function () 
         'slug' => 'abgesagte-teilnahme',
         'status' => Event::STATUS_CANCELLED,
     ]);
+    $pastAttendanceEvent = Event::factory()->for($owner, 'owner')->create([
+        'title' => 'Vergangene Teilnahme',
+        'slug' => 'vergangene-teilnahme',
+        'starts_at' => now()->subDays(3),
+        'ends_at' => now()->subDays(3)->addHours(2),
+    ]);
+    $pastPendingEvent = Event::factory()->for($owner, 'owner')->create([
+        'title' => 'Vergangene Anfrage',
+        'slug' => 'vergangene-anfrage',
+        'starts_at' => now()->subDays(2),
+        'ends_at' => now()->subDay(),
+        'visibility' => Event::VISIBILITY_REQUEST,
+    ]);
 
     EventAttendee::factory()
         ->for($attendingEvent)
@@ -141,6 +154,15 @@ test('my events separates active attendances and pending requests', function () 
         ->for($cancelledAttendanceEvent)
         ->for($viewer)
         ->create(['status' => EventAttendee::STATUS_ACTIVE]);
+    EventAttendee::factory()
+        ->for($pastAttendanceEvent)
+        ->for($viewer)
+        ->create(['status' => EventAttendee::STATUS_ACTIVE]);
+    EventAttendee::factory()
+        ->pending()
+        ->for($pastPendingEvent)
+        ->for($viewer)
+        ->create();
 
     $this->actingAs($viewer)
         ->get(route('events.mine'))

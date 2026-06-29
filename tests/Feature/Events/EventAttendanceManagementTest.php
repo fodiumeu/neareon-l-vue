@@ -363,6 +363,38 @@ test('full event blocks accepting request and keeps pending attendance', functio
     expect($pending->refresh()->status)->toBe(EventAttendee::STATUS_PENDING);
 });
 
+test('past event blocks accepting request but allows declining old request', function () {
+    $owner = User::factory()->create();
+    createOnboardedProfile($owner);
+    $requester = User::factory()->create();
+    createOnboardedProfile($requester);
+    $event = Event::factory()->for($owner, 'owner')->create([
+        'slug' => 'past-event-blocks-accept',
+        'visibility' => Event::VISIBILITY_REQUEST,
+        'starts_at' => now()->subDays(2),
+        'ends_at' => now()->subDay(),
+    ]);
+    $pending = EventAttendee::factory()
+        ->pending()
+        ->for($event)
+        ->for($requester)
+        ->create();
+
+    $this->actingAs($owner)
+        ->patch(route('events.attendance.accept', [$event->slug, $pending->id]))
+        ->assertSessionHasErrors(['attendance' => 'Dieses Event ist bereits vorbei.'])
+        ->assertRedirect(route('events.show', $event->slug));
+
+    expect($pending->refresh()->status)->toBe(EventAttendee::STATUS_PENDING);
+
+    $this->actingAs($owner)
+        ->delete(route('events.attendance.decline', [$event->slug, $pending->id]))
+        ->assertSessionHas('success', 'Teilnahme-Anfrage abgelehnt.')
+        ->assertRedirect(route('events.show', $event->slug));
+
+    expect(EventAttendee::query()->whereKey($pending->id)->exists())->toBeFalse();
+});
+
 test('event index counts only active attendees and updates after request acceptance', function () {
     $owner = User::factory()->create();
     createOnboardedProfile($owner);

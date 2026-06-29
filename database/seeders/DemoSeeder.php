@@ -315,6 +315,8 @@ class DemoSeeder extends Seeder
      */
     private function seedEvents(array $users, $interests): array
     {
+        $this->removeLegacyPastDiscoverEvent();
+
         $events = [
             'public' => $this->event(
                 'demo-hamburg-community-abend',
@@ -357,16 +359,6 @@ class DemoSeeder extends Seeder
                 Event::VISIBILITY_PUBLIC,
                 Event::STATUS_CANCELLED,
             ),
-            'past' => $this->event(
-                'demo-vergangener-spaziergang',
-                $users['mira'],
-                $interests->get('community'),
-                'Demo Vergangener Spaziergang',
-                'Vergangenes Demo-Event fuer Listen- und Dashboard-Abgrenzung.',
-                now()->subDays(7)->setTime(15, 0),
-                'Hamburg',
-                Event::VISIBILITY_PUBLIC,
-            ),
         ];
 
         $this->eventAttendee($events['public'], $users['fodi']);
@@ -375,9 +367,23 @@ class DemoSeeder extends Seeder
         $this->eventAttendee($events['request'], $users['jonas'], EventAttendee::STATUS_PENDING);
         $this->eventAttendee($events['owned'], $users['mira']);
         $this->eventAttendee($events['cancelled'], $users['lea']);
-        $this->eventAttendee($events['past'], $users['fodi']);
 
         return $events;
+    }
+
+    private function removeLegacyPastDiscoverEvent(): void
+    {
+        Event::query()
+            ->where(function ($query): void {
+                $query
+                    ->where('slug', 'demo-vergangener-spaziergang')
+                    ->orWhere(function ($titleQuery): void {
+                        $titleQuery
+                            ->where('title', 'Demo Vergangener Spaziergang')
+                            ->where('slug', 'like', 'demo-%');
+                    });
+            })
+            ->delete();
     }
 
     private function event(

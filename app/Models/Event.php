@@ -115,7 +115,40 @@ class Event extends Model
     }
 
     /**
-     * Restrict the query to active public/request events.
+     * Restrict the query to events that are upcoming, ongoing, or undated.
+     *
+     * @param  Builder<Event>  $query
+     * @return Builder<Event>
+     */
+    public function scopeNotPast(Builder $query): Builder
+    {
+        return $query->where(function (Builder $timeQuery): void {
+            $timeQuery
+                ->whereNull('starts_at')
+                ->orWhere('starts_at', '>=', now())
+                ->orWhere(function (Builder $ongoingQuery): void {
+                    $ongoingQuery
+                        ->whereNotNull('ends_at')
+                        ->where('ends_at', '>=', now());
+                });
+        });
+    }
+
+    public function isPast(): bool
+    {
+        if ($this->starts_at === null) {
+            return false;
+        }
+
+        if ($this->ends_at !== null) {
+            return $this->ends_at->isPast();
+        }
+
+        return $this->starts_at->isPast();
+    }
+
+    /**
+     * Restrict the query to active current public/request events.
      *
      * @param  Builder<Event>  $query
      * @return Builder<Event>
@@ -124,6 +157,7 @@ class Event extends Model
     {
         return $query
             ->active()
+            ->notPast()
             ->whereIn('visibility', [
                 self::VISIBILITY_PUBLIC,
                 self::VISIBILITY_REQUEST,

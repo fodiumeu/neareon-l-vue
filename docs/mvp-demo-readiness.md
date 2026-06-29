@@ -1,6 +1,6 @@
 # MVP-Demo-Readiness
 
-Stand: v0.10.60-navigation-stable
+Stand: v0.10.62-demo-seeder
 
 ## Aktuelle MVP-Bereiche
 
@@ -23,18 +23,18 @@ Stand: v0.10.60-navigation-stable
 
 ## Bewusste MVP-Grenzen
 
-- Es gibt keinen großen DemoSeeder mit vollständigen, miteinander verknüpften Demo-Nutzern, Gruppen, Events, Nachrichten und Benachrichtigungen.
+- Der DemoSeeder bleibt bewusst kompakt und synthetisch; er ersetzt keine produktive Datenpflege und keine fachliche Rollen-/Payment-Erweiterung.
 - Business-/Unternehmensprofile, Monetarisierung, Payment, bezahlte Gruppen/Events und neue Rollen sind nicht Teil des aktuellen MVP.
 - Admin/Stammdaten sind für die MVP-Pflege vorhanden, aber nicht als Demo-Hauptbereich ausgebaut.
 - Einige Datenstände müssen aktuell über Factories, Tests oder manuelle Nutzung erzeugt werden.
 
 ## Empfohlene nächste Schritte vor V0.1.00
 
-- Modul 136B sollte einen kleinen, idempotenten DemoSeeder ergänzen.
-- Der DemoSeeder sollte mehrere Nutzer mit Regionen, Sprachen, Interessen, Kontakten, Kontaktanfragen, Gruppenrollen, Event-Teilnahmen, Pending-Anfragen, Nachrichten und Benachrichtigungen erzeugen.
+- Demo-Daten sollten fuer Praesentationen regelmaessig frisch geseedet werden.
+- Sichtbare Demo-Events in Entdecken sollten kommende Termine bleiben, damit die MVP-Oberflaeche nicht wie ein Altbestand wirkt.
 - Eine kurze Demo-Checkliste für Moderation, Privacy und mobile Präsentation wäre sinnvoll.
 - Optional kann die Präsentationsumgebung feste Demo-Accounts mit klaren Rollen und Passwörtern erhalten.
 
 ## DemoSeeder-Empfehlung
 
-Ein eigener DemoSeeder ist als nächster Schritt sinnvoll. Er sollte klein bleiben, nur synthetische Daten verwenden und keine neuen Tabellen oder Fachlogik einführen.
+Der eigene DemoSeeder bleibt klein, idempotent, synthetisch und nicht automatisch in `DatabaseSeeder` verdrahtet. Er erzeugt Demo-Nutzer, Profile, Kontakte, Gruppen, Events, Nachrichten und Benachrichtigungen ohne neue Tabellen oder Fachlogik.

@@ -1,6 +1,6 @@
 # NEAREON DemoSeeder
 
-Der `DemoSeeder` erzeugt optionale, synthetische MVP-Daten fuer lokale Demos und Praesentationspruefungen. Er ist bewusst nicht in `DatabaseSeeder` verdrahtet.
+Der `DemoSeeder` erzeugt optionale, synthetische MVP-Daten fuer lokale Demos und Praesentationspruefungen. Er ist primaer fuer eine vorfuehrbare MVP-Oberflaeche gedacht und bewusst nicht in `DatabaseSeeder` verdrahtet.
 
 Ausfuehren:
 
@@ -24,4 +24,4 @@ Gemeinsames Passwort:
 neareon-demo
 ```
 
-Der Datensatz enthaelt onboarded Profile mit Sprachen und Interessen, Kontakte/Follows, offene Kontaktanfragen, oeffentliche und anfragebasierte Gruppen, private Demo-Gruppen, kommende und abgesagte Events, eine Demo-Unterhaltung sowie interne Benachrichtigungen.
+Der Datensatz enthaelt onboarded Profile mit Sprachen und Interessen, Kontakte/Follows, offene Kontaktanfragen, oeffentliche und anfragebasierte Gruppen, private Demo-Gruppen, kommende und abgesagte Events, eine Demo-Unterhaltung sowie interne Benachrichtigungen. Sichtbare Entdecken-Events werden als kommende Demo-Termine gehalten, damit die Praesentationsansicht aktuell wirkt.

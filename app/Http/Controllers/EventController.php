@@ -97,6 +97,7 @@ class EventController extends Controller
 
         $attendingEvents = Event::query()
             ->where('status', Event::STATUS_ACTIVE)
+            ->notPast()
             ->whereHas('attendees', fn (Builder $query) => $query
                 ->where('user_id', $viewer->id)
                 ->where('status', EventAttendee::STATUS_ACTIVE))
@@ -115,6 +116,7 @@ class EventController extends Controller
 
         $pendingEvents = Event::query()
             ->where('status', Event::STATUS_ACTIVE)
+            ->notPast()
             ->whereHas('attendees', fn (Builder $query) => $query
                 ->where('user_id', $viewer->id)
                 ->where('status', EventAttendee::STATUS_PENDING))
@@ -177,7 +179,8 @@ class EventController extends Controller
 
         $canEdit = $this->canManageEvent($event, $viewer);
         $canManageAttendanceRequests = $this->canManageAttendanceRequests($event, $viewer)
-            && $event->status === Event::STATUS_ACTIVE;
+            && $event->status === Event::STATUS_ACTIVE
+            && ! $event->isPast();
         $backLink = $this->eventBackLink($request);
 
         return Inertia::render('Events/Show', [
@@ -269,8 +272,13 @@ class EventController extends Controller
     {
         $viewer = $request->user();
 
-        abort_unless($this->canUseAttendance($event), 404);
+        abort_unless($this->canUseAttendanceSurface($event), 404);
         abort_if($event->owner_id === $viewer->id, 403);
+
+        if ($event->isPast()) {
+            return to_route('events.show', ['event' => $event->slug])
+                ->withErrors(['attendance' => 'Dieses Event ist bereits vorbei.']);
+        }
 
         $attendance = EventAttendee::query()
             ->where('event_id', $event->id)
@@ -375,6 +383,11 @@ class EventController extends Controller
         abort_unless($this->canManageAttendanceRequests($event, $viewer), 403);
         $this->ensureProcessableAttendanceRequest($event, $attendee);
 
+        if ($event->isPast()) {
+            return to_route('events.show', ['event' => $event->slug])
+                ->withErrors(['attendance' => 'Dieses Event ist bereits vorbei.']);
+        }
+
         if ($this->eventIsFull($event)) {
             return to_route('events.show', ['event' => $event->slug])
                 ->withErrors(['attendance' => 'Dieses Event ist bereits ausgebucht.']);
@@ -443,6 +456,12 @@ class EventController extends Controller
     }
 
     private function canUseAttendance(Event $event): bool
+    {
+        return $this->canUseAttendanceSurface($event)
+            && ! $event->isPast();
+    }
+
+    private function canUseAttendanceSurface(Event $event): bool
     {
         return $event->status === Event::STATUS_ACTIVE
             && in_array($event->visibility, [
@@ -804,6 +823,7 @@ class EventController extends Controller
             'visibility_label' => $this->visibilityLabel($event->visibility),
             'status' => $event->status,
             'status_label' => $this->statusLabel($event->status),
+            'is_past' => $event->isPast(),
             'category' => $event->category !== null
                 ? $this->categoryData($event->category)
                 : null,

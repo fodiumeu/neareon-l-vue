@@ -258,6 +258,31 @@ test('cancelled event and invalid visibility cannot be joined', function (array 
     ]],
 ]);
 
+test('past public and request events cannot receive new attendance', function (string $visibility) {
+    $user = User::factory()->create();
+    createOnboardedProfile($user);
+    $event = Event::factory()->create([
+        'slug' => "past-{$visibility}-attendance",
+        'visibility' => $visibility,
+        'status' => Event::STATUS_ACTIVE,
+        'starts_at' => now()->subDays(2),
+        'ends_at' => now()->subDay(),
+    ]);
+
+    $this->actingAs($user)
+        ->post(route('events.attendance.store', $event->slug))
+        ->assertSessionHasErrors(['attendance' => 'Dieses Event ist bereits vorbei.'])
+        ->assertRedirect(route('events.show', $event->slug));
+
+    expect(EventAttendee::query()
+        ->where('event_id', $event->id)
+        ->where('user_id', $user->id)
+        ->exists())->toBeFalse();
+})->with([
+    Event::VISIBILITY_PUBLIC,
+    Event::VISIBILITY_REQUEST,
+]);
+
 test('full public and request events reject new attendance but keep existing active attendee visible', function (string $visibility) {
     $existing = User::factory()->create();
     createOnboardedProfile($existing);
@@ -378,6 +403,47 @@ test('event index and detail expose attendance props according to viewer state',
     'pending' => [EventAttendee::STATUS_PENDING, 'pending', null, 'destroy'],
 ]);
 
+test('past event detail keeps page visible but hides attendance actions', function (string $status, string $role) {
+    $user = User::factory()->create();
+    createOnboardedProfile($user);
+    $event = Event::factory()->create([
+        'slug' => "past-detail-{$status}",
+        'visibility' => Event::VISIBILITY_PUBLIC,
+        'starts_at' => now()->subDays(2),
+        'ends_at' => now()->subDay(),
+    ]);
+
+    if ($status === EventAttendee::STATUS_ACTIVE) {
+        EventAttendee::factory()
+            ->for($event)
+            ->for($user)
+            ->create();
+    } elseif ($status === EventAttendee::STATUS_PENDING) {
+        EventAttendee::factory()
+            ->pending()
+            ->for($event)
+            ->for($user)
+            ->create();
+    }
+
+    $this->actingAs($user)
+        ->get(route('events.show', $event->slug))
+        ->assertOk()
+        ->assertInertia(fn (Assert $page) => $page
+            ->where('event.is_past', true)
+            ->where('event.viewer_event_role', $role)
+            ->where('event.can_join', false)
+            ->where('event.can_request', false)
+            ->where('event.can_leave', false)
+            ->where('event.attendance_store_url', null)
+            ->where('event.attendance_destroy_url', null),
+        );
+})->with([
+    'none' => ['none', 'none'],
+    'active' => [EventAttendee::STATUS_ACTIVE, 'attendee'],
+    'pending' => [EventAttendee::STATUS_PENDING, 'pending'],
+]);
+
 test('event attendance vue pages contain expected action copy and dialogs', function () {
     $index = file_get_contents(resource_path('js/pages/Events/Index.vue'));
     $show = file_get_contents(resource_path('js/pages/Events/Show.vue'));
@@ -402,5 +468,6 @@ test('event attendance vue pages contain expected action copy and dialogs', func
         ->toContain('Du bist Veranstalter dieses Events.')
         ->toContain('Du kannst direkt an diesem Event teilnehmen.')
         ->toContain('Sende eine Teilnahme-Anfrage, um an diesem Event teilzunehmen.')
+        ->toContain('Dieses Event ist bereits vorbei.')
         ->toContain('Dieses Event ist bereits ausgebucht.');
 });

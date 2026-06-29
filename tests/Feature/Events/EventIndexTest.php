@@ -122,6 +122,57 @@ test('events index sorts by start date and stable id', function () {
         );
 });
 
+test('events index hides past visible events but keeps ongoing and upcoming events', function () {
+    $viewer = User::factory()->create();
+    createOnboardedProfile($viewer);
+    $pastPublic = Event::factory()->create([
+        'title' => 'Vergangenes Public Event',
+        'starts_at' => now()->subDays(3),
+        'ends_at' => now()->subDays(3)->addHours(2),
+        'visibility' => Event::VISIBILITY_PUBLIC,
+        'status' => Event::STATUS_ACTIVE,
+    ]);
+    $pastRequest = Event::factory()->create([
+        'title' => 'Vergangenes Request Event',
+        'starts_at' => now()->subDays(2),
+        'ends_at' => now()->subDay(),
+        'visibility' => Event::VISIBILITY_REQUEST,
+        'status' => Event::STATUS_ACTIVE,
+    ]);
+    $ongoing = Event::factory()->create([
+        'title' => 'Laufendes Event',
+        'starts_at' => now()->subHour(),
+        'ends_at' => now()->addHour(),
+        'visibility' => Event::VISIBILITY_PUBLIC,
+        'status' => Event::STATUS_ACTIVE,
+    ]);
+    $upcoming = Event::factory()->create([
+        'title' => 'Kommendes Event',
+        'starts_at' => now()->addDays(2),
+        'ends_at' => now()->addDays(2)->addHours(2),
+        'visibility' => Event::VISIBILITY_REQUEST,
+        'status' => Event::STATUS_ACTIVE,
+    ]);
+    Event::factory()->create([
+        'title' => 'Abgesagtes Event',
+        'starts_at' => now()->addDay(),
+        'status' => Event::STATUS_CANCELLED,
+    ]);
+
+    $this->actingAs($viewer)
+        ->get(route('events.index'))
+        ->assertOk()
+        ->assertInertia(fn (Assert $page) => $page
+            ->has('events.data', 2)
+            ->where('events.data.0.id', $ongoing->id)
+            ->where('events.data.1.id', $upcoming->id),
+        );
+
+    expect(Event::query()->visibleForDiscover()->pluck('id')->all())
+        ->toContain($ongoing->id, $upcoming->id)
+        ->not->toContain($pastPublic->id, $pastRequest->id);
+});
+
 test('events index paginates visible events and keeps query strings', function () {
     $viewer = User::factory()->create();
     createOnboardedProfile($viewer);
@@ -144,6 +195,26 @@ test('events index paginates visible events and keeps query strings', function (
             ->where('events.last_page', 2)
             ->where('filters.q', 'Berlin')
             ->where('events.next_page_url', fn (?string $url): bool => $url !== null && str_contains($url, 'q=Berlin')),
+        );
+});
+
+test('events index search does not find past events', function () {
+    $viewer = User::factory()->create();
+    createOnboardedProfile($viewer);
+    Event::factory()->create([
+        'title' => 'Archivierter Spaziergang',
+        'description' => 'Vergangene Demo-Suche',
+        'starts_at' => now()->subDays(4),
+        'ends_at' => now()->subDays(4)->addHours(2),
+        'visibility' => Event::VISIBILITY_PUBLIC,
+        'status' => Event::STATUS_ACTIVE,
+    ]);
+
+    $this->actingAs($viewer)
+        ->get(route('events.index', ['q' => 'Archivierter']))
+        ->assertOk()
+        ->assertInertia(fn (Assert $page) => $page
+            ->has('events.data', 0),
         );
 });
 
@@ -193,6 +264,48 @@ test('events index searches visible events by title description region postal co
     'category label' => ['Urban Culture', 'Silent Reading'],
     'category slug' => ['urban-culture', 'Silent Reading'],
 ]);
+
+test('events index filter options ignore past events', function () {
+    $viewer = User::factory()->create();
+    createOnboardedProfile($viewer);
+    $pastCategory = InterestOption::query()->create([
+        'slug' => 'past-only-category',
+        'label' => 'Vergangene Kategorie',
+        'is_active' => true,
+    ]);
+    $upcomingCategory = InterestOption::query()->create([
+        'slug' => 'upcoming-category',
+        'label' => 'Kommende Kategorie',
+        'is_active' => true,
+    ]);
+
+    Event::factory()->create([
+        'title' => 'Altes Filter Event',
+        'region' => 'Altstadt',
+        'starts_at' => now()->subDays(5),
+        'ends_at' => now()->subDays(5)->addHours(2),
+        'category_interest_option_id' => $pastCategory->id,
+        'visibility' => Event::VISIBILITY_PUBLIC,
+        'status' => Event::STATUS_ACTIVE,
+    ]);
+    Event::factory()->create([
+        'title' => 'Aktuelles Filter Event',
+        'region' => 'Neustadt',
+        'starts_at' => now()->addDays(5),
+        'category_interest_option_id' => $upcomingCategory->id,
+        'visibility' => Event::VISIBILITY_PUBLIC,
+        'status' => Event::STATUS_ACTIVE,
+    ]);
+
+    $this->actingAs($viewer)
+        ->get(route('events.index'))
+        ->assertOk()
+        ->assertInertia(fn (Assert $page) => $page
+            ->where('filterOptions.regions', ['Neustadt'])
+            ->has('filterOptions.categories', 1)
+            ->where('filterOptions.categories.0.slug', 'upcoming-category'),
+        );
+});
 
 test('events index filters by region category visibility and combinations', function () {
     $viewer = User::factory()->create();

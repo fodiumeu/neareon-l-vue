@@ -30,6 +30,7 @@ type EventDetail = {
     visibility_label: string;
     status: 'active' | 'cancelled';
     status_label: string;
+    is_past: boolean;
     category: {
         id: number;
         slug: string;
@@ -145,6 +146,10 @@ const participationLabel = (event: EventDetail) => {
 };
 
 const participationText = (event: EventDetail) => {
+    if (event.is_past) {
+        return 'Dieses Event ist bereits vorbei.';
+    }
+
     if (event.viewer_event_role === 'owner') {
         return 'Du bist Veranstalter dieses Events.';
     }
@@ -363,6 +368,13 @@ defineOptions({
                         class="rounded-md border border-destructive/25 bg-destructive/10 px-3 py-2 text-sm leading-6 text-destructive"
                     >
                         Dieses Event wurde abgesagt.
+                    </p>
+
+                    <p
+                        v-else-if="event.is_past"
+                        class="rounded-md border border-border bg-muted/40 px-3 py-2 text-sm leading-6 text-muted-foreground"
+                    >
+                        Dieses Event ist bereits vorbei.
                     </p>
 
                     <div class="grid min-w-0 gap-4 md:grid-cols-2 xl:grid-cols-3">

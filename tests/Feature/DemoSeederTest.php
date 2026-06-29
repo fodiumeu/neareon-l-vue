@@ -110,12 +110,11 @@ test('demo seeder creates events with active pending and cancelled states', func
             'demo-berlin-kulturabend',
             'demo-fodi-tech-cafe',
             'demo-abgesagter-brunch',
-            'demo-vergangener-spaziergang',
         ])
         ->get()
         ->keyBy('slug');
 
-    expect($events)->toHaveCount(5)
+    expect($events)->toHaveCount(4)
         ->and($events->get('demo-berlin-kulturabend')->visibility)->toBe(Event::VISIBILITY_REQUEST)
         ->and($events->get('demo-abgesagter-brunch')->status)->toBe(Event::STATUS_CANCELLED)
         ->and(EventAttendee::query()
@@ -126,6 +125,17 @@ test('demo seeder creates events with active pending and cancelled states', func
             ->where('event_id', $events->get('demo-berlin-kulturabend')->id)
             ->where('status', EventAttendee::STATUS_PENDING)
             ->exists())->toBeTrue();
+});
+
+test('demo seeder keeps visible discover demo events upcoming', function () {
+    runDemoSeeder();
+
+    expect(Event::query()
+        ->visibleForDiscover()
+        ->where('slug', 'like', 'demo-%')
+        ->where('starts_at', '<', now())
+        ->exists())->toBeFalse()
+        ->and(Event::query()->where('slug', 'demo-vergangener-spaziergang')->exists())->toBeFalse();
 });
 
 test('demo seeder creates conversation messages and internal notifications idempotently', function () {
