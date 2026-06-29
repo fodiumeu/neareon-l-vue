@@ -24,6 +24,7 @@ const isActiveItem = (href: (typeof mobileBottomNavItems)[number]['href']) => {
         return [
             '/community',
             '/my-groups',
+            '/my-events',
             '/contacts',
             '/followers',
             '/following',

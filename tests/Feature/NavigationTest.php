@@ -139,6 +139,7 @@ test('mobile navigation keeps a compact five item structure', function () {
         ->toContain("path === '/community'")
         ->toContain("'/community'")
         ->toContain("'/my-groups'")
+        ->toContain("'/my-events'")
         ->toContain("'/followers'")
         ->toContain("'/following'")
         ->toContain("'/contact-requests'")
