@@ -308,16 +308,16 @@ defineOptions({
                     <p
                         class="text-xs font-semibold tracking-wide text-primary uppercase"
                     >
-                        Discover
+                        Entdecken
                     </p>
                     <div class="max-w-3xl space-y-3">
                         <h2 class="text-2xl font-semibold tracking-tight">
                             Sichtbare Profile aus der Community
                         </h2>
                         <p class="text-sm leading-6 text-muted-foreground">
-                            Discover zeigt nur Profile und Angaben, die nach
-                            Sichtbarkeit freigegeben und vom Server für diese
-                            Ansicht ausgeliefert werden.
+                            Mitglieder entdecken zeigt nur Profile und Angaben,
+                            die nach Sichtbarkeit freigegeben und vom Server für
+                            diese Ansicht ausgeliefert werden.
                         </p>
                     </div>
                 </CardContent>
@@ -524,7 +524,7 @@ defineOptions({
                             filters.language ||
                             filters.interest
                                 ? 'Passe deine Suche oder Filter an. Du kannst auch wieder alle sichtbaren Profile anzeigen.'
-                                : 'Aktuell sind keine weiteren Profile für Discover freigegeben.'
+                                : 'Aktuell sind keine weiteren Profile für Mitglieder entdecken freigegeben.'
                         }}
                     </p>
                     <div
@@ -797,7 +797,7 @@ defineOptions({
             <nav
                 v-if="profiles.last_page > 1"
                 class="mt-6 hidden items-center justify-center gap-2 md:flex"
-                aria-label="Discover Seiten"
+                aria-label="Mitglieder entdecken Seiten"
             >
                 <Button
                     as-child

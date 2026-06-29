@@ -92,10 +92,15 @@ test('discover uses the polished privacy placeholder and inline follow context',
         ->toContain(
             'Einige Profilinformationen sind nur für Kontakte sichtbar.',
         )
+        ->toContain('Entdecken')
+        ->toContain('Mitglieder entdecken zeigt nur Profile und Angaben')
+        ->toContain('Mitglieder entdecken Seiten')
         ->toContain('stay-on-page')
         ->not->toContain(
             'Weitere Angaben sind für Discover aktuell nicht sichtbar.',
         )
+        ->not->toContain('Discover zeigt nur Profile und Angaben')
+        ->not->toContain('für Discover freigegeben')
         ->and($actions)
         ->toContain('name="context"')
         ->toContain('value="discover"');
