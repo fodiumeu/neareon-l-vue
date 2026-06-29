@@ -1,6 +1,6 @@
 # MVP-Demo-Readiness
 
-Stand: v0.10.62-demo-seeder
+Stand: v0.10.63-past-event-guard
 
 ## Aktuelle MVP-Bereiche
 
@@ -9,6 +9,7 @@ Stand: v0.10.62-demo-seeder
 - Community-Bereich bündelt Kontakte, Follower, Kontaktanfragen, Blockierungen, Meine Gruppen und Meine Events.
 - Gruppen-MVP deckt Discover, Detailseite, Erstellung/Bearbeitung, Mitgliedschaft, Beitrittsanfragen und einfache Rollenverwaltung ab.
 - Event-MVP deckt Discover, Detailseite, Erstellung/Bearbeitung, Teilnahme/Anfrage, Anfrageverwaltung, Absage/Wiederherstellung, Meine Events und Benachrichtigungen ab.
+- Events entdecken zeigt aktive public/request Events nur, solange sie kommend oder laufend sind; vergangene Events bleiben von Discover und neuen Teilnahmen ausgeschlossen.
 - Nachrichten, Benachrichtigungen, Profil, Profilbearbeitung, Einstellungen und Onboarding sind als MVP-Flows vorhanden.
 
 ## Vorführbare Demo-Flows
