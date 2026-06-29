@@ -51,6 +51,7 @@ class EventController extends Controller
             ->through(fn (Event $event): array => $this->eventSummaryData($event));
 
         return Inertia::render('Events/Index', [
+            'backLink' => $this->discoverBackLink($request),
             'events' => $events,
             'filters' => $filters,
             'filterOptions' => [
@@ -131,6 +132,7 @@ class EventController extends Controller
             ->all();
 
         return Inertia::render('Events/MyEvents', [
+            'backLink' => $this->communityBackLink($request),
             'owned_events' => $ownedEvents,
             'attending_events' => $attendingEvents,
             'pending_events' => $pendingEvents,
@@ -476,6 +478,10 @@ class EventController extends Controller
     private function eventBackLink(Request $request): array
     {
         return match ($request->query('from')) {
+            'home' => [
+                'url' => route('dashboard'),
+                'label' => 'Zurück zu Home',
+            ],
             'my-events' => [
                 'url' => route('events.mine'),
                 'label' => 'Zurück zu Meine Events',
@@ -485,6 +491,48 @@ class EventController extends Controller
                 'label' => 'Zurück zu Events',
             ],
         };
+    }
+
+    /**
+     * @return array{href: string, label: string, source: string|null}
+     */
+    private function discoverBackLink(Request $request): array
+    {
+        return match ($request->string('from')->toString()) {
+            'home' => [
+                'href' => route('dashboard', absolute: false),
+                'label' => 'Zurück zu Home',
+                'source' => 'home',
+            ],
+            'explore' => [
+                'href' => route('explore.index', absolute: false),
+                'label' => 'Zurück zu Entdecken',
+                'source' => 'explore',
+            ],
+            default => [
+                'href' => route('explore.index', absolute: false),
+                'label' => 'Zurück zu Entdecken',
+                'source' => null,
+            ],
+        };
+    }
+
+    /**
+     * @return array{href: string, label: string, source: string|null}
+     */
+    private function communityBackLink(Request $request): array
+    {
+        return $request->string('from')->toString() === 'home'
+            ? [
+                'href' => route('dashboard', absolute: false),
+                'label' => 'Zurück zu Home',
+                'source' => 'home',
+            ]
+            : [
+                'href' => route('community.index', absolute: false),
+                'label' => 'Zurück zur Community',
+                'source' => null,
+            ];
     }
 
     /**

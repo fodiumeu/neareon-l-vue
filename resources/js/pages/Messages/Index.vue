@@ -29,7 +29,14 @@ type Conversation = {
     };
 };
 
+type BackLink = {
+    href: string;
+    label: string;
+    source: 'home';
+};
+
 defineProps<{
+    backLink: BackLink | null;
     conversations: Conversation[];
 }>();
 
@@ -62,6 +69,17 @@ defineOptions({
     <div
         class="mx-auto flex h-full w-full max-w-4xl flex-1 flex-col gap-6 overflow-x-auto p-4 sm:p-6"
     >
+        <Button
+            v-if="backLink"
+            as-child
+            variant="secondary"
+            class="max-w-full min-w-0 w-fit"
+        >
+            <Link :href="backLink.href" class="min-w-0 truncate">
+                ← {{ backLink.label }}
+            </Link>
+        </Button>
+
         <PageHeader
             title="Unterhaltungen"
             description="Hier siehst du deine bestehenden Unterhaltungen."

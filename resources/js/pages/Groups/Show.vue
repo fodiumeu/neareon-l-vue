@@ -52,7 +52,7 @@ type GroupDetail = {
     visibility_label: string;
     member_count: number;
     back_label: string;
-    back_source: 'groups' | 'my-groups';
+    back_source: 'home' | 'groups' | 'my-groups';
     back_url: string;
     can_edit: boolean;
     can_manage_requests: boolean;

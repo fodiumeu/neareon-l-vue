@@ -59,6 +59,7 @@ class GroupController extends Controller
             ->through(fn (Group $group): array => $this->groupSummary($group, $viewer, self::SOURCE_GROUPS));
 
         return Inertia::render('Groups/Index', [
+            'backLink' => $this->discoverBackLink($request),
             'groups' => $groups,
             'filters' => $filters,
             'filterOptions' => [
@@ -296,6 +297,7 @@ class GroupController extends Controller
             ->through(fn (Group $group): array => $this->groupSummary($group, $viewer, self::SOURCE_MY_GROUPS));
 
         return Inertia::render('Groups/MyGroups', [
+            'backLink' => $this->communityBackLink($request),
             'groups' => $groups,
         ]);
     }
@@ -704,11 +706,54 @@ class GroupController extends Controller
             ?: $request->string('from')->toString();
 
         return in_array($source, [
+            'home',
             self::SOURCE_GROUPS,
             self::SOURCE_MY_GROUPS,
         ], true)
             ? $source
             : null;
+    }
+
+    /**
+     * @return array{href: string, label: string, source: string|null}
+     */
+    private function discoverBackLink(Request $request): array
+    {
+        return match ($request->string('from')->toString()) {
+            'home' => [
+                'href' => route('dashboard', absolute: false),
+                'label' => 'Zurück zu Home',
+                'source' => 'home',
+            ],
+            'explore' => [
+                'href' => route('explore.index', absolute: false),
+                'label' => 'Zurück zu Entdecken',
+                'source' => 'explore',
+            ],
+            default => [
+                'href' => route('explore.index', absolute: false),
+                'label' => 'Zurück zu Entdecken',
+                'source' => null,
+            ],
+        };
+    }
+
+    /**
+     * @return array{href: string, label: string, source: string|null}
+     */
+    private function communityBackLink(Request $request): array
+    {
+        return $request->string('from')->toString() === 'home'
+            ? [
+                'href' => route('dashboard', absolute: false),
+                'label' => 'Zurück zu Home',
+                'source' => 'home',
+            ]
+            : [
+                'href' => route('community.index', absolute: false),
+                'label' => 'Zurück zur Community',
+                'source' => null,
+            ];
     }
 
     /**
@@ -719,6 +764,7 @@ class GroupController extends Controller
         $parameters = ['group' => $group->slug];
 
         if (in_array($source, [
+            'home',
             self::SOURCE_GROUPS,
             self::SOURCE_MY_GROUPS,
         ], true)) {
@@ -744,17 +790,23 @@ class GroupController extends Controller
                 : self::SOURCE_GROUPS;
         }
 
-        return $backSource === self::SOURCE_MY_GROUPS
-            ? [
+        return match ($backSource) {
+            'home' => [
+                'back_url' => route('dashboard'),
+                'back_label' => 'Zurück zu Home',
+                'back_source' => 'home',
+            ],
+            self::SOURCE_MY_GROUPS => [
                 'back_url' => route('groups.mine'),
                 'back_label' => 'Zurück zu Meine Gruppen',
                 'back_source' => self::SOURCE_MY_GROUPS,
-            ]
-            : [
+            ],
+            default => [
                 'back_url' => route('groups.index'),
                 'back_label' => 'Zurück zu Gruppen entdecken',
                 'back_source' => self::SOURCE_GROUPS,
-            ];
+            ],
+        };
     }
 
     private function uniqueSlug(string $name): string

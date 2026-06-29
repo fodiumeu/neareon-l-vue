@@ -461,8 +461,8 @@ test('groups index page includes empty state card and read only group actions', 
 
     expect($page)
         ->toContain('Gruppen entdecken')
-        ->toContain('← Zurück zu Entdecken')
-        ->toContain('href="/explore"')
+        ->toContain('← {{ backLink.label }}')
+        ->toContain(':href="backLink.href"')
         ->toContain('Entdecke öffentliche und offene Gruppen')
         ->toContain('class="group-filter-controls"')
         ->toContain('Gruppen durchsuchen')

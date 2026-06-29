@@ -60,6 +60,12 @@ type DiscoverFilterOptions = {
     interests: string[];
 };
 
+type BackLink = {
+    href: string;
+    label: string;
+    source: 'home' | 'explore' | null;
+};
+
 type PaginationLink = {
     url: string | null;
     label: string;
@@ -78,6 +84,7 @@ type PaginatedProfiles = {
 };
 
 const props = defineProps<{
+    backLink: BackLink;
     profiles: PaginatedProfiles;
     search: string;
     filters: DiscoverFilters;
@@ -146,6 +153,10 @@ const runSearch = () => {
 
     if (selectedInterest.value) {
         params.interest = selectedInterest.value;
+    }
+
+    if (props.backLink.source) {
+        params.from = props.backLink.source;
     }
 
     if (
@@ -279,8 +290,8 @@ defineOptions({
             variant="secondary"
             class="max-w-full min-w-0 w-fit"
         >
-            <Link href="/explore" class="min-w-0 truncate">
-                ← Zurück zu Entdecken
+            <Link :href="backLink.href" class="min-w-0 truncate">
+                ← {{ backLink.label }}
             </Link>
         </Button>
 

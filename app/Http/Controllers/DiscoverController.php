@@ -93,11 +93,36 @@ class DiscoverController extends Controller
                 ));
 
         return Inertia::render('Discover', [
+            'backLink' => $this->backLink($request),
             'profiles' => Inertia::scroll($profiles),
             'search' => $search,
             'filters' => $filters,
             'filterOptions' => $filterOptions,
         ]);
+    }
+
+    /**
+     * @return array{href: string, label: string, source: string|null}
+     */
+    private function backLink(Request $request): array
+    {
+        return match ($request->string('from')->toString()) {
+            'home' => [
+                'href' => route('dashboard', absolute: false),
+                'label' => 'Zurück zu Home',
+                'source' => 'home',
+            ],
+            'explore' => [
+                'href' => route('explore.index', absolute: false),
+                'label' => 'Zurück zu Entdecken',
+                'source' => 'explore',
+            ],
+            default => [
+                'href' => route('explore.index', absolute: false),
+                'label' => 'Zurück zu Entdecken',
+                'source' => null,
+            ],
+        };
     }
 
     private function visibleProfilesQuery(User $viewer): Builder

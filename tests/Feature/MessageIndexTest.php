@@ -206,6 +206,35 @@ test('the conversation index returns an empty collection without conversations',
         );
 });
 
+test('conversation index supports the safe home backlink context', function () {
+    $viewer = User::factory()->create();
+    createOnboardedProfile($viewer);
+
+    $this->actingAs($viewer)
+        ->get(route('messages.index', ['from' => 'home']))
+        ->assertOk()
+        ->assertInertia(fn (Assert $page) => $page
+            ->component('Messages/Index')
+            ->where('backLink.href', route('dashboard', absolute: false))
+            ->where('backLink.label', 'Zurück zu Home')
+            ->where('backLink.source', 'home'),
+        );
+});
+
+test('conversation index ignores invalid backlink context values', function () {
+    $viewer = User::factory()->create();
+    createOnboardedProfile($viewer);
+
+    $this->actingAs($viewer)
+        ->get(route('messages.index', ['from' => 'https://evil.example']))
+        ->assertOk()
+        ->assertDontSee('https://evil.example')
+        ->assertInertia(fn (Assert $page) => $page
+            ->component('Messages/Index')
+            ->where('backLink', null),
+        );
+});
+
 test('age gate middleware protects the conversation index', function () {
     $user = User::factory()->withoutAgeGate()->create();
 

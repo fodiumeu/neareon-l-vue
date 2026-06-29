@@ -261,6 +261,28 @@ test('group detail honors allowed backlink source from my groups', function () {
         );
 });
 
+test('group detail honors allowed backlink source from home', function () {
+    $viewer = User::factory()->create();
+    createOnboardedProfile($viewer);
+    $group = Group::factory()->create([
+        'slug' => 'from-home-detail',
+        'visibility' => Group::VISIBILITY_PUBLIC,
+    ]);
+
+    $this->actingAs($viewer)
+        ->get(route('groups.show', [
+            'group' => $group->slug,
+            'from' => 'home',
+        ]))
+        ->assertOk()
+        ->assertInertia(fn (Assert $page) => $page
+            ->component('Groups/Show')
+            ->where('group.back_url', route('dashboard'))
+            ->where('group.back_label', 'Zurück zu Home')
+            ->where('group.back_source', 'home'),
+        );
+});
+
 test('group detail ignores invalid backlink source values', function () {
     $viewer = User::factory()->create();
     createOnboardedProfile($viewer);

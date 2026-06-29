@@ -118,6 +118,7 @@ class ProfileController extends Controller
             ->get(['slug', 'label', 'is_active']);
 
         return Inertia::render('Profile/Edit', [
+            'backLink' => $this->profileEditBackLink($request),
             'profile' => [
                 'display_name' => $profile->display_name,
                 'bio' => $profile->bio,
@@ -172,6 +173,20 @@ class ProfileController extends Controller
                 ['value' => 'mutual_contacts', 'label' => 'Gegenseitige Kontakte'],
             ],
         ]);
+    }
+
+    /**
+     * @return array{href: string, label: string, source: string}|null
+     */
+    private function profileEditBackLink(Request $request): ?array
+    {
+        return $request->string('from')->toString() === 'home'
+            ? [
+                'href' => route('dashboard', absolute: false),
+                'label' => 'Zurück zu Home',
+                'source' => 'home',
+            ]
+            : null;
     }
 
     /**

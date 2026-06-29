@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Form, Head } from '@inertiajs/vue3';
+import { Form, Head, Link } from '@inertiajs/vue3';
 import { computed, onBeforeUnmount, ref } from 'vue';
 import AppBackButton from '@/components/AppBackButton.vue';
 import BioEmojiField from '@/components/BioEmojiField.vue';
@@ -42,7 +42,14 @@ type ProfileOption = {
     is_active: boolean;
 };
 
+type BackLink = {
+    href: string;
+    label: string;
+    source: 'home';
+};
+
 const props = defineProps<{
+    backLink: BackLink | null;
     profile: ProfileForm;
     languageOptions: ProfileOption[];
     interestOptions: ProfileOption[];
@@ -112,7 +119,18 @@ defineOptions({
     <Head title="Profil bearbeiten" />
 
     <div class="flex h-full flex-1 flex-col gap-6 overflow-x-auto p-4">
+        <Button
+            v-if="backLink"
+            as-child
+            variant="secondary"
+            class="max-w-full min-w-0 w-fit"
+        >
+            <Link :href="backLink.href" class="min-w-0 truncate">
+                ← {{ backLink.label }}
+            </Link>
+        </Button>
         <AppBackButton
+            v-else
             fallback="/profile"
             label="Zurück zum Profil"
             class="hidden md:inline-flex"

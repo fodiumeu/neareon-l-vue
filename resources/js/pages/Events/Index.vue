@@ -91,7 +91,14 @@ type EventFilterOptions = {
     visibilities: EventVisibilityOption[];
 };
 
+type BackLink = {
+    href: string;
+    label: string;
+    source: 'home' | 'explore' | null;
+};
+
 const props = defineProps<{
+    backLink: BackLink;
     events: PaginatedEvents;
     filters: EventDiscoverFilters;
     filterOptions: EventFilterOptions;
@@ -208,6 +215,10 @@ const runSearch = () => {
         params.visibility = selectedVisibility.value;
     }
 
+    if (props.backLink.source) {
+        params.from = props.backLink.source;
+    }
+
     if (
         query === props.filters.q &&
         selectedRegion.value === props.filters.region &&
@@ -318,8 +329,8 @@ defineOptions({
             variant="secondary"
             class="max-w-full min-w-0 w-fit"
         >
-            <Link href="/explore" class="min-w-0 truncate">
-                ← Zurück zu Entdecken
+            <Link :href="backLink.href" class="min-w-0 truncate">
+                ← {{ backLink.label }}
             </Link>
         </Button>
 

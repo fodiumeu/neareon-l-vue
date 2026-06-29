@@ -81,6 +81,27 @@ test('event detail uses safe my events backlink context', function () {
         );
 });
 
+test('event detail uses safe home backlink context', function () {
+    $viewer = User::factory()->create();
+    createOnboardedProfile($viewer);
+    $event = Event::factory()->create([
+        'slug' => 'home-backlink-context',
+        'status' => Event::STATUS_ACTIVE,
+    ]);
+
+    $this->actingAs($viewer)
+        ->get(route('events.show', [
+            'event' => $event->slug,
+            'from' => 'home',
+        ]))
+        ->assertOk()
+        ->assertInertia(fn (Assert $page) => $page
+            ->component('Events/Show')
+            ->where('event.back_url', route('dashboard'))
+            ->where('event.back_label', 'Zurück zu Home'),
+        );
+});
+
 test('event detail ignores invalid backlink context', function (string $from) {
     $viewer = User::factory()->create();
     createOnboardedProfile($viewer);

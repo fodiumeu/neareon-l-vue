@@ -19,7 +19,7 @@ test('the community backlink points to the hub without relying on browser histor
     $component = file_get_contents(resource_path('js/components/CommunityBackLink.vue'));
 
     expect($component)
-        ->toContain('href="/community"')
+        ->toContain("href: '/community'")
         ->toContain('Zurück zur Community')
         ->toContain('variant="ghost"')
         ->toContain('focus-visible:ring-primary/45')

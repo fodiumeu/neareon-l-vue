@@ -85,7 +85,14 @@ type GroupFilterOptions = {
     visibilities: GroupVisibilityOption[];
 };
 
+type BackLink = {
+    href: string;
+    label: string;
+    source: 'home' | 'explore' | null;
+};
+
 const props = defineProps<{
+    backLink: BackLink;
     groups: PaginatedGroups;
     filters: GroupDiscoverFilters;
     filterOptions: GroupFilterOptions;
@@ -154,6 +161,10 @@ const runSearch = () => {
 
     if (selectedVisibility.value) {
         params.visibility = selectedVisibility.value;
+    }
+
+    if (props.backLink.source) {
+        params.from = props.backLink.source;
     }
 
     if (
@@ -266,8 +277,8 @@ defineOptions({
             variant="secondary"
             class="max-w-full min-w-0 w-fit"
         >
-            <Link href="/explore" class="min-w-0 truncate">
-                ← Zurück zu Entdecken
+            <Link :href="backLink.href" class="min-w-0 truncate">
+                ← {{ backLink.label }}
             </Link>
         </Button>
 

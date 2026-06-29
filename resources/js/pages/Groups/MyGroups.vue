@@ -46,7 +46,14 @@ type PaginatedGroups = {
     links: PaginationLink[];
 };
 
+type BackLink = {
+    href: string;
+    label: string;
+    source: 'home' | null;
+};
+
 defineProps<{
+    backLink: BackLink;
     groups: PaginatedGroups;
 }>();
 
@@ -85,7 +92,7 @@ defineOptions({
     <div
         class="mx-auto flex h-full w-full max-w-6xl flex-1 flex-col gap-6 overflow-x-hidden p-4 sm:p-6"
     >
-        <CommunityBackLink />
+        <CommunityBackLink :href="backLink.href" :label="backLink.label" />
 
         <PageHeader
             title="Meine Gruppen"

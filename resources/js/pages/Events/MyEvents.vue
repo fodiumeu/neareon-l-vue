@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { Head, Link } from '@inertiajs/vue3';
+import CommunityBackLink from '@/components/CommunityBackLink.vue';
 import PageHeader from '@/components/PageHeader.vue';
 import PageSection from '@/components/PageSection.vue';
 import { Badge } from '@/components/ui/badge';
@@ -32,7 +33,14 @@ type MyEventSummary = {
     viewer_state: 'owner' | 'active' | 'pending';
 };
 
+type BackLink = {
+    href: string;
+    label: string;
+    source: 'home' | null;
+};
+
 const props = defineProps<{
+    backLink: BackLink;
     owned_events: MyEventSummary[];
     attending_events: MyEventSummary[];
     pending_events: MyEventSummary[];
@@ -101,6 +109,8 @@ defineOptions({
     <div
         class="mx-auto flex h-full w-full max-w-6xl flex-1 flex-col gap-6 overflow-x-hidden p-4 sm:p-6"
     >
+        <CommunityBackLink :href="props.backLink.href" :label="props.backLink.label" />
+
         <div
             class="flex min-w-0 flex-col gap-4 sm:flex-row sm:items-start sm:justify-between"
         >

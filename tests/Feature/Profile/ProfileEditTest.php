@@ -154,6 +154,36 @@ test('profile editing exposes followers only for field visibility options', func
         );
 });
 
+test('profile editing supports the safe home backlink context', function () {
+    $user = User::factory()->create();
+    Profile::factory()->for($user)->create();
+
+    $this->actingAs($user)
+        ->get(route('neareon-profile.edit', ['from' => 'home']))
+        ->assertOk()
+        ->assertDontSee('Zurück zum Profil')
+        ->assertInertia(fn (Assert $page) => $page
+            ->component('Profile/Edit')
+            ->where('backLink.href', route('dashboard', absolute: false))
+            ->where('backLink.label', 'Zurück zu Home')
+            ->where('backLink.source', 'home'),
+        );
+});
+
+test('profile editing ignores invalid backlink context values', function () {
+    $user = User::factory()->create();
+    Profile::factory()->for($user)->create();
+
+    $this->actingAs($user)
+        ->get(route('neareon-profile.edit', ['from' => 'https://evil.example']))
+        ->assertOk()
+        ->assertDontSee('https://evil.example')
+        ->assertInertia(fn (Assert $page) => $page
+            ->component('Profile/Edit')
+            ->where('backLink', null),
+        );
+});
+
 test('users can update display name bio and region', function () {
     $user = User::factory()->create();
     $profile = Profile::factory()->for($user)->create();

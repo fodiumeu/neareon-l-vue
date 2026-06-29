@@ -1,11 +1,50 @@
 <script setup lang="ts">
 import { Head, Link, usePage } from '@inertiajs/vue3';
+import {
+    Bell,
+    CalendarDays,
+    Compass,
+    MessageCircle,
+    Search,
+    UserCog,
+    UserRound,
+    Users,
+} from 'lucide-vue-next';
 import PageHeader from '@/components/PageHeader.vue';
 import PageSection from '@/components/PageSection.vue';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { dashboard } from '@/routes';
-import { edit as editProfile } from '@/routes/neareon-profile';
+
+type HomeUser = {
+    name: string;
+    username: string | null;
+    region: string | null;
+};
+
+type OpenItem = {
+    key: string;
+    label: string;
+    count: number;
+    href: string;
+};
+
+type UpcomingEvent = {
+    id: number;
+    title: string;
+    starts_at: string | null;
+    region: string | null;
+    href: string;
+};
+
+type HomeGroup = {
+    id: number;
+    name: string;
+    region: string | null;
+    category: string | null;
+    members_count: number;
+    href: string;
+};
 
 const page = usePage<{
     project: {
@@ -18,7 +57,69 @@ const page = usePage<{
             role: string;
         } | null;
     };
+    home: {
+        user: HomeUser;
+        openItems: OpenItem[];
+        upcomingEvents: UpcomingEvent[];
+        groups: HomeGroup[];
+    };
 }>();
+
+const quickLinks = [
+    {
+        label: 'Mitglieder entdecken',
+        description: 'Finde neue Profile in der Community.',
+        href: '/discover?from=home',
+        icon: UserRound,
+    },
+    {
+        label: 'Gruppen entdecken',
+        description: 'Stöbere durch offene Gruppen.',
+        href: '/groups?from=home',
+        icon: Users,
+    },
+    {
+        label: 'Events entdecken',
+        description: 'Sieh dir kommende Events an.',
+        href: '/events?from=home',
+        icon: CalendarDays,
+    },
+    {
+        label: 'Meine Gruppen',
+        description: 'Öffne deine Gruppenübersicht.',
+        href: '/my-groups?from=home',
+        icon: Users,
+    },
+    {
+        label: 'Meine Events',
+        description: 'Prüfe deine Events und Teilnahmen.',
+        href: '/my-events?from=home',
+        icon: CalendarDays,
+    },
+    {
+        label: 'Nachrichten',
+        description: 'Springe in deine Unterhaltungen.',
+        href: '/messages?from=home',
+        icon: MessageCircle,
+    },
+    {
+        label: 'Profil bearbeiten',
+        description: 'Aktualisiere deine sichtbaren Angaben.',
+        href: '/profile/edit?from=home',
+        icon: UserCog,
+    },
+];
+
+const formatDateTime = (value: string | null) => {
+    if (value === null) {
+        return 'Termin offen';
+    }
+
+    return new Intl.DateTimeFormat('de-DE', {
+        dateStyle: 'medium',
+        timeStyle: 'short',
+    }).format(new Date(value));
+};
 
 defineOptions({
     layout: {
@@ -36,52 +137,204 @@ defineOptions({
     <Head :title="page.props.project.dashboardTitle" />
 
     <div
-        class="mx-auto flex h-full w-full max-w-6xl flex-1 flex-col gap-6 overflow-x-auto p-4 sm:p-6"
+        class="mx-auto flex h-full w-full max-w-6xl flex-1 flex-col gap-6 overflow-x-hidden p-4 sm:p-6"
     >
         <PageHeader
-            title="Willkommen bei NEAREON"
-            description="Dein persönlicher Einstieg in Profil, Community und Discover."
+            :title="`Willkommen zurück, ${page.props.home.user.name}`"
+            description="Dein kurzer Überblick über Community, Gruppen, Events und offene Punkte."
         />
 
         <PageSection>
             <Card
-                class="overflow-hidden bg-card/95 shadow-lg shadow-black/10 dark:border-primary/20 dark:shadow-black/35"
+                class="overflow-hidden border-primary/25 bg-card/95 shadow-lg shadow-black/10 dark:shadow-black/35"
             >
-                <CardContent class="relative space-y-6">
-                    <div
-                        class="pointer-events-none absolute -top-24 -right-20 size-56 rounded-full bg-action-primary/14 blur-3xl"
-                        aria-hidden="true"
-                    />
-                    <div class="max-w-3xl space-y-3">
-                        <p
-                            class="relative text-xs font-semibold tracking-[0.18em] text-primary uppercase"
-                        >
-                            Home
-                        </p>
-                        <h2
-                            class="relative text-2xl font-semibold tracking-tight"
-                        >
-                            Baue dein NEAREON-Profil weiter aus.
-                        </h2>
-                        <p
-                            class="relative text-sm leading-6 text-muted-foreground"
-                        >
-                            Halte dein Profil aktuell, entdecke sichtbare
-                            Community-Profile und nutze die vorhandenen
-                            NEAREON-Funktionen ohne Umwege.
-                        </p>
-                    </div>
-
-                    <div class="relative flex flex-col gap-3 sm:flex-row">
-                        <Button as-child>
-                            <Link href="/explore">Entdecken</Link>
-                        </Button>
-                        <Button as-child variant="secondary">
-                            <Link :href="editProfile()">Profil bearbeiten</Link>
+                <CardContent class="space-y-5">
+                    <div class="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+                        <div class="min-w-0 space-y-2">
+                            <p
+                                v-if="page.props.home.user.region"
+                                class="text-xs font-semibold tracking-[0.18em] text-primary uppercase"
+                            >
+                                {{ page.props.home.user.region }}
+                            </p>
+                            <h2 class="text-xl font-semibold tracking-tight">
+                                Starte dort, wo gerade etwas passiert.
+                            </h2>
+                            <p class="max-w-3xl text-sm leading-6 text-muted-foreground">
+                                Öffne deine wichtigsten Bereiche direkt oder
+                                gehe über Entdecken zu Mitgliedern, Gruppen und
+                                Events.
+                            </p>
+                        </div>
+                        <Button as-child class="shrink-0">
+                            <Link href="/explore">
+                                <Compass class="size-4" aria-hidden="true" />
+                                Entdecken öffnen
+                            </Link>
                         </Button>
                     </div>
                 </CardContent>
             </Card>
+        </PageSection>
+
+        <PageSection>
+            <div class="grid gap-4 lg:grid-cols-[1.2fr_0.8fr]">
+                <Card>
+                    <CardContent class="space-y-4">
+                        <div class="flex items-center gap-2">
+                            <Search class="size-4 text-primary" aria-hidden="true" />
+                            <h2 class="text-base font-medium">Schnellzugriff</h2>
+                        </div>
+                        <div class="grid gap-3 sm:grid-cols-2">
+                            <Link
+                                v-for="item in quickLinks"
+                                :key="item.label"
+                                :href="item.href"
+                                class="group flex min-h-24 min-w-0 gap-3 rounded-lg border border-border bg-background/60 p-4 transition-colors duration-200 hover:border-primary/45 hover:bg-primary/10"
+                            >
+                                <span
+                                    class="flex size-10 shrink-0 items-center justify-center rounded-full border border-border bg-accent text-accent-foreground"
+                                >
+                                    <component :is="item.icon" class="size-4" aria-hidden="true" />
+                                </span>
+                                <span class="min-w-0 space-y-1">
+                                    <span class="block text-sm font-medium">
+                                        {{ item.label }}
+                                    </span>
+                                    <span class="block text-sm leading-5 text-muted-foreground">
+                                        {{ item.description }}
+                                    </span>
+                                </span>
+                            </Link>
+                        </div>
+                    </CardContent>
+                </Card>
+
+                <Card>
+                    <CardContent class="space-y-4">
+                        <div class="flex items-center gap-2">
+                            <Bell class="size-4 text-primary" aria-hidden="true" />
+                            <h2 class="text-base font-medium">Offene Punkte</h2>
+                        </div>
+                        <div
+                            v-if="page.props.home.openItems.length > 0"
+                            class="space-y-3"
+                        >
+                            <Link
+                                v-for="item in page.props.home.openItems"
+                                :key="item.key"
+                                :href="item.href"
+                                class="flex min-w-0 items-center justify-between gap-3 rounded-lg border border-border bg-background/60 p-4 transition-colors duration-200 hover:border-primary/45 hover:bg-primary/10"
+                            >
+                                <span class="min-w-0 text-sm font-medium">
+                                    {{ item.label }}
+                                </span>
+                                <span
+                                    class="flex min-w-8 shrink-0 items-center justify-center rounded-full bg-primary px-2 py-1 text-xs font-semibold text-primary-foreground"
+                                >
+                                    {{ item.count }}
+                                </span>
+                            </Link>
+                        </div>
+                        <p
+                            v-else
+                            class="rounded-lg border border-dashed border-border bg-background/50 p-4 text-sm text-muted-foreground"
+                        >
+                            Aktuell ist nichts offen.
+                        </p>
+                    </CardContent>
+                </Card>
+            </div>
+        </PageSection>
+
+        <PageSection>
+            <div class="grid gap-4 lg:grid-cols-2">
+                <Card>
+                    <CardContent class="space-y-4">
+                        <div class="flex items-center justify-between gap-3">
+                            <div class="flex items-center gap-2">
+                                <CalendarDays class="size-4 text-primary" aria-hidden="true" />
+                                <h2 class="text-base font-medium">Meine nächsten Events</h2>
+                            </div>
+                            <Button as-child variant="secondary" size="sm">
+                                <Link href="/my-events?from=home">Alle ansehen</Link>
+                            </Button>
+                        </div>
+                        <div
+                            v-if="page.props.home.upcomingEvents.length > 0"
+                            class="space-y-3"
+                        >
+                            <Link
+                                v-for="event in page.props.home.upcomingEvents"
+                                :key="event.id"
+                                :href="event.href"
+                                class="block min-w-0 rounded-lg border border-border bg-background/60 p-4 transition-colors duration-200 hover:border-primary/45 hover:bg-primary/10"
+                            >
+                                <span class="block truncate text-sm font-medium">
+                                    {{ event.title }}
+                                </span>
+                                <span class="mt-2 block text-sm text-muted-foreground">
+                                    {{ formatDateTime(event.starts_at) }}
+                                    <template v-if="event.region">
+                                        · {{ event.region }}
+                                    </template>
+                                </span>
+                            </Link>
+                        </div>
+                        <p
+                            v-else
+                            class="rounded-lg border border-dashed border-border bg-background/50 p-4 text-sm text-muted-foreground"
+                        >
+                            Du hast aktuell keine anstehenden Events.
+                        </p>
+                    </CardContent>
+                </Card>
+
+                <Card>
+                    <CardContent class="space-y-4">
+                        <div class="flex items-center justify-between gap-3">
+                            <div class="flex items-center gap-2">
+                                <Users class="size-4 text-primary" aria-hidden="true" />
+                                <h2 class="text-base font-medium">Meine Gruppen</h2>
+                            </div>
+                            <Button as-child variant="secondary" size="sm">
+                                <Link href="/my-groups?from=home">Alle ansehen</Link>
+                            </Button>
+                        </div>
+                        <div
+                            v-if="page.props.home.groups.length > 0"
+                            class="space-y-3"
+                        >
+                            <Link
+                                v-for="group in page.props.home.groups"
+                                :key="group.id"
+                                :href="group.href"
+                                class="block min-w-0 rounded-lg border border-border bg-background/60 p-4 transition-colors duration-200 hover:border-primary/45 hover:bg-primary/10"
+                            >
+                                <span class="block truncate text-sm font-medium">
+                                    {{ group.name }}
+                                </span>
+                                <span class="mt-2 block text-sm text-muted-foreground">
+                                    <template v-if="group.category">
+                                        {{ group.category }}
+                                    </template>
+                                    <template v-else>Gruppe</template>
+                                    <template v-if="group.region">
+                                        · {{ group.region }}
+                                    </template>
+                                    · {{ group.members_count }} Mitglieder
+                                </span>
+                            </Link>
+                        </div>
+                        <p
+                            v-else
+                            class="rounded-lg border border-dashed border-border bg-background/50 p-4 text-sm text-muted-foreground"
+                        >
+                            Du bist aktuell in keiner Gruppe.
+                        </p>
+                    </CardContent>
+                </Card>
+            </div>
         </PageSection>
 
         <PageSection v-if="page.props.project.hasStarterDefaults">
@@ -109,93 +362,6 @@ defineOptions({
                     </p>
                 </CardContent>
             </Card>
-        </PageSection>
-
-        <PageSection>
-            <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-                <Card>
-                    <CardContent class="space-y-3">
-                        <div
-                            class="flex size-10 items-center justify-center rounded-full border border-border bg-accent text-sm font-semibold text-accent-foreground"
-                        >
-                            01
-                        </div>
-                        <div class="space-y-2">
-                            <h2 class="text-sm font-medium">
-                                Profil vervollständigen
-                            </h2>
-                            <p class="text-sm leading-6 text-muted-foreground">
-                                Pflege Anzeigename, Bio, Region, Interessen und
-                                Sprachen an einer Stelle.
-                            </p>
-                        </div>
-                        <Button as-child variant="secondary" class="w-full">
-                            <Link :href="editProfile()">Profil bearbeiten</Link>
-                        </Button>
-                    </CardContent>
-                </Card>
-
-                <Card>
-                    <CardContent class="space-y-3">
-                        <div
-                            class="flex size-10 items-center justify-center rounded-full border border-border bg-accent text-sm font-semibold text-accent-foreground"
-                        >
-                            02
-                        </div>
-                        <div class="space-y-2">
-                            <h2 class="text-sm font-medium">Entdecken</h2>
-                            <p class="text-sm leading-6 text-muted-foreground">
-                                Finde Mitglieder, Gruppen und Events aus der
-                                Community.
-                            </p>
-                        </div>
-                        <Button as-child variant="secondary" class="w-full">
-                            <Link href="/explore">Entdecken öffnen</Link>
-                        </Button>
-                    </CardContent>
-                </Card>
-
-                <Card>
-                    <CardContent class="space-y-3">
-                        <div
-                            class="flex size-10 items-center justify-center rounded-full border border-border bg-accent text-sm font-semibold text-accent-foreground"
-                        >
-                            03
-                        </div>
-                        <div class="space-y-2">
-                            <h2 class="text-sm font-medium">
-                                Profil bearbeiten
-                            </h2>
-                            <p class="text-sm leading-6 text-muted-foreground">
-                                Aktualisiere sichtbare Angaben, ohne den
-                                Account-Namen oder Systemdaten zu verändern.
-                            </p>
-                        </div>
-                        <Button as-child variant="secondary" class="w-full">
-                            <Link :href="editProfile()">Bearbeiten</Link>
-                        </Button>
-                    </CardContent>
-                </Card>
-
-                <Card>
-                    <CardContent class="space-y-3">
-                        <div
-                            class="flex size-10 items-center justify-center rounded-full border border-border bg-accent text-sm font-semibold text-accent-foreground"
-                        >
-                            04
-                        </div>
-                        <div class="space-y-2">
-                            <h2 class="text-sm font-medium">
-                                Nächste Schritte
-                            </h2>
-                            <p class="text-sm leading-6 text-muted-foreground">
-                                Discover, Profile und Follow-Funktionen bleiben
-                                die aktuelle Basis für die nächsten Module.
-                            </p>
-                        </div>
-                    </CardContent>
-                </Card>
-            </div>
         </PageSection>
     </div>
 </template>

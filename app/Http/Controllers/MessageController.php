@@ -84,8 +84,23 @@ class MessageController extends Controller
             });
 
         return Inertia::render('Messages/Index', [
+            'backLink' => $this->backLink($request),
             'conversations' => $conversations,
         ]);
+    }
+
+    /**
+     * @return array{href: string, label: string, source: string}|null
+     */
+    private function backLink(Request $request): ?array
+    {
+        return $request->string('from')->toString() === 'home'
+            ? [
+                'href' => route('dashboard', absolute: false),
+                'label' => 'Zurück zu Home',
+                'source' => 'home',
+            ]
+            : null;
     }
 
     /**

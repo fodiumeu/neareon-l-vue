@@ -9,6 +9,7 @@ use App\Http\Controllers\BlockController;
 use App\Http\Controllers\CommunityController;
 use App\Http\Controllers\ContactController;
 use App\Http\Controllers\ContactRequestController;
+use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DiscoverController;
 use App\Http\Controllers\EventController;
 use App\Http\Controllers\FollowController;
@@ -21,7 +22,6 @@ use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\OnboardingController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ReportController;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 use Laravel\Fortify\Features;
@@ -157,9 +157,7 @@ Route::middleware(['auth', 'age.gate', 'verified', 'onboarding.complete'])->grou
     Route::delete('u/{username}/follow', [FollowController::class, 'destroy'])->name('public-profile.unfollow');
     Route::post('u/{username}/block', [BlockController::class, 'store'])->name('public-profile.block');
     Route::delete('u/{username}/block', [BlockController::class, 'destroy'])->name('public-profile.unblock');
-    Route::get('dashboard', function (Request $request) {
-        return Inertia::render('Dashboard');
-    })->name('dashboard');
+    Route::get('dashboard', DashboardController::class)->name('dashboard');
     Route::get('admin', [AdminController::class, 'index'])
         ->middleware('role:admin')
         ->name('admin');
