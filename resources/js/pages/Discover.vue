@@ -260,7 +260,7 @@ defineOptions({
     layout: {
         breadcrumbs: [
             {
-                title: 'Entdecken',
+                title: 'Mitglieder entdecken',
                 href: '/discover',
             },
         ],
@@ -269,14 +269,24 @@ defineOptions({
 </script>
 
 <template>
-    <Head title="Entdecken" />
+    <Head title="Mitglieder entdecken" />
 
     <div
         class="mx-auto flex h-full w-full max-w-6xl flex-1 flex-col gap-6 overflow-x-auto p-4 sm:p-6"
     >
+        <Button
+            as-child
+            variant="secondary"
+            class="max-w-full min-w-0 w-fit"
+        >
+            <Link href="/explore" class="min-w-0 truncate">
+                ← Zurück zu Entdecken
+            </Link>
+        </Button>
+
         <PageHeader
-            title="Entdecken"
-            description="Finde sichtbare Profile aus der NEAREON-Community."
+            title="Mitglieder entdecken"
+            description="Finde Mitglieder aus deiner Region und mit passenden Interessen."
         />
 
         <PageSection>

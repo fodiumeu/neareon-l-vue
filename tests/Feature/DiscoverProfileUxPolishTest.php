@@ -87,6 +87,8 @@ test('discover uses the polished privacy placeholder and inline follow context',
     );
 
     expect($normalizedPage)
+        ->toContain('← Zurück zu Entdecken')
+        ->toContain('href="/explore"')
         ->toContain(
             'Einige Profilinformationen sind nur für Kontakte sichtbar.',
         )

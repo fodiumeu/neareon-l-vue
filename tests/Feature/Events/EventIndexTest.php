@@ -268,6 +268,8 @@ test('events index vue contains expected copy and no forbidden event actions', f
 
     expect($page)
         ->toContain('Events entdecken')
+        ->toContain('← Zurück zu Entdecken')
+        ->toContain('href="/explore"')
         ->toContain('Entdecke regionale Events aus der NEAREON-Community.')
         ->toContain('Event erstellen')
         ->toContain('Name, Beschreibung, Region oder PLZ')

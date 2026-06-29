@@ -261,6 +261,16 @@ defineOptions({
     <div
         class="mx-auto flex h-full w-full max-w-6xl flex-1 flex-col gap-6 overflow-x-hidden p-4 sm:p-6"
     >
+        <Button
+            as-child
+            variant="secondary"
+            class="max-w-full min-w-0 w-fit"
+        >
+            <Link href="/explore" class="min-w-0 truncate">
+                ← Zurück zu Entdecken
+            </Link>
+        </Button>
+
         <PageHeader
             title="Gruppen entdecken"
             description="Entdecke öffentliche und offene Gruppen aus der NEAREON-Community."

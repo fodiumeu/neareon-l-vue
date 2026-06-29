@@ -46,6 +46,8 @@ Route::middleware(['auth', 'age.gate', 'verified'])->group(function () {
 });
 
 Route::middleware(['auth', 'age.gate', 'verified', 'onboarding.complete'])->group(function () {
+    Route::get('explore', fn () => Inertia::render('Explore/Index'))
+        ->name('explore.index');
     Route::get('community', CommunityController::class)
         ->name('community.index');
     Route::get('groups', [GroupController::class, 'index'])

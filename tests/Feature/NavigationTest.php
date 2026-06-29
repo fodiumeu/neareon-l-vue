@@ -20,13 +20,14 @@ test('main navigation config contains the mobile bottom navigation targets', fun
         ->and($mobileNavigation)
         ->toContain("title: 'Home'")
         ->toContain("title: 'Entdecken'")
+        ->toContain("href: '/explore'")
         ->toContain("title: 'Community'")
         ->toContain("href: '/community'")
         ->toContain("title: 'Nachrichten'")
         ->toContain("href: '/messages'")
         ->toContain("title: 'Profil'")
-        ->toContain("href: '/discover'")
         ->toContain("href: '/profile'")
+        ->not->toContain("title: 'Mitglieder entdecken'")
         ->not->toContain("title: 'Einstellungen'")
         ->and($navigation)
         ->not->toContain("title: 'Chats'");
@@ -53,8 +54,12 @@ test('desktop navigation is grouped for community communication profile and admi
         ->toContain("title: 'Kommunikation'")
         ->toContain("title: 'Profil & Konto'")
         ->toContain("title: 'Admin'")
+        ->toContain("title: 'Entdecken'")
+        ->toContain("href: '/explore'")
         ->toContain("title: 'Übersicht'")
         ->toContain("href: '/community'")
+        ->toContain("title: 'Mitglieder entdecken'")
+        ->toContain("href: '/discover'")
         ->toContain("title: 'Gruppen entdecken'")
         ->toContain("href: '/groups'")
         ->toContain("title: 'Events entdecken'")
@@ -143,6 +148,8 @@ test('mobile navigation keeps a compact five item structure', function () {
         ->and($mobileNavigation)
         ->toContain("title: 'Community'")
         ->toContain("href: '/community'")
+        ->toContain("title: 'Entdecken'")
+        ->toContain("href: '/explore'")
         ->toContain("title: 'Nachrichten'")
         ->toContain("href: '/messages'")
         ->not->toContain("title: 'Events entdecken'")
@@ -246,6 +253,8 @@ test('guests remain protected from contact navigation destinations', function (
         ->assertRedirect(route('login'));
 })->with([
     'contacts.index',
+    'explore.index',
+    'discover',
     'groups.index',
     'groups.mine',
     'events.index',

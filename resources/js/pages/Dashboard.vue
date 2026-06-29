@@ -4,7 +4,7 @@ import PageHeader from '@/components/PageHeader.vue';
 import PageSection from '@/components/PageSection.vue';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { dashboard, discover } from '@/routes';
+import { dashboard } from '@/routes';
 import { edit as editProfile } from '@/routes/neareon-profile';
 
 const page = usePage<{
@@ -74,7 +74,7 @@ defineOptions({
 
                     <div class="relative flex flex-col gap-3 sm:flex-row">
                         <Button as-child>
-                            <Link :href="discover()">Entdecken</Link>
+                            <Link href="/explore">Entdecken</Link>
                         </Button>
                         <Button as-child variant="secondary">
                             <Link :href="editProfile()">Profil bearbeiten</Link>
@@ -145,12 +145,12 @@ defineOptions({
                         <div class="space-y-2">
                             <h2 class="text-sm font-medium">Entdecken</h2>
                             <p class="text-sm leading-6 text-muted-foreground">
-                                Finde sichtbare Profile aus der Community und
-                                öffne öffentliche Profilseiten.
+                                Finde Mitglieder, Gruppen und Events aus der
+                                Community.
                             </p>
                         </div>
                         <Button as-child variant="secondary" class="w-full">
-                            <Link :href="discover()">Discover öffnen</Link>
+                            <Link href="/explore">Entdecken öffnen</Link>
                         </Button>
                     </CardContent>
                 </Card>

@@ -54,8 +54,13 @@ export const getMainNavGroups = ({
             },
             {
                 title: 'Entdecken',
-                href: '/discover',
+                href: '/explore',
                 icon: Search,
+            },
+            {
+                title: 'Mitglieder entdecken',
+                href: '/discover',
+                icon: Users,
             },
             {
                 title: 'Gruppen entdecken',
@@ -230,7 +235,7 @@ export const mobileBottomNavItems: NavItem[] = [
     },
     {
         title: 'Entdecken',
-        href: '/discover',
+        href: '/explore',
         icon: Search,
     },
     {
