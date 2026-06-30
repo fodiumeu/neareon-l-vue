@@ -1,6 +1,6 @@
 # MVP-Demo-Readiness
 
-Stand: v0.10.64-mvp-demo-final-check
+Stand: v0.10.66-candidate-smoke-fixes
 
 ## Aktuelle MVP-Bereiche
 
@@ -29,9 +29,11 @@ Stand: v0.10.64-mvp-demo-final-check
 - Admin/Stammdaten sind für die MVP-Pflege vorhanden, aber nicht als Demo-Hauptbereich ausgebaut.
 - Einige Datenstände müssen aktuell über Factories, Tests oder manuelle Nutzung erzeugt werden.
 
-## Empfohlene nächste Schritte vor V0.1.00
+## Empfohlene nächste Schritte vor V1.0.0 RC1
 
-- Die manuelle Candidate-Prüfung ist in [V0.1.00 Candidate Checkliste](v0.1.00-candidate-checklist.md) gebündelt.
+- Die manuelle Release-Candidate-Prüfung ist in [V1.0.0 RC1 Checkliste](v1.0.0-rc.1-checklist.md) gebündelt.
+- Der geplante Release-Candidate-Tag ist `v1.0.0-rc.1`; er ist noch keine Produktivfreigabe.
+- Der finale MVP-Tag kann nach bestandener Testphase später `v1.0.0` heißen.
 - Demo-Daten sollten fuer Praesentationen regelmaessig frisch geseedet werden.
 - Sichtbare Demo-Events in Entdecken sollten kommende Termine bleiben, damit die MVP-Oberflaeche nicht wie ein Altbestand wirkt.
 - Eine kurze Demo-Checkliste für Moderation, Privacy und mobile Präsentation wäre sinnvoll.
