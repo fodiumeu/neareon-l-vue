@@ -29,9 +29,9 @@ Stand: v0.10.66-candidate-smoke-fixes
 - Admin/Stammdaten sind für die MVP-Pflege vorhanden, aber nicht als Demo-Hauptbereich ausgebaut.
 - Einige Datenstände müssen aktuell über Factories, Tests oder manuelle Nutzung erzeugt werden.
 
-## Empfohlene nächste Schritte vor V1.0.0 RC1
+## Status für V1.0.0 RC1
 
-- Die manuelle Release-Candidate-Prüfung ist in [V1.0.0 RC1 Checkliste](v1.0.0-rc.1-checklist.md) gebündelt.
+- Die manuelle Release-Candidate-Prüfung ist in [V1.0.0 RC1 Checkliste](v1.0.0-rc.1-checklist.md) gebündelt und erfolgreich abgeschlossen.
 - Der geplante Release-Candidate-Tag ist `v1.0.0-rc.1`; er ist noch keine Produktivfreigabe.
 - Der finale MVP-Tag kann nach bestandener Testphase später `v1.0.0` heißen.
 - Demo-Daten sollten fuer Praesentationen regelmaessig frisch geseedet werden.
