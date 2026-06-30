@@ -190,6 +190,26 @@ test('my events separates active attendances and pending requests', function () 
         );
 });
 
+test('my events from home keeps the home origin on event links', function () {
+    $viewer = User::factory()->create();
+    createOnboardedProfile($viewer);
+    $event = Event::factory()->for($viewer, 'owner')->create([
+        'slug' => 'my-events-home-origin-link',
+    ]);
+
+    $this->actingAs($viewer)
+        ->get(route('events.mine', ['from' => 'home']))
+        ->assertOk()
+        ->assertInertia(fn (Assert $page) => $page
+            ->component('Events/MyEvents')
+            ->where('owned_events.0.my_events_show_url', route('events.show', [
+                'event' => $event->slug,
+                'from' => 'my-events',
+                'origin' => 'home',
+            ])),
+        );
+});
+
 test('pending events do not count as active attendance on my events', function () {
     $viewer = User::factory()->create();
     createOnboardedProfile($viewer);

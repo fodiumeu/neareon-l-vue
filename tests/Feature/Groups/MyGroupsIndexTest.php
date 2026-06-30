@@ -90,6 +90,27 @@ test('my groups shows owned active and pending memberships', function () {
         );
 });
 
+test('my groups from home keeps the home origin on group links', function () {
+    $viewer = User::factory()->create();
+    createOnboardedProfile($viewer);
+    $group = Group::factory()->for($viewer, 'owner')->create([
+        'name' => 'Home My Group',
+        'slug' => 'home-my-group',
+    ]);
+
+    $this->actingAs($viewer)
+        ->get(route('groups.mine', ['from' => 'home']))
+        ->assertOk()
+        ->assertInertia(fn (Assert $page) => $page
+            ->component('Groups/MyGroups')
+            ->where('groups.data.0.url', route('groups.show', [
+                'group' => $group->slug,
+                'from' => 'my-groups',
+                'origin' => 'home',
+            ])),
+        );
+});
+
 test('my groups empty state links to group discovery', function () {
     $viewer = User::factory()->create();
     createOnboardedProfile($viewer);

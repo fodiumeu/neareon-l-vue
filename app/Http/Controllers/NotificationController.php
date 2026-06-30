@@ -45,11 +45,25 @@ class NotificationController extends Controller
             ->keyBy('id');
 
         return Inertia::render('Notifications/Index', [
+            'backLink' => $this->backLink($request),
             'notificationItems' => $this->presentNotifications(
                 $notifications,
                 $actors,
             ),
         ]);
+    }
+
+    /**
+     * @return array{href: string, label: string}|null
+     */
+    private function backLink(Request $request): ?array
+    {
+        return $request->string('from')->toString() === 'home'
+            ? [
+                'href' => route('dashboard', absolute: false),
+                'label' => 'Zurück zu Home',
+            ]
+            : null;
     }
 
     /**

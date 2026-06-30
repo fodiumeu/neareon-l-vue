@@ -510,7 +510,7 @@ class DemoSeeder extends Seeder
             InternalNotificationType::EventAttendanceRequestReceived,
             'Neue Event-Anfrage',
             'Jonas Berlin moechte am Berlin Kulturabend teilnehmen.',
-            '/my-events',
+            route('events.show', $events['request']->slug, absolute: false),
             $users['jonas']->id,
             null,
             ['event_id' => $events['request']->id],

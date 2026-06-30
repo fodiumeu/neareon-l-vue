@@ -122,6 +122,27 @@ test('events index sorts by start date and stable id', function () {
         );
 });
 
+test('events index from home keeps the home origin on event links', function () {
+    $viewer = User::factory()->create();
+    createOnboardedProfile($viewer);
+    $event = Event::factory()->create([
+        'slug' => 'home-origin-event-link',
+        'starts_at' => now()->addDay(),
+    ]);
+
+    $this->actingAs($viewer)
+        ->get(route('events.index', ['from' => 'home']))
+        ->assertOk()
+        ->assertInertia(fn (Assert $page) => $page
+            ->component('Events/Index')
+            ->where('events.data.0.show_url', route('events.show', [
+                'event' => $event->slug,
+                'from' => 'events',
+                'origin' => 'home',
+            ])),
+        );
+});
+
 test('events index hides past visible events but keeps ongoing and upcoming events', function () {
     $viewer = User::factory()->create();
     createOnboardedProfile($viewer);

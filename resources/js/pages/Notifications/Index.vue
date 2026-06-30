@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { Head, Link, router } from '@inertiajs/vue3';
 import { Handshake, Users } from 'lucide-vue-next';
+import CommunityBackLink from '@/components/CommunityBackLink.vue';
 import PageHeader from '@/components/PageHeader.vue';
 import PageSection from '@/components/PageSection.vue';
 import ProfileAvatar from '@/components/ProfileAvatar.vue';
@@ -36,7 +37,13 @@ type InternalNotification = {
     open_url: string | null;
 };
 
+type BackLink = {
+    href: string;
+    label: string;
+};
+
 defineProps<{
+    backLink: BackLink | null;
     notificationItems: InternalNotification[];
 }>();
 
@@ -66,6 +73,12 @@ defineOptions({
     <div
         class="mx-auto flex h-full w-full max-w-5xl flex-1 flex-col gap-6 overflow-x-hidden p-4 sm:p-6"
     >
+        <CommunityBackLink
+            v-if="backLink"
+            :href="backLink.href"
+            :label="backLink.label"
+        />
+
         <PageHeader
             title="Benachrichtigungen"
             description="Hier findest du Neuigkeiten zu Kontakten, Followern und Nachrichten."

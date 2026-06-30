@@ -48,7 +48,10 @@ class EventController extends Controller
             ->orderBy('id')
             ->paginate(self::PER_PAGE)
             ->withQueryString()
-            ->through(fn (Event $event): array => $this->eventSummaryData($event));
+            ->through(fn (Event $event): array => $this->eventSummaryData(
+                $event,
+                $this->homeOrigin($request) ? 'home' : null,
+            ));
 
         return Inertia::render('Events/Index', [
             'backLink' => $this->discoverBackLink($request),
@@ -91,7 +94,11 @@ class EventController extends Controller
             ->orderBy('starts_at')
             ->orderBy('id')
             ->get()
-            ->map(fn (Event $event): array => $this->myEventData($event, 'owner'))
+            ->map(fn (Event $event): array => $this->myEventData(
+                $event,
+                'owner',
+                $this->homeOrigin($request) ? 'home' : null,
+            ))
             ->values()
             ->all();
 
@@ -110,7 +117,11 @@ class EventController extends Controller
             ->orderBy('starts_at')
             ->orderBy('id')
             ->get()
-            ->map(fn (Event $event): array => $this->myEventData($event, 'active'))
+            ->map(fn (Event $event): array => $this->myEventData(
+                $event,
+                'active',
+                $this->homeOrigin($request) ? 'home' : null,
+            ))
             ->values()
             ->all();
 
@@ -129,7 +140,11 @@ class EventController extends Controller
             ->orderBy('starts_at')
             ->orderBy('id')
             ->get()
-            ->map(fn (Event $event): array => $this->myEventData($event, 'pending'))
+            ->map(fn (Event $event): array => $this->myEventData(
+                $event,
+                'pending',
+                $this->homeOrigin($request) ? 'home' : null,
+            ))
             ->values()
             ->all();
 
@@ -496,7 +511,26 @@ class EventController extends Controller
      */
     private function eventBackLink(Request $request): array
     {
-        return match ($request->query('from')) {
+        $source = $request->string('from')->toString();
+
+        if ($request->string('origin')->toString() === 'home') {
+            return match ($source) {
+                'events' => [
+                    'url' => route('events.index', ['from' => 'home']),
+                    'label' => 'Zurück zu Events',
+                ],
+                'my-events' => [
+                    'url' => route('events.mine', ['from' => 'home']),
+                    'label' => 'Zurück zu Meine Events',
+                ],
+                default => [
+                    'url' => route('events.index'),
+                    'label' => 'Zurück zu Events',
+                ],
+            };
+        }
+
+        return match ($source) {
             'home' => [
                 'url' => route('dashboard'),
                 'label' => 'Zurück zu Home',
@@ -552,6 +586,29 @@ class EventController extends Controller
                 'label' => 'Zurück zur Community',
                 'source' => null,
             ];
+    }
+
+    private function homeOrigin(Request $request): bool
+    {
+        return $request->string('from')->toString() === 'home';
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    private function eventShowRouteParameters(Event $event, ?string $source = null, ?string $origin = null): array
+    {
+        $parameters = ['event' => $event->slug];
+
+        if (in_array($source, ['events', 'my-events'], true)) {
+            $parameters['from'] = $source;
+        }
+
+        if ($origin === 'home') {
+            $parameters['origin'] = 'home';
+        }
+
+        return $parameters;
     }
 
     /**
@@ -768,7 +825,7 @@ class EventController extends Controller
     /**
      * @return array<string, mixed>
      */
-    private function eventSummaryData(Event $event): array
+    private function eventSummaryData(Event $event, ?string $origin = null): array
     {
         $description = $event->description;
         $attendanceState = $this->eventAttendanceState($event);
@@ -780,7 +837,11 @@ class EventController extends Controller
             'description' => $description !== null && mb_strlen($description) > 180
                 ? Str::limit($description, 180)
                 : $description,
-            'show_url' => route('events.show', ['event' => $event->slug]),
+            'show_url' => route('events.show', $this->eventShowRouteParameters(
+                $event,
+                $origin === 'home' ? 'events' : null,
+                $origin,
+            )),
             'starts_at' => $event->starts_at?->toIso8601String(),
             'ends_at' => $event->ends_at?->toIso8601String(),
             'region' => $event->region,
@@ -850,17 +911,18 @@ class EventController extends Controller
     /**
      * @return array<string, mixed>
      */
-    private function myEventData(Event $event, string $viewerState): array
+    private function myEventData(Event $event, string $viewerState, ?string $origin = null): array
     {
         return [
             'id' => $event->id,
             'title' => $event->title,
             'slug' => $event->slug,
             'show_url' => route('events.show', ['event' => $event->slug]),
-            'my_events_show_url' => route('events.show', [
-                'event' => $event->slug,
-                'from' => 'my-events',
-            ]),
+            'my_events_show_url' => route('events.show', $this->eventShowRouteParameters(
+                $event,
+                'my-events',
+                $origin,
+            )),
             'edit_url' => $viewerState === 'owner'
                 ? route('events.edit', ['event' => $event->slug])
                 : null,

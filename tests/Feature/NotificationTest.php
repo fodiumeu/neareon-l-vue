@@ -249,6 +249,32 @@ test('notification page lists only the authenticated users notifications', funct
     expect($user->unreadNotifications()->count())->toBe(0);
 });
 
+test('notifications from home expose a home backlink', function () {
+    [, $user] = notificationUsers();
+
+    $this->actingAs($user)
+        ->get(route('notifications.index', ['from' => 'home']))
+        ->assertOk()
+        ->assertInertia(fn (Assert $page) => $page
+            ->component('Notifications/Index')
+            ->where('backLink.href', route('dashboard', absolute: false))
+            ->where('backLink.label', 'Zurück zu Home'),
+        );
+});
+
+test('notifications ignore invalid backlink contexts', function () {
+    [, $user] = notificationUsers();
+
+    $this->actingAs($user)
+        ->get(route('notifications.index', ['from' => '//evil.example']))
+        ->assertOk()
+        ->assertDontSee('//evil.example')
+        ->assertInertia(fn (Assert $page) => $page
+            ->component('Notifications/Index')
+            ->where('backLink', null),
+        );
+});
+
 test('one message notification is presented as one message group', function () {
     [$sender, $receiver] = notificationUsers();
     $receiver->notify(new InternalNotification(

@@ -31,7 +31,13 @@ type ContactRequest = {
     };
 };
 
+type BackLink = {
+    href: string;
+    label: string;
+};
+
 defineProps<{
+    backLink: BackLink;
     contactRequests: ContactRequest[];
 }>();
 
@@ -56,7 +62,7 @@ defineOptions({
     <div
         class="mx-auto flex h-full w-full max-w-5xl flex-1 flex-col gap-6 overflow-x-hidden p-4 sm:p-6"
     >
-        <CommunityBackLink />
+        <CommunityBackLink :href="backLink.href" :label="backLink.label" />
 
         <PageHeader
             title="Kontaktanfragen"

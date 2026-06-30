@@ -102,6 +102,73 @@ test('event detail uses safe home backlink context', function () {
         );
 });
 
+test('event detail from home events discover returns to events with home context', function () {
+    $viewer = User::factory()->create();
+    createOnboardedProfile($viewer);
+    $event = Event::factory()->create([
+        'slug' => 'events-home-origin-detail',
+        'status' => Event::STATUS_ACTIVE,
+    ]);
+
+    $this->actingAs($viewer)
+        ->get(route('events.show', [
+            'event' => $event->slug,
+            'from' => 'events',
+            'origin' => 'home',
+        ]))
+        ->assertOk()
+        ->assertInertia(fn (Assert $page) => $page
+            ->component('Events/Show')
+            ->where('event.back_url', route('events.index', ['from' => 'home']))
+            ->where('event.back_label', 'Zurück zu Events'),
+        );
+});
+
+test('event detail from home my events returns to my events with home context', function () {
+    $viewer = User::factory()->create();
+    createOnboardedProfile($viewer);
+    $event = Event::factory()->for($viewer, 'owner')->create([
+        'slug' => 'my-events-home-origin-detail',
+        'status' => Event::STATUS_ACTIVE,
+    ]);
+
+    $this->actingAs($viewer)
+        ->get(route('events.show', [
+            'event' => $event->slug,
+            'from' => 'my-events',
+            'origin' => 'home',
+        ]))
+        ->assertOk()
+        ->assertInertia(fn (Assert $page) => $page
+            ->component('Events/Show')
+            ->where('event.back_url', route('events.mine', ['from' => 'home']))
+            ->where('event.back_label', 'Zurück zu Meine Events'),
+        );
+});
+
+test('event detail ignores invalid nested origin values', function () {
+    $viewer = User::factory()->create();
+    createOnboardedProfile($viewer);
+    $event = Event::factory()->create([
+        'slug' => 'invalid-origin-event-context',
+        'status' => Event::STATUS_ACTIVE,
+    ]);
+
+    $this->actingAs($viewer)
+        ->get(route('events.show', [
+            'event' => $event->slug,
+            'from' => 'events',
+            'origin' => 'https://evil.example',
+        ]))
+        ->assertOk()
+        ->assertDontSee('https://evil.example')
+        ->assertInertia(fn (Assert $page) => $page
+            ->component('Events/Show')
+            ->where('event.back_url', route('events.index'))
+            ->where('event.back_label', 'Zurück zu Events'),
+        );
+});
+
 test('event detail ignores invalid backlink context', function (string $from) {
     $viewer = User::factory()->create();
     createOnboardedProfile($viewer);
@@ -125,6 +192,7 @@ test('event detail ignores invalid backlink context', function (string $from) {
     'unknown',
     'https://example.com',
     '//example.com',
+    'events',
 ]);
 
 test('event detail exposes event information without management urls for non owners', function () {

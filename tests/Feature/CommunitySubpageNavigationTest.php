@@ -4,8 +4,13 @@ test('community subpages include a stable link back to the community overview', 
     $content = file_get_contents(resource_path("js/pages/{$page}"));
 
     expect($content)
-        ->toContain("import CommunityBackLink from '@/components/CommunityBackLink.vue'")
-        ->toContain('<CommunityBackLink />');
+        ->toContain("import CommunityBackLink from '@/components/CommunityBackLink.vue'");
+
+    $page === 'ContactRequests/Index.vue'
+        ? expect($content)
+            ->toContain(':href="backLink.href"')
+            ->toContain(':label="backLink.label"')
+        : expect($content)->toContain('<CommunityBackLink />');
 })->with([
     'contacts' => 'Contacts/Index.vue',
     'followers' => 'Followers/Index.vue',

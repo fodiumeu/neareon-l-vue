@@ -57,25 +57,25 @@ class DashboardController extends Controller
                     ->where('receiver_id', $user->id)
                     ->where('status', ContactRequestStatus::Pending)
                     ->count(),
-                'href' => route('contact-requests.index', absolute: false),
+                'href' => route('contact-requests.index', ['from' => 'home'], absolute: false),
             ],
             [
                 'key' => 'notifications',
                 'label' => 'Ungelesene Benachrichtigungen',
                 'count' => $user->unreadNotifications()->count(),
-                'href' => route('notifications.index', absolute: false),
+                'href' => route('notifications.index', ['from' => 'home'], absolute: false),
             ],
             [
                 'key' => 'group_requests',
                 'label' => 'Gruppen-Beitrittsanfragen',
                 'count' => $this->pendingGroupRequestCount($user),
-                'href' => route('groups.mine', absolute: false),
+                'href' => route('groups.mine', ['from' => 'home'], absolute: false),
             ],
             [
                 'key' => 'event_requests',
                 'label' => 'Event-Teilnahmeanfragen',
                 'count' => $this->pendingEventRequestCount($user),
-                'href' => route('events.mine', absolute: false),
+                'href' => route('events.mine', ['from' => 'home'], absolute: false),
             ],
         ])
             ->filter(fn (array $item): bool => $item['count'] > 0)

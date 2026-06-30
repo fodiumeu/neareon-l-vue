@@ -118,6 +118,28 @@ test('groups index exposes pending and active viewer membership status', functio
         );
 });
 
+test('groups index from home keeps the home origin on group links', function () {
+    $viewer = User::factory()->create();
+    createOnboardedProfile($viewer);
+    $group = Group::factory()->create([
+        'name' => 'Home Origin Group',
+        'slug' => 'home-origin-group',
+        'visibility' => Group::VISIBILITY_PUBLIC,
+    ]);
+
+    $this->actingAs($viewer)
+        ->get(route('groups.index', ['from' => 'home']))
+        ->assertOk()
+        ->assertInertia(fn (Assert $page) => $page
+            ->component('Groups/Index')
+            ->where('groups.data.0.url', route('groups.show', [
+                'group' => $group->slug,
+                'from' => 'groups',
+                'origin' => 'home',
+            ])),
+        );
+});
+
 test('groups discover index hides private groups even when the viewer is an active member', function () {
     $viewer = User::factory()->create();
     createOnboardedProfile($viewer);

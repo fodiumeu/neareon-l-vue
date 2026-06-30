@@ -56,7 +56,12 @@ class GroupController extends Controller
             ->orderBy('name')
             ->paginate(self::PER_PAGE)
             ->withQueryString()
-            ->through(fn (Group $group): array => $this->groupSummary($group, $viewer, self::SOURCE_GROUPS));
+            ->through(fn (Group $group): array => $this->groupSummary(
+                $group,
+                $viewer,
+                self::SOURCE_GROUPS,
+                origin: $this->homeOrigin($request) ? 'home' : null,
+            ));
 
         return Inertia::render('Groups/Index', [
             'backLink' => $this->discoverBackLink($request),
@@ -294,7 +299,12 @@ class GroupController extends Controller
             ->orderBy('name')
             ->paginate(self::PER_PAGE)
             ->withQueryString()
-            ->through(fn (Group $group): array => $this->groupSummary($group, $viewer, self::SOURCE_MY_GROUPS));
+            ->through(fn (Group $group): array => $this->groupSummary(
+                $group,
+                $viewer,
+                self::SOURCE_MY_GROUPS,
+                origin: $this->homeOrigin($request) ? 'home' : null,
+            ));
 
         return Inertia::render('Groups/MyGroups', [
             'backLink' => $this->communityBackLink($request),
@@ -501,7 +511,12 @@ class GroupController extends Controller
 
         return Inertia::render('Groups/Show', [
             'group' => array_merge($this->groupSummary($group, $viewer, $this->requestSource($request), $inviteToken), [
-                ...$this->backlinkData($group, $viewer, $this->requestSource($request)),
+                ...$this->backlinkData(
+                    $group,
+                    $viewer,
+                    $this->requestSource($request),
+                    $this->requestOrigin($request),
+                ),
                 'members' => $group->activeMembers
                     ->map(fn (GroupMember $membership): array => $this->memberData($membership))
                     ->values(),
@@ -756,10 +771,22 @@ class GroupController extends Controller
             ];
     }
 
+    private function homeOrigin(Request $request): bool
+    {
+        return $request->string('from')->toString() === 'home';
+    }
+
+    private function requestOrigin(Request $request): ?string
+    {
+        return $request->string('origin')->toString() === 'home'
+            ? 'home'
+            : null;
+    }
+
     /**
      * @return array<string, string>
      */
-    private function showRouteParameters(Group $group, ?string $source = null): array
+    private function showRouteParameters(Group $group, ?string $source = null, ?string $origin = null): array
     {
         $parameters = ['group' => $group->slug];
 
@@ -771,15 +798,39 @@ class GroupController extends Controller
             $parameters['from'] = $source;
         }
 
+        if ($origin === 'home') {
+            $parameters['origin'] = 'home';
+        }
+
         return $parameters;
     }
 
     /**
      * @return array{back_url: string, back_label: string, back_source: string}
      */
-    private function backlinkData(Group $group, User $viewer, ?string $source): array
+    private function backlinkData(Group $group, User $viewer, ?string $source, ?string $origin = null): array
     {
         $backSource = $source;
+
+        if ($origin === 'home') {
+            return match ($backSource) {
+                self::SOURCE_MY_GROUPS => [
+                    'back_url' => route('groups.mine', ['from' => 'home']),
+                    'back_label' => 'Zurück zu Meine Gruppen',
+                    'back_source' => self::SOURCE_MY_GROUPS,
+                ],
+                self::SOURCE_GROUPS => [
+                    'back_url' => route('groups.index', ['from' => 'home']),
+                    'back_label' => 'Zurück zu Gruppen entdecken',
+                    'back_source' => self::SOURCE_GROUPS,
+                ],
+                default => [
+                    'back_url' => route('groups.index'),
+                    'back_label' => 'Zurück zu Gruppen entdecken',
+                    'back_source' => self::SOURCE_GROUPS,
+                ],
+            };
+        }
 
         if ($backSource === null) {
             $hasMembership = $group->owner_id === $viewer->id
@@ -826,8 +877,13 @@ class GroupController extends Controller
     /**
      * @return array<string, mixed>
      */
-    private function groupSummary(Group $group, User $viewer, ?string $source = null, ?string $inviteToken = null): array
-    {
+    private function groupSummary(
+        Group $group,
+        User $viewer,
+        ?string $source = null,
+        ?string $inviteToken = null,
+        ?string $origin = null,
+    ): array {
         $membership = $group->members->first();
         $membershipData = $membership !== null
             ? [
@@ -878,7 +934,7 @@ class GroupController extends Controller
             'edit_url' => $this->canManageGroup($group, $viewer)
                 ? route('groups.edit', ['group' => $group->slug])
                 : null,
-            'url' => route('groups.show', $this->showRouteParameters($group, $source)),
+            'url' => route('groups.show', $this->showRouteParameters($group, $source, $origin)),
             'invite_context' => $this->hasValidInviteContext($group, $inviteToken, $viewer, $membershipData),
             'can_manage_invite' => $this->canManageInvite($group, $viewer),
             'can_view_members' => $this->canViewGroupMembers($group, $viewer),

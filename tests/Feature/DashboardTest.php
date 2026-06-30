@@ -123,16 +123,16 @@ test('dashboard summarizes open contact requests notifications and manageable re
         ->assertInertia(fn (Assert $page) => $page
             ->where('home.openItems.0.key', 'contact_requests')
             ->where('home.openItems.0.count', 1)
-            ->where('home.openItems.0.href', route('contact-requests.index', absolute: false))
+            ->where('home.openItems.0.href', route('contact-requests.index', ['from' => 'home'], absolute: false))
             ->where('home.openItems.1.key', 'notifications')
             ->where('home.openItems.1.count', 1)
-            ->where('home.openItems.1.href', route('notifications.index', absolute: false))
+            ->where('home.openItems.1.href', route('notifications.index', ['from' => 'home'], absolute: false))
             ->where('home.openItems.2.key', 'group_requests')
             ->where('home.openItems.2.count', 1)
-            ->where('home.openItems.2.href', route('groups.mine', absolute: false))
+            ->where('home.openItems.2.href', route('groups.mine', ['from' => 'home'], absolute: false))
             ->where('home.openItems.3.key', 'event_requests')
             ->where('home.openItems.3.count', 1)
-            ->where('home.openItems.3.href', route('events.mine', absolute: false)),
+            ->where('home.openItems.3.href', route('events.mine', ['from' => 'home'], absolute: false)),
         );
 });
 

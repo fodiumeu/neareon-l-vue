@@ -45,6 +45,35 @@ test('users only see their own received pending contact requests', function () {
         );
 });
 
+test('contact requests from home expose a home backlink', function () {
+    $receiver = User::factory()->create();
+    createOnboardedProfile($receiver);
+
+    $this->actingAs($receiver)
+        ->get(route('contact-requests.index', ['from' => 'home']))
+        ->assertOk()
+        ->assertInertia(fn (Assert $page) => $page
+            ->component('ContactRequests/Index')
+            ->where('backLink.href', route('dashboard', absolute: false))
+            ->where('backLink.label', 'Zurück zu Home'),
+        );
+});
+
+test('contact requests keep the community backlink without home context', function () {
+    $receiver = User::factory()->create();
+    createOnboardedProfile($receiver);
+
+    $this->actingAs($receiver)
+        ->get(route('contact-requests.index', ['from' => 'https://evil.example']))
+        ->assertOk()
+        ->assertDontSee('https://evil.example')
+        ->assertInertia(fn (Assert $page) => $page
+            ->component('ContactRequests/Index')
+            ->where('backLink.href', route('community.index', absolute: false))
+            ->where('backLink.label', 'Zurück zur Community'),
+        );
+});
+
 test('accepted declined and closed contact requests are not visible', function () {
     $receiver = User::factory()->create();
     createOnboardedProfile($receiver);

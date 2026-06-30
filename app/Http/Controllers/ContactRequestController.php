@@ -89,8 +89,25 @@ class ContactRequestController extends Controller
             });
 
         return Inertia::render('ContactRequests/Index', [
+            'backLink' => $this->backLink($request),
             'contactRequests' => $contactRequests,
         ]);
+    }
+
+    /**
+     * @return array{href: string, label: string}
+     */
+    private function backLink(Request $request): array
+    {
+        return $request->string('from')->toString() === 'home'
+            ? [
+                'href' => route('dashboard', absolute: false),
+                'label' => 'Zurück zu Home',
+            ]
+            : [
+                'href' => route('community.index', absolute: false),
+                'label' => 'Zurück zur Community',
+            ];
     }
 
     /**

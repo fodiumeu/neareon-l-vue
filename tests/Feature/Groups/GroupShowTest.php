@@ -283,6 +283,82 @@ test('group detail honors allowed backlink source from home', function () {
         );
 });
 
+test('group detail from home groups discover returns to groups with home context', function () {
+    $viewer = User::factory()->create();
+    createOnboardedProfile($viewer);
+    $group = Group::factory()->create([
+        'slug' => 'groups-home-origin-detail',
+        'visibility' => Group::VISIBILITY_PUBLIC,
+    ]);
+
+    $this->actingAs($viewer)
+        ->get(route('groups.show', [
+            'group' => $group->slug,
+            'from' => 'groups',
+            'origin' => 'home',
+        ]))
+        ->assertOk()
+        ->assertInertia(fn (Assert $page) => $page
+            ->component('Groups/Show')
+            ->where('group.back_url', route('groups.index', ['from' => 'home']))
+            ->where('group.back_label', 'Zurück zu Gruppen entdecken')
+            ->where('group.back_source', 'groups'),
+        );
+});
+
+test('group detail from home my groups returns to my groups with home context', function () {
+    $viewer = User::factory()->create();
+    createOnboardedProfile($viewer);
+    $group = Group::factory()->create([
+        'slug' => 'my-groups-home-origin-detail',
+        'visibility' => Group::VISIBILITY_PUBLIC,
+    ]);
+    GroupMember::factory()
+        ->for($group)
+        ->for($viewer)
+        ->create([
+            'status' => GroupMember::STATUS_ACTIVE,
+        ]);
+
+    $this->actingAs($viewer)
+        ->get(route('groups.show', [
+            'group' => $group->slug,
+            'from' => 'my-groups',
+            'origin' => 'home',
+        ]))
+        ->assertOk()
+        ->assertInertia(fn (Assert $page) => $page
+            ->component('Groups/Show')
+            ->where('group.back_url', route('groups.mine', ['from' => 'home']))
+            ->where('group.back_label', 'Zurück zu Meine Gruppen')
+            ->where('group.back_source', 'my-groups'),
+        );
+});
+
+test('group detail ignores invalid nested origin values', function () {
+    $viewer = User::factory()->create();
+    createOnboardedProfile($viewer);
+    $group = Group::factory()->create([
+        'slug' => 'invalid-origin-group-detail',
+        'visibility' => Group::VISIBILITY_PUBLIC,
+    ]);
+
+    $this->actingAs($viewer)
+        ->get(route('groups.show', [
+            'group' => $group->slug,
+            'from' => 'groups',
+            'origin' => '//evil.example',
+        ]))
+        ->assertOk()
+        ->assertDontSee('//evil.example')
+        ->assertInertia(fn (Assert $page) => $page
+            ->component('Groups/Show')
+            ->where('group.back_url', route('groups.index'))
+            ->where('group.back_label', 'Zurück zu Gruppen entdecken')
+            ->where('group.back_source', 'groups'),
+        );
+});
+
 test('group detail ignores invalid backlink source values', function () {
     $viewer = User::factory()->create();
     createOnboardedProfile($viewer);
