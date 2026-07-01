@@ -7,6 +7,7 @@ import {
     SidebarMenuBadge,
     SidebarMenuButton,
     SidebarMenuItem,
+    useSidebar,
 } from '@/components/ui/sidebar';
 import { useCurrentUrl } from '@/composables/useCurrentUrl';
 import type { NavGroup } from '@/types';
@@ -16,6 +17,13 @@ defineProps<{
 }>();
 
 const { isCurrentUrl } = useCurrentUrl();
+const { isMobile, setOpenMobile } = useSidebar();
+
+const closeMobileSidebar = () => {
+    if (isMobile.value) {
+        setOpenMobile(false);
+    }
+};
 </script>
 
 <template>
@@ -28,7 +36,7 @@ const { isCurrentUrl } = useCurrentUrl();
                     :is-active="isCurrentUrl(item.href)"
                     :tooltip="item.title"
                 >
-                    <Link :href="item.href">
+                    <Link :href="item.href" @click="closeMobileSidebar">
                         <component :is="item.icon" />
                         <span>{{ item.title }}</span>
                     </Link>

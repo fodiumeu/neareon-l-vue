@@ -8,6 +8,26 @@ use Illuminate\Support\Carbon;
 class StoreAgeGateRequest extends FormRequest
 {
     /**
+     * Prepare the data for validation.
+     */
+    protected function prepareForValidation(): void
+    {
+        $birthdate = $this->input('birthdate');
+
+        if (! is_string($birthdate)) {
+            return;
+        }
+
+        $normalizedBirthdate = $this->normalizeBirthdate($birthdate);
+
+        if ($normalizedBirthdate !== null) {
+            $this->merge([
+                'birthdate' => $normalizedBirthdate,
+            ]);
+        }
+    }
+
+    /**
      * Determine if the user is authorized to make this request.
      */
     public function authorize(): bool
@@ -61,5 +81,45 @@ class StoreAgeGateRequest extends FormRequest
             'birthdate.date' => 'Bitte gib ein gültiges Geburtsdatum ein.',
             'birthdate.before_or_equal' => 'Bitte gib ein gültiges Geburtsdatum ein.',
         ];
+    }
+
+    private function normalizeBirthdate(string $value): ?string
+    {
+        $value = trim($value);
+
+        if ($value === '') {
+            return null;
+        }
+
+        if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $value) === 1) {
+            return $value;
+        }
+
+        if (preg_match('/^(\d{1,2})\.(\d{1,2})\.(\d{4})$/', $value, $matches) === 1) {
+            return $this->datePartsToIso(
+                (int) $matches[1],
+                (int) $matches[2],
+                (int) $matches[3],
+            );
+        }
+
+        if (preg_match('/^(\d{2})(\d{2})(\d{4})$/', $value, $matches) === 1) {
+            return $this->datePartsToIso(
+                (int) $matches[1],
+                (int) $matches[2],
+                (int) $matches[3],
+            );
+        }
+
+        return null;
+    }
+
+    private function datePartsToIso(int $day, int $month, int $year): ?string
+    {
+        if (! checkdate($month, $day, $year)) {
+            return null;
+        }
+
+        return sprintf('%04d-%02d-%02d', $year, $month, $day);
     }
 }

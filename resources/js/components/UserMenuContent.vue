@@ -16,7 +16,12 @@ type Props = {
     user: User;
 };
 
+const emit = defineEmits<{
+    navigate: [];
+}>();
+
 const handleLogout = () => {
+    emit('navigate');
     router.flushAll();
 };
 
@@ -32,7 +37,12 @@ defineProps<Props>();
     <DropdownMenuSeparator />
     <DropdownMenuGroup>
         <DropdownMenuItem :as-child="true">
-            <Link class="block w-full cursor-pointer" :href="edit()" prefetch>
+            <Link
+                class="block w-full cursor-pointer"
+                :href="edit()"
+                prefetch
+                @click="emit('navigate')"
+            >
                 <Settings class="mr-2 h-4 w-4" />
                 Einstellungen
             </Link>

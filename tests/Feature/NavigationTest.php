@@ -102,7 +102,10 @@ test('desktop navigation is grouped for community communication profile and admi
         ->and($navMain)
         ->toContain('v-for="group in groups"')
         ->toContain('<SidebarGroupLabel>{{ group.title }}</SidebarGroupLabel>')
-        ->toContain('SidebarMenuBadge');
+        ->toContain('SidebarMenuBadge')
+        ->toContain('useSidebar')
+        ->toContain('setOpenMobile(false)')
+        ->toContain('@click="closeMobileSidebar"');
 
     expect($mainNavigation)
         ->not->toContain("title: 'Meine Events'");
@@ -115,13 +118,24 @@ test('desktop navigation is grouped for community communication profile and admi
 
 test('sidebar preserves badge props and allows admin navigation for admins and owners only', function () {
     $sidebar = file_get_contents(resource_path('js/components/AppSidebar.vue'));
+    $navUser = file_get_contents(resource_path('js/components/NavUser.vue'));
+    $userMenuContent = file_get_contents(
+        resource_path('js/components/UserMenuContent.vue'),
+    );
 
     expect($sidebar)
         ->toContain('page.props.messages.unreadCount')
         ->toContain('unreadMessagesCount')
         ->toContain('page.props.notifications.unreadCount')
         ->toContain('unreadNotificationsCount')
-        ->toContain("user?.role === 'admin' || user?.role === 'owner'");
+        ->toContain("user?.role === 'admin' || user?.role === 'owner'")
+        ->toContain('@click="closeMobileSidebar"')
+        ->and($navUser)
+        ->toContain('setOpenMobile(false)')
+        ->toContain('@navigate="closeMobileSidebar"')
+        ->and($userMenuContent)
+        ->toContain('navigate')
+        ->toContain("@click=\"emit('navigate')\"");
 });
 
 test('mobile navigation keeps a compact five item structure', function () {

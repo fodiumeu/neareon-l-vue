@@ -72,6 +72,79 @@ test('users fourteen and older pass age gate', function () {
         ->and($user->age_gate_passed_at)->not->toBeNull();
 });
 
+test('age gate accepts localized birthdate input formats', function (
+    string $birthdate,
+    string $expectedBirthdate,
+) {
+    $user = User::factory()->withoutAgeGate()->create();
+
+    $this->actingAs($user)
+        ->post(route('age-gate.store'), [
+            'birthdate' => $birthdate,
+        ])
+        ->assertRedirect(route('onboarding.details'));
+
+    $user->refresh();
+
+    expect($user->birthdate->toDateString())->toBe($expectedBirthdate)
+        ->and($user->age_gate_passed_at)->not->toBeNull();
+})->with([
+    'padded german date' => ['01.07.2006', '2006-07-01'],
+    'short german date' => ['1.7.2006', '2006-07-01'],
+    'compact german date' => ['01072006', '2006-07-01'],
+]);
+
+test('invalid localized birthdate input is rejected', function () {
+    $user = User::factory()->withoutAgeGate()->create();
+
+    $this->actingAs($user)
+        ->from(route('age-gate.show'))
+        ->post(route('age-gate.store'), [
+            'birthdate' => '31022006',
+        ])
+        ->assertRedirect(route('age-gate.show'))
+        ->assertSessionHasErrors('birthdate');
+
+    $user->refresh();
+
+    expect($user->birthdate)->toBeNull()
+        ->and($user->age_gate_passed_at)->toBeNull();
+});
+
+test('localized underage birthdate remains blocked by age gate', function () {
+    $user = User::factory()->withoutAgeGate()->create();
+    $birthdate = now()->subYears(14)->addDay()->format('d.m.Y');
+
+    $this->actingAs($user)
+        ->from(route('age-gate.show'))
+        ->post(route('age-gate.store'), [
+            'birthdate' => $birthdate,
+        ])
+        ->assertRedirect(route('age-gate.show'))
+        ->assertSessionHasErrors([
+            'birthdate' => 'NEAREON kann aktuell erst ab 14 Jahren genutzt werden.',
+        ]);
+
+    $user->refresh();
+
+    expect($user->birthdate)->toBeNull()
+        ->and($user->age_gate_passed_at)->toBeNull();
+});
+
+test('age gate page supports manual birthdate input and explicit calendar opening', function () {
+    $page = file_get_contents(resource_path('js/pages/AgeGate.vue'));
+
+    expect($page)
+        ->toContain('type="text"')
+        ->toContain('inputmode="numeric"')
+        ->toContain('placeholder="TT.MM.JJJJ"')
+        ->toContain('type="hidden"')
+        ->toContain('name="birthdate"')
+        ->toContain('type="date"')
+        ->toContain('showPicker')
+        ->toContain('Kalender öffnen');
+});
+
 test('users with completed age gate are redirected away from age gate', function () {
     $user = User::factory()->create();
 

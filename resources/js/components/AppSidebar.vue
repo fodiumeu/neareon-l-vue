@@ -13,6 +13,7 @@ import {
     SidebarMenu,
     SidebarMenuButton,
     SidebarMenuItem,
+    useSidebar,
 } from '@/components/ui/sidebar';
 import { useLiveBadgePolling } from '@/composables/useLiveBadgePolling';
 import {
@@ -89,6 +90,13 @@ const visibleMainNavGroups = computed(() =>
 const visibleFooterNavItems = computed(() =>
     filterItemsByUserAccess(footerNavItems),
 );
+const { isMobile, setOpenMobile } = useSidebar();
+
+const closeMobileSidebar = () => {
+    if (isMobile.value) {
+        setOpenMobile(false);
+    }
+};
 </script>
 
 <template>
@@ -97,7 +105,7 @@ const visibleFooterNavItems = computed(() =>
             <SidebarMenu>
                 <SidebarMenuItem>
                     <SidebarMenuButton size="lg" as-child>
-                        <Link :href="dashboard()">
+                        <Link :href="dashboard()" @click="closeMobileSidebar">
                             <AppLogo />
                         </Link>
                     </SidebarMenuButton>
